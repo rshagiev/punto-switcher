@@ -20,54 +20,76 @@ final class TextAccessor {
 
     // MARK: - Get Selected Text
 
+    /// Result of trying to get selected text via Accessibility API
+    private enum AXGetResult {
+        case text(String)       // Got non-empty selected text
+        case empty              // AX worked, but nothing is selected
+        case failed             // AX API failed (should try clipboard fallback)
+    }
+
     /// Attempts to get the currently selected text using Accessibility API
     /// Falls back to Cmd+C clipboard method for browsers/apps that don't expose selectedText
     func getSelectedText() -> String? {
         // 1. Try Accessibility API (direct access)
-        if let text = getSelectedTextViaAccessibility() {
+        switch getSelectedTextViaAccessibility() {
+        case .text(let text):
             lastGetUsedClipboard = false
             return text
+        case .empty:
+            // AX worked, nothing selected - no need for clipboard fallback
+            lastGetUsedClipboard = false
+            return nil
+        case .failed:
+            // AX failed - try clipboard fallback for browsers
+            lastGetUsedClipboard = true
+            return getSelectedTextViaClipboard()
         }
-
-        // 2. Fallback: Cmd+C for browsers and other problematic apps
-        lastGetUsedClipboard = true
-        return getSelectedTextViaClipboard()
     }
 
-    private func getSelectedTextViaAccessibility() -> String? {
-        PuntoLog.info("getSelectedTextViaAccessibility: starting")
-
+    private func getSelectedTextViaAccessibility() -> AXGetResult {
         guard let focusedElement = getFocusedElement() else {
             PuntoLog.info("getSelectedTextViaAccessibility: no focused element")
-            return nil
+            return .failed
         }
 
         // Direct attempt on focused element
-        PuntoLog.info("getSelectedTextViaAccessibility: trying direct on focused element")
-        if let text = tryGetSelectedText(focusedElement) {
+        switch tryGetSelectedText(focusedElement) {
+        case .text(let text):
             PuntoLog.info("getSelectedTextViaAccessibility: direct succeeded")
-            return text
+            return .text(text)
+        case .empty:
+            PuntoLog.info("getSelectedTextViaAccessibility: direct returned empty (nothing selected)")
+            return .empty
+        case .failed:
+            break  // Continue to other methods
         }
 
         // For Safari/Electron: try via app's focusedUIElement
-        // (as AXorcist does for Chromium apps)
-        PuntoLog.info("getSelectedTextViaAccessibility: trying via app focusedUIElement")
         if let appFocusedElement = getAppFocusedElement() {
-            if let text = tryGetSelectedText(appFocusedElement) {
+            switch tryGetSelectedText(appFocusedElement) {
+            case .text(let text):
                 PuntoLog.info("getSelectedTextViaAccessibility: appFocusedElement succeeded")
-                return text
+                return .text(text)
+            case .empty:
+                return .empty
+            case .failed:
+                break
             }
         }
 
         // Recursive search in children (maxDepth=5)
-        PuntoLog.info("getSelectedTextViaAccessibility: trying recursive search in children")
-        let result = searchForSelectedText(focusedElement, depth: 0)
-        PuntoLog.info("getSelectedTextViaAccessibility: recursive search returned '\(result?.prefix(20) ?? "nil")'")
-        return result
+        if let text = searchForSelectedText(focusedElement, depth: 0) {
+            PuntoLog.info("getSelectedTextViaAccessibility: recursive search found text")
+            return .text(text)
+        }
+
+        // All methods failed - might be a browser that needs clipboard fallback
+        PuntoLog.info("getSelectedTextViaAccessibility: all methods failed")
+        return .failed
     }
 
     /// Attempts to get selectedText from an element
-    private func tryGetSelectedText(_ element: AXUIElement) -> String? {
+    private func tryGetSelectedText(_ element: AXUIElement) -> AXGetResult {
         var selectedText: AnyObject?
         let result = AXUIElementCopyAttributeValue(
             element,
@@ -75,22 +97,19 @@ final class TextAccessor {
             &selectedText
         )
 
-        // Log the result for debugging
+        // AX API failed - element doesn't support selectedText
         if result != .success {
-            // Only log non-noValue errors (noValue is normal for containers)
-            if result.rawValue != -25212 {
-                PuntoLog.info("tryGetSelectedText: AX error=\(result.rawValue)")
-            }
-            return nil
+            return .failed
         }
 
-        guard let text = selectedText as? String, !text.isEmpty else {
-            PuntoLog.info("tryGetSelectedText: got empty or nil string")
-            return nil
+        // AX API succeeded - check if there's actual text
+        if let text = selectedText as? String, !text.isEmpty {
+            PuntoLog.info("tryGetSelectedText: got '\(text.prefix(30))'")
+            return .text(text)
         }
 
-        PuntoLog.info("tryGetSelectedText: SUCCESS got '\(text.prefix(30))'")
-        return text
+        // AX succeeded but returned empty string = nothing selected
+        return .empty
     }
 
     /// Gets focusedUIElement directly from application (bypass for Electron/Safari)
@@ -138,19 +157,12 @@ final class TextAccessor {
             &children
         )
         guard childResult == .success, let childArray = children as? [AXUIElement] else {
-            if depth == 0 {
-                PuntoLog.info("searchForSelectedText: no children at depth 0, error=\(childResult.rawValue)")
-            }
             return nil
-        }
-
-        if depth == 0 {
-            PuntoLog.info("searchForSelectedText: found \(childArray.count) children at depth 0")
         }
 
         for child in childArray {
             // First check the element itself
-            if let text = tryGetSelectedText(child) {
+            if case .text(let text) = tryGetSelectedText(child) {
                 PuntoLog.info("searchForSelectedText: found text at depth \(depth)")
                 return text
             }
