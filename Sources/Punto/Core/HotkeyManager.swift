@@ -14,8 +14,17 @@ final class HotkeyManager {
 
     private var isRunning = false
 
-    // Flag to ignore events during text replacement
-    var ignoreEvents = false
+    // Thread-safe flag to ignore events during text replacement
+    private let stateQueue = DispatchQueue(label: "com.punto.hotkeymanager.state")
+    private var _ignoreEvents = false
+    var ignoreEvents: Bool {
+        get { stateQueue.sync { _ignoreEvents } }
+        set { stateQueue.sync { _ignoreEvents = newValue } }
+    }
+
+    // Track modifier state for modifier-only hotkeys (accessed from event tap thread)
+    private var modifiersWerePressed = false
+    private var lastTriggerTime: Date = .distantPast
 
     init(
         settingsManager: SettingsManager,
@@ -103,13 +112,24 @@ final class HotkeyManager {
     private func handleEvent(proxy: CGEventTapProxy, type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
         // Ignore events during text replacement to prevent re-capture
         if ignoreEvents {
+            // Log when we're passing through events during ignore mode
+            if type == .keyDown {
+                let keyCode = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
+                let flags = event.flags
+                if flags.contains(.maskCommand) && (keyCode == 8 || keyCode == 9) {
+                    PuntoLog.info("handleEvent: passing through Cmd+\(keyCode == 8 ? "C" : "V") (ignoreEvents=true)")
+                }
+            }
             return Unmanaged.passUnretained(event)
         }
 
-        // Don't intercept hotkeys when settings window is active (for hotkey recording)
+        // Don't intercept hotkeys when our settings window is active (for hotkey recording)
+        // Check by window class instead of title for localization safety
         if let frontApp = NSWorkspace.shared.frontmostApplication,
            frontApp.bundleIdentifier == Bundle.main.bundleIdentifier,
-           NSApp.keyWindow?.title == "Punto" {
+           NSApp.keyWindow != nil,
+           NSApp.keyWindow != NSApp.mainWindow {
+            // Our app is frontmost with a key window - likely settings
             return Unmanaged.passUnretained(event)
         }
 
@@ -122,17 +142,54 @@ final class HotkeyManager {
             return Unmanaged.passUnretained(event)
         }
 
-        // Ignore flagsChanged events - we only care about keyDown
+        let flags = event.flags
+        let hasCmd = flags.contains(.maskCommand)
+        let hasOpt = flags.contains(.maskAlternate)
+        let hasShift = flags.contains(.maskShift)
+        let hasControl = flags.contains(.maskControl)
+
+        // Handle flagsChanged for modifier-only hotkeys
         if type == .flagsChanged {
+            let convertHotkey = settingsManager.convertLayoutHotkey
+
+            if convertHotkey.isModifierOnly {
+                // Check if all required modifiers are currently pressed
+                let allModifiersPressed = hasCmd == convertHotkey.command &&
+                                          hasOpt == convertHotkey.option &&
+                                          hasShift == convertHotkey.shift &&
+                                          hasControl == convertHotkey.control
+
+                // Check if ALL modifiers are released (none pressed)
+                let noModifiersPressed = !hasCmd && !hasOpt && !hasShift && !hasControl
+
+                if allModifiersPressed {
+                    // Mark that modifiers were pressed
+                    modifiersWerePressed = true
+                } else if modifiersWerePressed && noModifiersPressed {
+                    // All modifiers were released - trigger if enough time passed
+                    let now = Date()
+                    if now.timeIntervalSince(lastTriggerTime) > 0.5 {
+                        PuntoLog.info("Modifier-only hotkey triggered: \(convertHotkey.displayString)")
+                        lastTriggerTime = now
+                        DispatchQueue.main.async { [weak self] in
+                            self?.onConvertLayout()
+                        }
+                    }
+                    modifiersWerePressed = false
+                }
+            }
+
             return Unmanaged.passUnretained(event)
         }
-
-        let flags = event.flags
 
         // Process keyDown events
         guard type == .keyDown else {
             return Unmanaged.passUnretained(event)
         }
+
+        // Any key press cancels modifier-only hotkey detection
+        // This prevents Cmd+V from triggering the hotkey
+        modifiersWerePressed = false
 
         let keyCode = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
 
@@ -225,9 +282,9 @@ struct Hotkey: Codable, Equatable {
         return keyCode == Self.modifierOnlyKeyCode
     }
 
-    /// Default hotkey for layout conversion: Cmd+Option+Shift+Space
+    /// Default hotkey for layout conversion: Cmd+Option+Shift (modifier-only)
     static let defaultConvertLayout = Hotkey(
-        keyCode: 49, // Space
+        keyCode: modifierOnlyKeyCode,
         command: true,
         option: true,
         shift: true,

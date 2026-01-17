@@ -22,15 +22,16 @@ macOS menu bar app for keyboard layout conversion (Russian ↔ English).
 ## Build & Run
 
 ```bash
-# Quick build (arm64 only)
+# Quick build (arm64 only) and deploy to Applications
 swift build -c release --arch arm64
-cp .build/arm64-apple-macosx/release/Punto Release/Punto.app/Contents/MacOS/
-./Release/Punto.app/Contents/MacOS/Punto
+cp .build/arm64-apple-macosx/release/Punto /Applications/Punto.app/Contents/MacOS/
 
 # Full build (universal)
 ./Scripts/build.sh
 open Release/Punto.app
 ```
+
+**ВАЖНО:** После любых изменений кода — собрать release и скопировать в `/Applications/Punto.app/Contents/MacOS/`, заменяя старый бинарник.
 
 ## Debug
 

@@ -74,13 +74,44 @@ echo -n "APPL????" > "$APP_BUNDLE/Contents/PkgInfo"
 
 # Copy resources if they exist
 if [ -d "$PROJECT_DIR/Resources/Assets.xcassets" ]; then
-    # Compile asset catalog if actool is available
-    if command -v actool &> /dev/null; then
+    # Try to compile asset catalog with xcrun actool (requires full Xcode)
+    if xcrun --find actool &> /dev/null; then
         echo "Compiling asset catalog..."
-        actool --compile "$APP_BUNDLE/Contents/Resources" \
+        xcrun actool --compile "$APP_BUNDLE/Contents/Resources" \
                --platform macosx \
                --minimum-deployment-target 12.0 \
+               --app-icon AppIcon \
+               --output-partial-info-plist /tmp/assetcatalog_generated_info.plist \
                "$PROJECT_DIR/Resources/Assets.xcassets" 2>/dev/null || true
+    else
+        echo "actool not found (requires full Xcode), copying PNG files directly..."
+        # Copy menu bar icon
+        cp "$PROJECT_DIR/Resources/Assets.xcassets/MenuBarIcon.imageset/MenuBarIcon.png" \
+           "$APP_BUNDLE/Contents/Resources/"
+        cp "$PROJECT_DIR/Resources/Assets.xcassets/MenuBarIcon.imageset/MenuBarIcon@2x.png" \
+           "$APP_BUNDLE/Contents/Resources/"
+        # Copy app icon PNGs and generate .icns for Settings/Login Items.
+        cp "$PROJECT_DIR/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon_128x128.png" \
+           "$APP_BUNDLE/Contents/Resources/AppIcon.png"
+        cp "$PROJECT_DIR/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon_256x256.png" \
+           "$APP_BUNDLE/Contents/Resources/AppIcon@2x.png"
+        ICONSET_DIR="$BUILD_DIR/AppIcon.iconset"
+        ICON_SOURCE="$PROJECT_DIR/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon_512x512@2x.png"
+        if [ -f "$ICON_SOURCE" ] && command -v iconutil >/dev/null 2>&1; then
+            rm -rf "$ICONSET_DIR"
+            mkdir -p "$ICONSET_DIR"
+            sips -z 16 16 "$ICON_SOURCE" --out "$ICONSET_DIR/icon_16x16.png" >/dev/null
+            sips -z 32 32 "$ICON_SOURCE" --out "$ICONSET_DIR/icon_16x16@2x.png" >/dev/null
+            sips -z 32 32 "$ICON_SOURCE" --out "$ICONSET_DIR/icon_32x32.png" >/dev/null
+            sips -z 64 64 "$ICON_SOURCE" --out "$ICONSET_DIR/icon_32x32@2x.png" >/dev/null
+            sips -z 128 128 "$ICON_SOURCE" --out "$ICONSET_DIR/icon_128x128.png" >/dev/null
+            sips -z 256 256 "$ICON_SOURCE" --out "$ICONSET_DIR/icon_128x128@2x.png" >/dev/null
+            sips -z 256 256 "$ICON_SOURCE" --out "$ICONSET_DIR/icon_256x256.png" >/dev/null
+            sips -z 512 512 "$ICON_SOURCE" --out "$ICONSET_DIR/icon_256x256@2x.png" >/dev/null
+            sips -z 512 512 "$ICON_SOURCE" --out "$ICONSET_DIR/icon_512x512.png" >/dev/null
+            sips -z 1024 1024 "$ICON_SOURCE" --out "$ICONSET_DIR/icon_512x512@2x.png" >/dev/null
+            iconutil -c icns "$ICONSET_DIR" -o "$APP_BUNDLE/Contents/Resources/AppIcon.icns"
+        fi
     fi
 fi
 
@@ -88,10 +119,16 @@ fi
 echo "Signing app bundle..."
 codesign --force --deep --sign - "$APP_BUNDLE" 2>/dev/null || echo "Warning: Code signing failed (this is OK for local use)"
 
+# Copy to Applications
+echo "Installing to /Applications..."
+rm -rf "/Applications/$APP_NAME.app"
+cp -r "$APP_BUNDLE" "/Applications/"
+
 # Verify the build
 echo ""
 echo "Build complete!"
 echo "App bundle: $APP_BUNDLE"
+echo "Installed to: /Applications/$APP_NAME.app"
 echo ""
 
 # Show binary info
@@ -99,7 +136,4 @@ file "$APP_BUNDLE/Contents/MacOS/$APP_NAME"
 
 echo ""
 echo "To run the app:"
-echo "  open $APP_BUNDLE"
-echo ""
-echo "Or copy to Applications:"
-echo "  cp -r $APP_BUNDLE /Applications/"
+echo "  open /Applications/$APP_NAME.app"

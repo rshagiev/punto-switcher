@@ -5,9 +5,9 @@ final class LayoutConverter {
 
     // MARK: - Character Mappings
 
-    /// English to Russian mapping (based on standard QWERTY and ЙЦУКЕН layouts)
+    /// English to Russian mapping (based on standard QWERTY and ЙЦУКЕН layouts on Mac)
     private let enToRu: [Character: Character] = [
-        // Lowercase
+        // Lowercase letters
         "q": "й", "w": "ц", "e": "у", "r": "к", "t": "е", "y": "н", "u": "г",
         "i": "ш", "o": "щ", "p": "з", "[": "х", "]": "ъ", "a": "ф", "s": "ы",
         "d": "в", "f": "а", "g": "п", "h": "р", "j": "о", "k": "л", "l": "д",
@@ -15,7 +15,7 @@ final class LayoutConverter {
         "n": "т", "m": "ь", ",": "б", ".": "ю", "/": ".",
         "`": "ё",
 
-        // Uppercase
+        // Uppercase letters (Shift + letter)
         "Q": "Й", "W": "Ц", "E": "У", "R": "К", "T": "Е", "Y": "Н", "U": "Г",
         "I": "Ш", "O": "Щ", "P": "З", "{": "Х", "}": "Ъ", "A": "Ф", "S": "Ы",
         "D": "В", "F": "А", "G": "П", "H": "Р", "J": "О", "K": "Л", "L": "Д",
@@ -23,10 +23,24 @@ final class LayoutConverter {
         "N": "Т", "M": "Ь", "<": "Б", ">": "Ю", "?": ",",
         "~": "Ё",
 
-        // Numbers with Shift (Russian layout)
-        "@": "\"", "#": "№", "$": ";", "^": ":", "&": "?",
+        // Shift + numbers: EN -> RU (Mac Russian layout)
+        // Shift+1: ! -> ! (same)
+        // Shift+2: @ -> "
+        "@": "\"",
+        // Shift+3: # -> №
+        "#": "№",
+        // Shift+4: $ -> ;
+        "$": ";",
+        // Shift+5: % -> % (same)
+        // Shift+6: ^ -> :
+        "^": ":",
+        // Shift+7: & -> ?
+        "&": "?",
+        // Shift+8: * -> * (same)
+        // Shift+9: ( -> ( (same)
+        // Shift+0: ) -> ) (same)
 
-        // Special
+        // Special characters
         "\\": "\\", "|": "/"
     ]
 
@@ -39,8 +53,16 @@ final class LayoutConverter {
             ruToEn[ru] = en
         }
 
-        // Add some special cases that may differ
-        ruToEn["№"] = "#"
+        // Fix ambiguous mappings for RU -> EN direction
+        // These are cases where multiple EN keys map to the same RU character
+        // We choose the mapping based on Mac Russian keyboard Shift+number positions
+        ruToEn["\""] = "@"  // Shift+2 on RU keyboard produces ", maps to @ on EN
+        ruToEn[";"] = "$"   // Shift+4 on RU keyboard produces ;, maps to $ on EN
+        ruToEn[":"] = "^"   // Shift+6 on RU keyboard produces :, maps to ^ on EN
+        ruToEn["?"] = "&"   // Shift+7 on RU keyboard produces ?, maps to & on EN
+        ruToEn["№"] = "#"   // Shift+3 on RU keyboard produces №, maps to # on EN
+        // Note: "," maps to both "б" (letter) and Shift+/ result. We keep "б" -> "," mapping
+        // as it's more common for text conversion. Shift symbols are edge cases.
     }
 
     // MARK: - Conversion

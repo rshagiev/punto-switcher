@@ -3,7 +3,28 @@
 <plist version="1.0">
 <dict>
 	<key>files</key>
-	<dict/>
+	<dict>
+		<key>Resources/AppIcon.icns</key>
+		<data>
+		kXs89tzc/KBKNjm7G7JAVo2a58U=
+		</data>
+		<key>Resources/AppIcon.png</key>
+		<data>
+		3fBaEnnJH3dD7oHpUPmAb41l2G0=
+		</data>
+		<key>Resources/AppIcon@2x.png</key>
+		<data>
+		QOVHryegzt6Dq2gua84Bw82drDs=
+		</data>
+		<key>Resources/MenuBarIcon.png</key>
+		<data>
+		MgFmd3r6yrjB/ByiL4w7VlxsUjY=
+		</data>
+		<key>Resources/MenuBarIcon@2x.png</key>
+		<data>
+		oRUdCrEjZc73G5mXsW9uMyVZhyo=
+		</data>
+	</dict>
 	<key>files2</key>
 	<dict>
 		<key>Punto.entitlements</key>
@@ -14,6 +35,41 @@
 			</data>
 			<key>requirement</key>
 			<string>cdhash H"301249cd666429d84f67881bdaf6406bed3f94d1"</string>
+		</dict>
+		<key>Resources/AppIcon.icns</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			omwo/2KUg/gAhLJcQW4ajDFp7EJIN/moxWh/od9xv1Y=
+			</data>
+		</dict>
+		<key>Resources/AppIcon.png</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			hTME1I+BOMyEA5fiKVcsq7ElewLm9xNAw+CX5GQ+XeM=
+			</data>
+		</dict>
+		<key>Resources/AppIcon@2x.png</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			a+5JZhyhNwrpjGyvgHbKfYV75PN8Sd/A++nxo85Fvug=
+			</data>
+		</dict>
+		<key>Resources/MenuBarIcon.png</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			cxZa+WN+kek6GDYqYlHsxMcV4C1Ft6KcOfXZfckO2QY=
+			</data>
+		</dict>
+		<key>Resources/MenuBarIcon@2x.png</key>
+		<dict>
+			<key>hash2</key>
+			<data>
+			Wnt99EyuRxaPspXny0clW3y5XpYQGJRXW2idlpB4uuM=
+			</data>
 		</dict>
 	</dict>
 	<key>rules</key>

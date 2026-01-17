@@ -10,7 +10,6 @@ final class StatusBarController {
 
     private var enabledMenuItem: NSMenuItem?
     private var isFlashing = false
-    private let menuBarIconName = "MenuBarIcon"
 
     init(settingsManager: SettingsManager, onSettingsClick: @escaping () -> Void, onQuitClick: @escaping () -> Void) {
         self.settingsManager = settingsManager
@@ -26,11 +25,15 @@ final class StatusBarController {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
         if let button = statusItem?.button {
-            button.image = NSImage(named: menuBarIconName)
+            button.image = loadMenuBarIcon()
             button.image?.isTemplate = true
         }
 
         setupMenu()
+    }
+
+    private func loadMenuBarIcon() -> NSImage? {
+        return NSImage(named: "MenuBarIcon")
     }
 
     private func setupMenu() {
@@ -109,7 +112,7 @@ final class StatusBarController {
         let originalTint = button.contentTintColor
 
         // Flash by tinting the template icon with the accent color.
-        button.image = NSImage(named: menuBarIconName)
+        button.image = loadMenuBarIcon()
         button.image?.isTemplate = true
         button.contentTintColor = NSColor.controlAccentColor
 

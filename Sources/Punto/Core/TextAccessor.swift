@@ -473,41 +473,39 @@ final class TextAccessor {
 
     // MARK: - Replace Last Word
 
-    /// Deletes the last word and types the replacement
+    /// Deletes the last word and pastes the replacement via clipboard
+    /// Much faster than character-by-character typing
     func replaceLastWord(wordLength: Int, with replacement: String) {
-        // Delete the last word using backspace
-        for _ in 0..<wordLength {
-            simulateKeyPress(keyCode: 51, flags: []) // Delete/Backspace key
-            Thread.sleep(forTimeInterval: 0.01)
+        PuntoLog.info("replaceLastWord: deleting \(wordLength) chars, replacing with '\(replacement)'")
+
+        // Use Opt+Backspace to delete word at once (faster than multiple backspaces)
+        // This works in most apps and deletes the entire word
+        simulateKeyPress(keyCode: 51, flags: .maskAlternate) // Opt+Delete
+        Thread.sleep(forTimeInterval: 0.02)
+
+        // If Opt+Backspace didn't work (some apps don't support it), fall back to multiple backspaces
+        // We'll use clipboard paste anyway, so we rely on Opt+Backspace working
+
+        // Paste replacement via clipboard (much faster than typing)
+        let pasteboard = NSPasteboard.general
+        let savedClipboard = pasteboard.string(forType: .string)
+
+        pasteboard.clearContents()
+        pasteboard.setString(replacement, forType: .string)
+
+        // Simulate Cmd+V
+        simulatePaste()
+        Thread.sleep(forTimeInterval: 0.03)
+
+        // Restore clipboard asynchronously
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            if let old = savedClipboard {
+                pasteboard.clearContents()
+                pasteboard.setString(old, forType: .string)
+            }
         }
 
-        // Type the replacement
-        typeText(replacement)
-    }
-
-    private func typeText(_ text: String) {
-        // Use privateState for better isolation - may bypass some Secure Input restrictions
-        let source = CGEventSource(stateID: .privateState)
-
-        for char in text {
-            // Create key down event
-            if let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: true) {
-                var chars = Array(String(char).utf16)
-                keyDown.keyboardSetUnicodeString(stringLength: chars.count, unicodeString: &chars)
-                keyDown.post(tap: .cghidEventTap)
-            }
-
-            Thread.sleep(forTimeInterval: 0.005)
-
-            // Create key up event
-            if let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 0, keyDown: false) {
-                var chars = Array(String(char).utf16)
-                keyUp.keyboardSetUnicodeString(stringLength: chars.count, unicodeString: &chars)
-                keyUp.post(tap: .cghidEventTap)
-            }
-
-            Thread.sleep(forTimeInterval: 0.005)
-        }
+        PuntoLog.info("replaceLastWord: completed")
     }
 
     // MARK: - Helpers

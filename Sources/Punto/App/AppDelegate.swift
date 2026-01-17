@@ -1,5 +1,6 @@
 import AppKit
 import ApplicationServices
+import Carbon
 
 /// Main application delegate handling lifecycle and permissions
 final class AppDelegate: NSObject, NSApplicationDelegate {
@@ -13,6 +14,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsWindowController: SettingsWindowController?
     private var permissionCheckTimer: Timer?
     private var inputSourceManager: InputSourceManager?
+
+    /// Информация о последней конвертации для undo
+    private struct LastConversion {
+        let originalText: String
+        let convertedText: String
+        let timestamp: Date
+        let wasSelection: Bool
+    }
+
+    private var lastConversion: LastConversion?
+    private let undoTimeout: TimeInterval = 3.0
+    private var isConversionInProgress = false  // Prevents race condition with key press clearing undo
 
     // MARK: - Application Lifecycle
 
@@ -57,6 +70,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Always try to start hotkey manager
         startHotkeyManager()
 
+        // Subscribe to input source changes to clear WordTracker
+        // This prevents buffer corruption when user switches keyboard layout
+        DistributedNotificationCenter.default().addObserver(
+            self,
+            selector: #selector(inputSourceChanged),
+            name: NSNotification.Name(kTISNotifySelectedKeyboardInputSourceChanged as String),
+            object: nil
+        )
+        PuntoLog.info("Subscribed to input source changes")
+
         // Show alert if permissions not granted and start checking periodically
         if !trusted {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
@@ -72,6 +95,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         PuntoLog.info("Punto terminating")
         permissionCheckTimer?.invalidate()
         hotkeyManager?.stop()
+        DistributedNotificationCenter.default().removeObserver(self)
+    }
+
+    // MARK: - Input Source Change
+
+    @objc private func inputSourceChanged() {
+        // Clear WordTracker when keyboard layout changes
+        // This prevents buffer corruption from mixed-layout input
+        wordTracker?.clear()
+        lastConversion = nil  // Also clear undo state
+        PuntoLog.info("Input source changed - WordTracker cleared")
     }
 
     // MARK: - Permission Monitoring
@@ -142,8 +176,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 PuntoLog.info(">>> Toggle case triggered <<<")
                 self?.handleToggleCase()
             },
-            onKeyPress: { [weak wordTracker] keyCode, characters in
+            onKeyPress: { [weak self, weak wordTracker] keyCode, characters in
                 wordTracker?.trackKeyPress(keyCode: keyCode, characters: characters)
+                // Clear undo on any key press, but only if we're not in the middle of a conversion
+                // This prevents race condition where async key event clears undo right after hotkey
+                if self?.isConversionInProgress == false {
+                    self?.lastConversion = nil
+                }
             }
         )
 
@@ -158,17 +197,64 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
+        // Check for Secure Input (e.g., Terminal password prompts)
+        if textAccessor?.isSecureInputEnabled() == true {
+            PuntoLog.info("Secure Input enabled - conversion blocked for security")
+            return
+        }
+
+        // Prevent race condition: block key press from clearing undo during conversion
+        isConversionInProgress = true
+        defer { isConversionInProgress = false }
+
         // Ignore events during replacement to prevent re-capture
         hotkeyManager?.ignoreEvents = true
 
-        // Try to get selected text first
+        // Check for undo possibility
+        if let last = lastConversion,
+           Date().timeIntervalSince(last.timestamp) < undoTimeout {
+            // Undo: revert to original text
+            PuntoLog.info("Undo: reverting '\(last.convertedText)' back to '\(last.originalText)'")
+
+            if last.wasSelection {
+                // Keep selection so user can press hotkey again to re-convert
+                textAccessor?.setSelectedText(last.originalText, keepSelection: true)
+            } else {
+                // Use grapheme cluster count for correct backspace count
+                let charCount = last.convertedText.count
+                textAccessor?.replaceLastWord(wordLength: charCount, with: last.originalText)
+            }
+
+            // Switch layout back
+            let originalLayout = layoutConverter!.detectLayout(last.originalText)
+            switchLayoutIfEnabled(originalLayout)
+
+            statusBarController?.flashIcon()
+            lastConversion = nil
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+                self?.hotkeyManager?.ignoreEvents = false
+            }
+            return
+        }
+
+        // Normal conversion
         if let selectedText = textAccessor?.getSelectedText(), !selectedText.isEmpty {
             PuntoLog.info("Converting selected text: '\(selectedText)'")
             let result = layoutConverter!.convertWithResult(selectedText)
             PuntoLog.info("Converted to: '\(result.text)'")
-            textAccessor?.setSelectedText(result.text)
+            // Keep selection so user can undo by pressing hotkey again
+            textAccessor?.setSelectedText(result.text, keepSelection: true)
             statusBarController?.flashIcon()
             switchLayoutIfEnabled(result.targetLayout)
+
+            // Save for undo
+            lastConversion = LastConversion(
+                originalText: selectedText,
+                convertedText: result.text,
+                timestamp: Date(),
+                wasSelection: true
+            )
         } else {
             // No selection - convert last word
             if let lastWord = wordTracker?.getLastWord(), !lastWord.isEmpty {
@@ -179,6 +265,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 wordTracker?.clear()
                 statusBarController?.flashIcon()
                 switchLayoutIfEnabled(result.targetLayout)
+
+                // Save for undo
+                lastConversion = LastConversion(
+                    originalText: lastWord,
+                    convertedText: result.text,
+                    timestamp: Date(),
+                    wasSelection: false
+                )
             } else {
                 PuntoLog.info("No text to convert")
             }
@@ -195,9 +289,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         switch targetLayout {
         case .english:
-            inputSourceManager?.switchTo(.english)
+            inputSourceManager?.switchTo(KeyboardLanguage.english)
         case .russian:
-            inputSourceManager?.switchTo(.russian)
+            inputSourceManager?.switchTo(KeyboardLanguage.russian)
         case .mixed, .unknown:
             break
         }

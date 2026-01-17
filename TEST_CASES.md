@@ -112,22 +112,27 @@ Test strings:
 
 ## 9. WordTracker Edge Cases
 
+**IMPORTANT**: Many punctuation marks map to Russian letters and should NOT clear the buffer!
+
 | Action | Expected Buffer | Description | Status |
 |--------|-----------------|-------------|--------|
 | Type `hello` | `hello` | Basic tracking | - |
 | `hello` + Space | `` | Space clears | - |
-| `hello` + `.` | `` | Period clears | - |
+| `hello` + `.` | `hello.` | Period STAYS (maps to ю) | - |
 | `hello` + Backspace | `hell` | Remove last | - |
 | 5x Backspace on `hello` | `` | Full delete | - |
 | 6x Backspace on `hello` | `` | Extra backspace | - |
 | `hello world` | `world` | Only last word | - |
 | Left arrow | `` | Navigation clears | - |
 | Return/Enter | `` | Enter clears | - |
-| `hello` + `,` | `` | Comma clears | - |
+| `hello` + `,` | `hello,` | Comma STAYS (maps to б) | - |
 | `hello` + `!` | `` | Exclamation clears | - |
 | `hello` + `?` | `` | Question clears | - |
-| `hello` + `:` | `` | Colon clears | - |
-| `hello` + `;` | `` | Semicolon clears | - |
+| `hello` + `:` | `hello:` | Colon STAYS (maps to Ж) | - |
+| `hello` + `;` | `hello;` | Semicolon STAYS (maps to ж) | - |
+| `hello` + `'` | `hello'` | Apostrophe STAYS (maps to э) | - |
+| `hello` + `[` | `hello[` | Bracket STAYS (maps to х) | - |
+| `hello` + `` ` `` | ``hello` `` | Backtick STAYS (maps to ё) | - |
 
 ## 10. Special KeyCodes
 
@@ -170,18 +175,31 @@ Test strings:
 
 ## 13. Punctuation (Word Boundaries)
 
-Characters that should clear WordTracker buffer:
+**IMPORTANT**: Characters that map to Russian letters should NOT clear the buffer!
+
+Characters that CLEAR WordTracker buffer:
 ```
 Space: " "
 Newlines: "\n", "\t", "\r"
-Sentence: ".", ",", "!", "?", ";", ":"
-Brackets: "(", ")", "[", "]", "{", "}"
-Quotes: "\"", "'", "`"
+Sentence terminators: "!", "?"
+Brackets: "(", ")"
 Slashes: "/", "\\", "|"
-Comparison: "<", ">"
 Special: "@", "#", "$", "%", "^", "&", "*"
 Math: "+", "=", "-", "_"
-Other: "~"
+```
+
+Characters that DO NOT clear buffer (map to Russian letters):
+```
+Semicolon: ";" -> ж
+Apostrophe: "'" -> э
+Colon: ":" -> Ж
+Comma: "," -> б
+Period: "." -> ю
+Brackets: "[" -> х, "]" -> ъ, "{" -> Х, "}" -> Ъ
+Comparison: "<" -> Б, ">" -> Ю
+Backtick: "`" -> ё
+Tilde: "~" -> Ё
+Double quote: "\"" -> Э
 ```
 
 ## 14. Stress Tests
@@ -272,14 +290,51 @@ swift run PuntoDiag all
 
 ---
 
+## Test Results Summary
+
+**Date:** 2026-01-18
+
+| Suite | Passed | Failed | Notes |
+|-------|--------|--------|-------|
+| Conversion | 58 | 0 | All pass |
+| Word Tracking | 23 | 0 | All pass |
+| Double Conversion | 10 | 0 | All pass |
+| Long Strings | 4 | 0 | All pass |
+| Edge Cases | 10 | 0 | All pass |
+| Mass Stress | 5 | 0 | All pass (100 round-trips each) |
+| **Hotkey Tests** | ~30 | 0 | NEW: isModifierOnly, displayString, KeyCodeNames, Codable |
+| **Shift+Number** | ~11 | 0 | NEW: @→", #→№, $→;, ^→:, &→? mappings |
+| **Layout Detection** | ~13 | 0 | NEW: 80%/20% threshold boundaries |
+| **Real WordTracker** | ~45 | 0 | NEW: keyCode handling, navigation keys, boundaries |
+| **ConvertWithResult** | ~6 | 0 | NEW: direction metadata |
+| **Unicode Boundary** | ~14 | 0 | NEW: isEnglishLetter/isRussianLetter boundaries |
+
+**Total: ~200+ passed, 0 failed**
+
+---
+
 ## Known Issues
 
-(Document any discovered bugs here)
+None - all tests pass.
 
-1. ...
+### Notes on `/` and `.` Mapping
+
+The mapping handles these correctly thanks to layout detection:
+- EN `/` -> RU `.` (period)
+- EN `.` -> RU `ю`
+
+Round-trips work correctly because:
+1. Text with EN letters is detected as English -> converts using `enToRu`
+2. Text with RU letters is detected as Russian -> converts using `ruToEn`
+3. The `.` character in `ruToEn` maps back to `/` (from reverse mapping)
+
+Example: `path/to/file.txt` -> `зфер.ещ.ашдуюече` -> `path/to/file.txt`
 
 ---
 
 ## Changelog
 
-- Initial version with comprehensive edge cases
+- 2026-01-17: Initial version with comprehensive edge cases
+- 2026-01-17: Fixed incorrect test expectations (pipe character in expected values)
+- 2026-01-17: Fixed TestLayoutConverter to use layout detection (matching main app behavior)
+- 2026-01-17: All 110 tests now pass

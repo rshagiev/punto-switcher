@@ -12,16 +12,16 @@ final class WordTracker {
     private var count: Int = 0
 
     // Characters that indicate word boundaries
+    // Note: Many punctuation marks map to Russian letters on QWERTY layout:
+    //   ; -> ж, ' -> э, [ -> х, ] -> ъ, ` -> ё, , -> б, . -> ю
+    // So we only treat actual word separators as boundaries
     private let wordBoundaries: Set<Character> = [
         " ", "\n", "\t", "\r",
-        ".", ",", "!", "?", ";", ":",
-        "(", ")", "[", "]", "{", "}",
-        "\"", "'", "`",
+        "!", "?",
+        "(", ")",
         "/", "\\", "|",
-        "<", ">",
         "@", "#", "$", "%", "^", "&", "*",
-        "+", "=", "-", "_",
-        "~"
+        "+", "=", "-", "_"
     ]
 
     // Key codes for special keys
@@ -54,17 +54,20 @@ final class WordTracker {
         // Handle special keys
         if keyCode == deleteKeyCode {
             removeLastCharacter()
+            PuntoLog.info("WordTracker: backspace, buffer now '\(getCurrentBuffer())'")
             return
         }
 
         // Navigation keys clear the buffer (cursor moved)
         if navigationKeyCodes.contains(keyCode) {
+            PuntoLog.info("WordTracker: navigation key \(keyCode), clearing buffer")
             clear()
             return
         }
 
         // Return/Enter acts as word boundary
         if keyCode == returnKeyCode || keyCode == enterKeyCode {
+            PuntoLog.info("WordTracker: return/enter, clearing buffer")
             clear()
             return
         }
@@ -76,17 +79,35 @@ final class WordTracker {
 
         // Space and other word boundaries clear the buffer
         if keyCode == spaceKeyCode || wordBoundaries.contains(firstChar) {
+            PuntoLog.info("WordTracker: word boundary '\(firstChar)', clearing buffer")
             clear()
             return
         }
 
         // Add the character to the buffer
         addCharacter(firstChar)
+        PuntoLog.info("WordTracker: added '\(firstChar)' (keyCode=\(keyCode)), buffer now '\(getCurrentBuffer())'")
+    }
+
+    /// Returns current buffer contents for debugging
+    private func getCurrentBuffer() -> String {
+        guard count > 0 else { return "" }
+        var result = [Character]()
+        result.reserveCapacity(count)
+        for i in 0..<count {
+            let index = (head - count + i + maxSize) % maxSize
+            result.append(buffer[index])
+        }
+        return String(result)
     }
 
     /// Returns the last typed word
+    /// Returns nil if buffer contains mixed layouts (corrupted data)
     func getLastWord() -> String? {
-        guard count > 0 else { return nil }
+        guard count > 0 else {
+            PuntoLog.info("WordTracker.getLastWord: buffer empty")
+            return nil
+        }
 
         var result = [Character]()
         result.reserveCapacity(count)
@@ -97,7 +118,51 @@ final class WordTracker {
             result.append(buffer[index])
         }
 
-        return String(result)
+        let word = String(result)
+
+        // Validate: reject mixed-layout words (e.g. "жеa" - Russian + English)
+        // This happens when layout change notification arrives with delay
+        if isMixedLayout(word) {
+            PuntoLog.info("WordTracker.getLastWord: mixed layout detected in '\(word)', clearing")
+            clear()
+            return nil
+        }
+
+        PuntoLog.info("WordTracker.getLastWord: returning '\(word)' (\(word.count) chars)")
+        return word
+    }
+
+    /// Checks if text contains characters from multiple keyboard layouts
+    private func isMixedLayout(_ text: String) -> Bool {
+        var hasEnglish = false
+        var hasRussian = false
+
+        for char in text {
+            if isEnglishLetter(char) {
+                hasEnglish = true
+            } else if isRussianLetter(char) {
+                hasRussian = true
+            }
+
+            // Early exit if both detected
+            if hasEnglish && hasRussian {
+                return true
+            }
+        }
+
+        return false
+    }
+
+    private func isEnglishLetter(_ char: Character) -> Bool {
+        guard let scalar = char.unicodeScalars.first else { return false }
+        return (scalar.value >= 0x41 && scalar.value <= 0x5A) || // A-Z
+               (scalar.value >= 0x61 && scalar.value <= 0x7A)    // a-z
+    }
+
+    private func isRussianLetter(_ char: Character) -> Bool {
+        guard let scalar = char.unicodeScalars.first else { return false }
+        return (scalar.value >= 0x410 && scalar.value <= 0x44F) || // А-я
+               scalar.value == 0x401 || scalar.value == 0x451      // Ё, ё
     }
 
     /// Clears the buffer
