@@ -1,0 +1,91 @@
+{
+  "": {
+    "dependencies": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/Punto.d",
+    "object": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/Punto.o",
+    "swift-dependencies": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/master.swiftdeps"
+  },
+  "/Users/rshagiev/Projects/Punto/Sources/Punto/App/AppDelegate.swift": {
+    "object": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/AppDelegate.swift.o",
+    "swiftmodule": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/AppDelegate~partial.swiftmodule",
+    "swift-dependencies": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/AppDelegate.swiftdeps",
+    "diagnostics": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/AppDelegate.dia"
+  },
+  "/Users/rshagiev/Projects/Punto/Sources/Punto/App/StatusBarController.swift": {
+    "object": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/StatusBarController.swift.o",
+    "swiftmodule": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/StatusBarController~partial.swiftmodule",
+    "swift-dependencies": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/StatusBarController.swiftdeps",
+    "diagnostics": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/StatusBarController.dia"
+  },
+  "/Users/rshagiev/Projects/Punto/Sources/Punto/Core/HotkeyManager.swift": {
+    "object": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/HotkeyManager.swift.o",
+    "swiftmodule": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/HotkeyManager~partial.swiftmodule",
+    "swift-dependencies": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/HotkeyManager.swiftdeps",
+    "diagnostics": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/HotkeyManager.dia"
+  },
+  "/Users/rshagiev/Projects/Punto/Sources/Punto/Core/InputSourceManager.swift": {
+    "object": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/InputSourceManager.swift.o",
+    "swiftmodule": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/InputSourceManager~partial.swiftmodule",
+    "swift-dependencies": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/InputSourceManager.swiftdeps",
+    "diagnostics": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/InputSourceManager.dia"
+  },
+  "/Users/rshagiev/Projects/Punto/Sources/Punto/Core/LayoutConverter.swift": {
+    "object": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/LayoutConverter.swift.o",
+    "swiftmodule": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/LayoutConverter~partial.swiftmodule",
+    "swift-dependencies": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/LayoutConverter.swiftdeps",
+    "diagnostics": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/LayoutConverter.dia"
+  },
+  "/Users/rshagiev/Projects/Punto/Sources/Punto/Core/Logger.swift": {
+    "object": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/Logger.swift.o",
+    "swiftmodule": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/Logger~partial.swiftmodule",
+    "swift-dependencies": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/Logger.swiftdeps",
+    "diagnostics": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/Logger.dia"
+  },
+  "/Users/rshagiev/Projects/Punto/Sources/Punto/Core/TextAccessor.swift": {
+    "object": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/TextAccessor.swift.o",
+    "swiftmodule": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/TextAccessor~partial.swiftmodule",
+    "swift-dependencies": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/TextAccessor.swiftdeps",
+    "diagnostics": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/TextAccessor.dia"
+  },
+  "/Users/rshagiev/Projects/Punto/Sources/Punto/Core/WordTracker.swift": {
+    "object": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/WordTracker.swift.o",
+    "swiftmodule": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/WordTracker~partial.swiftmodule",
+    "swift-dependencies": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/WordTracker.swiftdeps",
+    "diagnostics": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/WordTracker.dia"
+  },
+  "/Users/rshagiev/Projects/Punto/Sources/Punto/Settings/SettingsManager.swift": {
+    "object": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/SettingsManager.swift.o",
+    "swiftmodule": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/SettingsManager~partial.swiftmodule",
+    "swift-dependencies": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/SettingsManager.swiftdeps",
+    "diagnostics": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/SettingsManager.dia"
+  },
+  "/Users/rshagiev/Projects/Punto/Sources/Punto/UI/HotkeyRecorderView.swift": {
+    "object": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/HotkeyRecorderView.swift.o",
+    "swiftmodule": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/HotkeyRecorderView~partial.swiftmodule",
+    "swift-dependencies": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/HotkeyRecorderView.swiftdeps",
+    "diagnostics": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/HotkeyRecorderView.dia"
+  },
+  "/Users/rshagiev/Projects/Punto/Sources/Punto/UI/OnboardingAlert.swift": {
+    "object": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/OnboardingAlert.swift.o",
+    "swiftmodule": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/OnboardingAlert~partial.swiftmodule",
+    "swift-dependencies": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/OnboardingAlert.swiftdeps",
+    "diagnostics": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/OnboardingAlert.dia"
+  },
+  "/Users/rshagiev/Projects/Punto/Sources/Punto/UI/SettingsWindowController.swift": {
+    "object": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/SettingsWindowController.swift.o",
+    "swiftmodule": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/SettingsWindowController~partial.swiftmodule",
+    "swift-dependencies": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/SettingsWindowController.swiftdeps",
+    "diagnostics": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/SettingsWindowController.dia"
+  },
+  "/Users/rshagiev/Projects/Punto/Sources/Punto/UI/Styles.swift": {
+    "object": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/Styles.swift.o",
+    "swiftmodule": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/Styles~partial.swiftmodule",
+    "swift-dependencies": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/Styles.swiftdeps",
+    "diagnostics": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/Styles.dia"
+  },
+  "/Users/rshagiev/Projects/Punto/Sources/Punto/main.swift": {
+    "object": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/main.swift.o",
+    "swiftmodule": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/main~partial.swiftmodule",
+    "swift-dependencies": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/main.swiftdeps",
+    "diagnostics": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/release/Punto.build/main.dia"
+  }
+}

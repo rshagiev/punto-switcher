@@ -1,0 +1,193 @@
+client:
+  name: basic
+  file-system: device-agnostic
+tools: {}
+targets:
+  "PackageStructure": ["<PackageStructure>"]
+  "Punto-arm64-apple-macosx26.0-debug.exe": ["<Punto-arm64-apple-macosx26.0-debug.exe>"]
+  "Punto-arm64-apple-macosx26.0-debug.module": ["<Punto-arm64-apple-macosx26.0-debug.module>"]
+  "PuntoDiag-arm64-apple-macosx26.0-debug.exe": ["<PuntoDiag-arm64-apple-macosx26.0-debug.exe>"]
+  "PuntoDiag-arm64-apple-macosx26.0-debug.module": ["<PuntoDiag-arm64-apple-macosx26.0-debug.module>"]
+  "PuntoTest-arm64-apple-macosx26.0-debug.exe": ["<PuntoTest-arm64-apple-macosx26.0-debug.exe>"]
+  "PuntoTest-arm64-apple-macosx26.0-debug.module": ["<PuntoTest-arm64-apple-macosx26.0-debug.module>"]
+  "main": ["<Punto-arm64-apple-macosx26.0-debug.exe>","<Punto-arm64-apple-macosx26.0-debug.module>","<PuntoDiag-arm64-apple-macosx26.0-debug.exe>","<PuntoDiag-arm64-apple-macosx26.0-debug.module>","<PuntoTest-arm64-apple-macosx26.0-debug.exe>","<PuntoTest-arm64-apple-macosx26.0-debug.module>"]
+  "test": ["<Punto-arm64-apple-macosx26.0-debug.exe>","<Punto-arm64-apple-macosx26.0-debug.module>","<PuntoDiag-arm64-apple-macosx26.0-debug.exe>","<PuntoDiag-arm64-apple-macosx26.0-debug.module>","<PuntoTest-arm64-apple-macosx26.0-debug.exe>","<PuntoTest-arm64-apple-macosx26.0-debug.module>"]
+default: "main"
+nodes:
+  "/Users/rshagiev/Projects/Punto/Sources/Punto/":
+    is-directory-structure: true
+    content-exclusion-patterns: [".git",".build"]
+  "/Users/rshagiev/Projects/Punto/Sources/PuntoDiag/":
+    is-directory-structure: true
+    content-exclusion-patterns: [".git",".build"]
+  "/Users/rshagiev/Projects/Punto/Sources/PuntoTest/":
+    is-directory-structure: true
+    content-exclusion-patterns: [".git",".build"]
+  "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto":
+    is-mutated: true
+  "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoDiag":
+    is-mutated: true
+  "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoTest":
+    is-mutated: true
+commands:
+  "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto-entitlement.plist":
+    tool: write-auxiliary-file
+    inputs: ["<entitlement-plist>","<com.apple.security.get-task-allow>"]
+    outputs: ["/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto-entitlement.plist"]
+    description: "Write auxiliary file /Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto-entitlement.plist"
+
+  "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/sources":
+    tool: write-auxiliary-file
+    inputs: ["<sources-file-list>","/Users/rshagiev/Projects/Punto/Sources/Punto/App/AppDelegate.swift","/Users/rshagiev/Projects/Punto/Sources/Punto/App/StatusBarController.swift","/Users/rshagiev/Projects/Punto/Sources/Punto/Core/HotkeyManager.swift","/Users/rshagiev/Projects/Punto/Sources/Punto/Core/InputSourceManager.swift","/Users/rshagiev/Projects/Punto/Sources/Punto/Core/LayoutConverter.swift","/Users/rshagiev/Projects/Punto/Sources/Punto/Core/Logger.swift","/Users/rshagiev/Projects/Punto/Sources/Punto/Core/TextAccessor.swift","/Users/rshagiev/Projects/Punto/Sources/Punto/Core/WordTracker.swift","/Users/rshagiev/Projects/Punto/Sources/Punto/Settings/SettingsManager.swift","/Users/rshagiev/Projects/Punto/Sources/Punto/UI/HotkeyRecorderView.swift","/Users/rshagiev/Projects/Punto/Sources/Punto/UI/OnboardingAlert.swift","/Users/rshagiev/Projects/Punto/Sources/Punto/UI/SettingsWindowController.swift","/Users/rshagiev/Projects/Punto/Sources/Punto/UI/Styles.swift","/Users/rshagiev/Projects/Punto/Sources/Punto/main.swift"]
+    outputs: ["/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/sources"]
+    description: "Write auxiliary file /Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/sources"
+
+  "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.product/Objects.LinkFileList":
+    tool: write-auxiliary-file
+    inputs: ["<link-file-list>","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/AppDelegate.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/HotkeyManager.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/HotkeyRecorderView.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/InputSourceManager.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/LayoutConverter.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/Logger.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/OnboardingAlert.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/SettingsManager.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/SettingsWindowController.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/StatusBarController.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/Styles.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/TextAccessor.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/WordTracker.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/main.swift.o"]
+    outputs: ["/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.product/Objects.LinkFileList"]
+    description: "Write auxiliary file /Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.product/Objects.LinkFileList"
+
+  "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoDiag-entitlement.plist":
+    tool: write-auxiliary-file
+    inputs: ["<entitlement-plist>","<com.apple.security.get-task-allow>"]
+    outputs: ["/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoDiag-entitlement.plist"]
+    description: "Write auxiliary file /Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoDiag-entitlement.plist"
+
+  "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoDiag.build/sources":
+    tool: write-auxiliary-file
+    inputs: ["<sources-file-list>","/Users/rshagiev/Projects/Punto/Sources/PuntoDiag/main.swift"]
+    outputs: ["/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoDiag.build/sources"]
+    description: "Write auxiliary file /Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoDiag.build/sources"
+
+  "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoDiag.product/Objects.LinkFileList":
+    tool: write-auxiliary-file
+    inputs: ["<link-file-list>","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoDiag.build/main.swift.o"]
+    outputs: ["/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoDiag.product/Objects.LinkFileList"]
+    description: "Write auxiliary file /Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoDiag.product/Objects.LinkFileList"
+
+  "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoTest-entitlement.plist":
+    tool: write-auxiliary-file
+    inputs: ["<entitlement-plist>","<com.apple.security.get-task-allow>"]
+    outputs: ["/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoTest-entitlement.plist"]
+    description: "Write auxiliary file /Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoTest-entitlement.plist"
+
+  "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoTest.build/sources":
+    tool: write-auxiliary-file
+    inputs: ["<sources-file-list>","/Users/rshagiev/Projects/Punto/Sources/PuntoTest/main.swift"]
+    outputs: ["/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoTest.build/sources"]
+    description: "Write auxiliary file /Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoTest.build/sources"
+
+  "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoTest.product/Objects.LinkFileList":
+    tool: write-auxiliary-file
+    inputs: ["<link-file-list>","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoTest.build/main.swift.o"]
+    outputs: ["/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoTest.product/Objects.LinkFileList"]
+    description: "Write auxiliary file /Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoTest.product/Objects.LinkFileList"
+
+  "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt":
+    tool: write-auxiliary-file
+    inputs: ["<swift-get-version>","/Library/Developer/CommandLineTools/usr/bin/swiftc"]
+    outputs: ["/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt"]
+    always-out-of-date: "true"
+    description: "Write auxiliary file /Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt"
+
+  "<Punto-arm64-apple-macosx26.0-debug.exe>":
+    tool: phony
+    inputs: ["<Punto-arm64-apple-macosx26.0-debug.exe-CodeSigning>"]
+    outputs: ["<Punto-arm64-apple-macosx26.0-debug.exe>"]
+
+  "<Punto-arm64-apple-macosx26.0-debug.module>":
+    tool: phony
+    inputs: ["/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/AppDelegate.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/StatusBarController.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/HotkeyManager.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/InputSourceManager.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/LayoutConverter.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/Logger.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/TextAccessor.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/WordTracker.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/SettingsManager.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/HotkeyRecorderView.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/OnboardingAlert.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/SettingsWindowController.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/Styles.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/main.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Modules/Punto.swiftmodule"]
+    outputs: ["<Punto-arm64-apple-macosx26.0-debug.module>"]
+
+  "<PuntoDiag-arm64-apple-macosx26.0-debug.exe>":
+    tool: phony
+    inputs: ["<PuntoDiag-arm64-apple-macosx26.0-debug.exe-CodeSigning>"]
+    outputs: ["<PuntoDiag-arm64-apple-macosx26.0-debug.exe>"]
+
+  "<PuntoDiag-arm64-apple-macosx26.0-debug.module>":
+    tool: phony
+    inputs: ["/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoDiag.build/main.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Modules/PuntoDiag.swiftmodule"]
+    outputs: ["<PuntoDiag-arm64-apple-macosx26.0-debug.module>"]
+
+  "<PuntoTest-arm64-apple-macosx26.0-debug.exe>":
+    tool: phony
+    inputs: ["<PuntoTest-arm64-apple-macosx26.0-debug.exe-CodeSigning>"]
+    outputs: ["<PuntoTest-arm64-apple-macosx26.0-debug.exe>"]
+
+  "<PuntoTest-arm64-apple-macosx26.0-debug.module>":
+    tool: phony
+    inputs: ["/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoTest.build/main.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Modules/PuntoTest.swiftmodule"]
+    outputs: ["<PuntoTest-arm64-apple-macosx26.0-debug.module>"]
+
+  "C.Punto-arm64-apple-macosx26.0-debug.exe":
+    tool: shell
+    inputs: ["/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/AppDelegate.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/HotkeyManager.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/HotkeyRecorderView.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/InputSourceManager.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/LayoutConverter.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/Logger.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/OnboardingAlert.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/SettingsManager.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/SettingsWindowController.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/StatusBarController.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/Styles.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/TextAccessor.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/WordTracker.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/main.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.product/Objects.LinkFileList"]
+    outputs: ["/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto"]
+    description: "Linking ./.build/arm64-apple-macosx/debug/Punto"
+    args: ["/Library/Developer/CommandLineTools/usr/bin/swiftc","-L","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug","-o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto","-module-name","Punto","-Xlinker","-no_warn_duplicate_libraries","-emit-executable","-Xlinker","-alias","-Xlinker","_Punto_main","-Xlinker","_main","-Xlinker","-rpath","-Xlinker","@loader_path","@/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.product/Objects.LinkFileList","-Xlinker","-rpath","-Xlinker","/Library/Developer/CommandLineTools/usr/lib/swift-6.2/macosx","-target","arm64-apple-macosx12.0","-Xlinker","-add_ast_path","-Xlinker","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Modules/Punto.swiftmodule","-I","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-L","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-plugin-path","/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing","-sdk","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-g"]
+
+  "C.Punto-arm64-apple-macosx26.0-debug.exe-entitlements":
+    tool: shell
+    inputs: ["/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto-entitlement.plist"]
+    outputs: ["<Punto-arm64-apple-macosx26.0-debug.exe-CodeSigning>"]
+    description: "Applying debug entitlements to ./.build/arm64-apple-macosx/debug/Punto"
+    args: ["codesign","--force","--sign","-","--entitlements","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto-entitlement.plist","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto"]
+
+  "C.Punto-arm64-apple-macosx26.0-debug.module":
+    tool: shell
+    inputs: ["/Users/rshagiev/Projects/Punto/Sources/Punto/App/AppDelegate.swift","/Users/rshagiev/Projects/Punto/Sources/Punto/App/StatusBarController.swift","/Users/rshagiev/Projects/Punto/Sources/Punto/Core/HotkeyManager.swift","/Users/rshagiev/Projects/Punto/Sources/Punto/Core/InputSourceManager.swift","/Users/rshagiev/Projects/Punto/Sources/Punto/Core/LayoutConverter.swift","/Users/rshagiev/Projects/Punto/Sources/Punto/Core/Logger.swift","/Users/rshagiev/Projects/Punto/Sources/Punto/Core/TextAccessor.swift","/Users/rshagiev/Projects/Punto/Sources/Punto/Core/WordTracker.swift","/Users/rshagiev/Projects/Punto/Sources/Punto/Settings/SettingsManager.swift","/Users/rshagiev/Projects/Punto/Sources/Punto/UI/HotkeyRecorderView.swift","/Users/rshagiev/Projects/Punto/Sources/Punto/UI/OnboardingAlert.swift","/Users/rshagiev/Projects/Punto/Sources/Punto/UI/SettingsWindowController.swift","/Users/rshagiev/Projects/Punto/Sources/Punto/UI/Styles.swift","/Users/rshagiev/Projects/Punto/Sources/Punto/main.swift","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/sources"]
+    outputs: ["/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/AppDelegate.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/StatusBarController.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/HotkeyManager.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/InputSourceManager.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/LayoutConverter.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/Logger.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/TextAccessor.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/WordTracker.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/SettingsManager.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/HotkeyRecorderView.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/OnboardingAlert.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/SettingsWindowController.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/Styles.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/main.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Modules/Punto.swiftmodule"]
+    description: "Compiling Swift Module 'Punto' (14 sources)"
+    args: ["/Library/Developer/CommandLineTools/usr/bin/swiftc","-module-name","Punto","-emit-dependencies","-emit-module","-emit-module-path","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Modules/Punto.swiftmodule","-output-file-map","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/output-file-map.json","-incremental","-c","@/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Punto.build/sources","-I","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Modules","-target","arm64-apple-macosx12.0","-incremental","-enable-batch-mode","-serialize-diagnostics","-index-store-path","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/index/store","-Onone","-enable-testing","-j8","-DSWIFT_PACKAGE","-DDEBUG","-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE","-module-cache-path","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/ModuleCache","-parseable-output","-Xfrontend","-entry-point-function-name","-Xfrontend","Punto_main","-swift-version","5","-I","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-L","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-plugin-path","/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing","-sdk","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-g","-Xcc","-isysroot","-Xcc","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-Xcc","-fPIC","-Xcc","-g","-package-name","punto"]
+
+  "C.PuntoDiag-arm64-apple-macosx26.0-debug.exe":
+    tool: shell
+    inputs: ["/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoDiag.build/main.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoDiag.product/Objects.LinkFileList"]
+    outputs: ["/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoDiag"]
+    description: "Linking ./.build/arm64-apple-macosx/debug/PuntoDiag"
+    args: ["/Library/Developer/CommandLineTools/usr/bin/swiftc","-L","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug","-o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoDiag","-module-name","PuntoDiag","-Xlinker","-no_warn_duplicate_libraries","-emit-executable","-Xlinker","-alias","-Xlinker","_PuntoDiag_main","-Xlinker","_main","-Xlinker","-rpath","-Xlinker","@loader_path","@/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoDiag.product/Objects.LinkFileList","-Xlinker","-rpath","-Xlinker","/Library/Developer/CommandLineTools/usr/lib/swift-6.2/macosx","-target","arm64-apple-macosx12.0","-Xlinker","-add_ast_path","-Xlinker","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Modules/PuntoDiag.swiftmodule","-I","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-L","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-plugin-path","/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing","-sdk","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-g"]
+
+  "C.PuntoDiag-arm64-apple-macosx26.0-debug.exe-entitlements":
+    tool: shell
+    inputs: ["/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoDiag","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoDiag-entitlement.plist"]
+    outputs: ["<PuntoDiag-arm64-apple-macosx26.0-debug.exe-CodeSigning>"]
+    description: "Applying debug entitlements to ./.build/arm64-apple-macosx/debug/PuntoDiag"
+    args: ["codesign","--force","--sign","-","--entitlements","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoDiag-entitlement.plist","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoDiag"]
+
+  "C.PuntoDiag-arm64-apple-macosx26.0-debug.module":
+    tool: shell
+    inputs: ["/Users/rshagiev/Projects/Punto/Sources/PuntoDiag/main.swift","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoDiag.build/sources"]
+    outputs: ["/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoDiag.build/main.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Modules/PuntoDiag.swiftmodule"]
+    description: "Compiling Swift Module 'PuntoDiag' (1 sources)"
+    args: ["/Library/Developer/CommandLineTools/usr/bin/swiftc","-module-name","PuntoDiag","-emit-dependencies","-emit-module","-emit-module-path","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Modules/PuntoDiag.swiftmodule","-output-file-map","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoDiag.build/output-file-map.json","-incremental","-c","@/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoDiag.build/sources","-I","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Modules","-target","arm64-apple-macosx12.0","-incremental","-enable-batch-mode","-serialize-diagnostics","-index-store-path","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/index/store","-Onone","-enable-testing","-j8","-DSWIFT_PACKAGE","-DDEBUG","-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE","-module-cache-path","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/ModuleCache","-parseable-output","-Xfrontend","-entry-point-function-name","-Xfrontend","PuntoDiag_main","-swift-version","5","-I","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-L","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-plugin-path","/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing","-sdk","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-g","-Xcc","-isysroot","-Xcc","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-Xcc","-fPIC","-Xcc","-g","-package-name","punto"]
+
+  "C.PuntoTest-arm64-apple-macosx26.0-debug.exe":
+    tool: shell
+    inputs: ["/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoTest.build/main.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoTest.product/Objects.LinkFileList"]
+    outputs: ["/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoTest"]
+    description: "Linking ./.build/arm64-apple-macosx/debug/PuntoTest"
+    args: ["/Library/Developer/CommandLineTools/usr/bin/swiftc","-L","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug","-o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoTest","-module-name","PuntoTest","-Xlinker","-no_warn_duplicate_libraries","-emit-executable","-Xlinker","-alias","-Xlinker","_PuntoTest_main","-Xlinker","_main","-Xlinker","-rpath","-Xlinker","@loader_path","@/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoTest.product/Objects.LinkFileList","-Xlinker","-rpath","-Xlinker","/Library/Developer/CommandLineTools/usr/lib/swift-6.2/macosx","-target","arm64-apple-macosx12.0","-Xlinker","-add_ast_path","-Xlinker","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Modules/PuntoTest.swiftmodule","-I","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-L","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-plugin-path","/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing","-sdk","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-g"]
+
+  "C.PuntoTest-arm64-apple-macosx26.0-debug.exe-entitlements":
+    tool: shell
+    inputs: ["/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoTest","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoTest-entitlement.plist"]
+    outputs: ["<PuntoTest-arm64-apple-macosx26.0-debug.exe-CodeSigning>"]
+    description: "Applying debug entitlements to ./.build/arm64-apple-macosx/debug/PuntoTest"
+    args: ["codesign","--force","--sign","-","--entitlements","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoTest-entitlement.plist","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoTest"]
+
+  "C.PuntoTest-arm64-apple-macosx26.0-debug.module":
+    tool: shell
+    inputs: ["/Users/rshagiev/Projects/Punto/Sources/PuntoTest/main.swift","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoTest.build/sources"]
+    outputs: ["/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoTest.build/main.swift.o","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Modules/PuntoTest.swiftmodule"]
+    description: "Compiling Swift Module 'PuntoTest' (1 sources)"
+    args: ["/Library/Developer/CommandLineTools/usr/bin/swiftc","-module-name","PuntoTest","-emit-dependencies","-emit-module","-emit-module-path","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Modules/PuntoTest.swiftmodule","-output-file-map","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoTest.build/output-file-map.json","-incremental","-c","@/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoTest.build/sources","-I","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/Modules","-target","arm64-apple-macosx12.0","-incremental","-enable-batch-mode","-serialize-diagnostics","-index-store-path","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/index/store","-Onone","-enable-testing","-j8","-DSWIFT_PACKAGE","-DDEBUG","-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE","-module-cache-path","/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/ModuleCache","-parseable-output","-Xfrontend","-entry-point-function-name","-Xfrontend","PuntoTest_main","-swift-version","5","-I","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-L","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-plugin-path","/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing","-sdk","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-g","-Xcc","-isysroot","-Xcc","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-Xcc","-fPIC","-Xcc","-g","-package-name","punto"]
+
+  "PackageStructure":
+    tool: package-structure-tool
+    inputs: ["/Users/rshagiev/Projects/Punto/Sources/Punto/","/Users/rshagiev/Projects/Punto/Sources/PuntoDiag/","/Users/rshagiev/Projects/Punto/Sources/PuntoTest/","/Users/rshagiev/Projects/Punto/Package.swift","/Users/rshagiev/Projects/Punto/Package.resolved"]
+    outputs: ["<PackageStructure>"]
+    description: "Planning build"
+    allow-missing-inputs: true
+

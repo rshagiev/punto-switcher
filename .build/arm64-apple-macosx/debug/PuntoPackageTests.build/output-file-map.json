@@ -1,0 +1,12 @@
+{
+  "": {
+    "swift-dependencies": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoPackageTests.build/master.swiftdeps"
+  },
+  "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoPackageTests.derived/runner.swift": {
+    "dependencies": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoPackageTests.build/runner.d",
+    "object": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoPackageTests.build/runner.swift.o",
+    "swiftmodule": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoPackageTests.build/runner~partial.swiftmodule",
+    "swift-dependencies": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoPackageTests.build/runner.swiftdeps",
+    "diagnostics": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoPackageTests.build/runner.dia"
+  }
+}

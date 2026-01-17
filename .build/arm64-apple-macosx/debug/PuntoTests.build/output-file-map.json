@@ -1,0 +1,12 @@
+{
+  "": {
+    "swift-dependencies": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoTests.build/master.swiftdeps"
+  },
+  "/Users/rshagiev/Projects/Punto/Tests/PuntoTests/PuntoTests.swift": {
+    "dependencies": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoTests.build/PuntoTests.d",
+    "object": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoTests.build/PuntoTests.swift.o",
+    "swiftmodule": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoTests.build/PuntoTests~partial.swiftmodule",
+    "swift-dependencies": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoTests.build/PuntoTests.swiftdeps",
+    "diagnostics": "/Users/rshagiev/Projects/Punto/.build/arm64-apple-macosx/debug/PuntoTests.build/PuntoTests.dia"
+  }
+}
