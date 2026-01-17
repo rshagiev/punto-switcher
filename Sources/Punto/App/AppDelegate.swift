@@ -192,6 +192,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Actions
 
     private func handleConvertLayout() {
+        let startTime = CFAbsoluteTimeGetCurrent()
+
         guard settingsManager?.isEnabled == true else {
             PuntoLog.info("Disabled, skipping conversion")
             return
@@ -205,7 +207,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Prevent race condition: block key press from clearing undo during conversion
         isConversionInProgress = true
-        defer { isConversionInProgress = false }
+        defer {
+            isConversionInProgress = false
+            let totalTime = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
+            PuntoLog.info("⏱️ TOTAL conversion time: \(String(format: "%.1f", totalTime))ms")
+        }
 
         // Ignore events during replacement to prevent re-capture
         hotkeyManager?.ignoreEvents = true
@@ -238,13 +244,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
+        var t1 = CFAbsoluteTimeGetCurrent()
+
         // Normal conversion
         if let selectedText = textAccessor?.getSelectedText(), !selectedText.isEmpty {
+            let getTextTime = (CFAbsoluteTimeGetCurrent() - t1) * 1000
+            PuntoLog.info("⏱️ getSelectedText: \(String(format: "%.1f", getTextTime))ms")
+
             PuntoLog.info("Converting selected text: '\(selectedText)'")
             let result = layoutConverter!.convertWithResult(selectedText)
             PuntoLog.info("Converted to: '\(result.text)'")
+
+            t1 = CFAbsoluteTimeGetCurrent()
             // Keep selection so user can undo by pressing hotkey again
             textAccessor?.setSelectedText(result.text, keepSelection: true)
+            let setTextTime = (CFAbsoluteTimeGetCurrent() - t1) * 1000
+            PuntoLog.info("⏱️ setSelectedText: \(String(format: "%.1f", setTextTime))ms")
+
             statusBarController?.flashIcon()
             switchLayoutIfEnabled(result.targetLayout)
 
@@ -256,12 +272,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 wasSelection: true
             )
         } else {
+            let getTextTime = (CFAbsoluteTimeGetCurrent() - t1) * 1000
+            PuntoLog.info("⏱️ getSelectedText (empty): \(String(format: "%.1f", getTextTime))ms")
+
             // No selection - convert last word
             if let lastWord = wordTracker?.getLastWord(), !lastWord.isEmpty {
                 PuntoLog.info("Converting last word: '\(lastWord)'")
                 let result = layoutConverter!.convertWithResult(lastWord)
                 PuntoLog.info("Converted to: '\(result.text)'")
+
+                t1 = CFAbsoluteTimeGetCurrent()
                 textAccessor?.replaceLastWord(wordLength: lastWord.count, with: result.text)
+                let replaceTime = (CFAbsoluteTimeGetCurrent() - t1) * 1000
+                PuntoLog.info("⏱️ replaceLastWord: \(String(format: "%.1f", replaceTime))ms")
+
                 wordTracker?.clear()
                 statusBarController?.flashIcon()
                 switchLayoutIfEnabled(result.targetLayout)

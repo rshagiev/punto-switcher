@@ -169,125 +169,59 @@ final class TextAccessor {
 
         let pasteboard = NSPasteboard.general
         let previousContent = pasteboard.string(forType: .string)
-        let previousChangeCount = pasteboard.changeCount
-        PuntoLog.info("getSelectedTextViaClipboard: previous clipboard = '\(previousContent?.prefix(20) ?? "nil")', changeCount=\(previousChangeCount)")
+        let initialChangeCount = pasteboard.changeCount
 
         pasteboard.clearContents()
-        simulateCopy()
 
-        // Wait for clipboard to be populated
-        // simulateCopy() already waits 0.1s internally, add more for heavy web pages
-        Thread.sleep(forTimeInterval: 0.15)
-
-        var selected = pasteboard.string(forType: .string)
-
-        // If still nil, wait a bit more (some apps are slow)
-        if selected == nil {
-            Thread.sleep(forTimeInterval: 0.2)
-            selected = pasteboard.string(forType: .string)
+        // Send Cmd+C via CGEvent (fastest method)
+        let source = CGEventSource(stateID: .combinedSessionState)
+        if let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 8, keyDown: true) {
+            keyDown.flags = .maskCommand
+            keyDown.post(tap: .cgAnnotatedSessionEventTap)
         }
-        PuntoLog.info("getSelectedTextViaClipboard: after Cmd+C clipboard = '\(selected?.prefix(20) ?? "nil")', changeCount=\(pasteboard.changeCount)")
+        Thread.sleep(forTimeInterval: 0.01)
+        if let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 8, keyDown: false) {
+            keyUp.flags = .maskCommand
+            keyUp.post(tap: .cgAnnotatedSessionEventTap)
+        }
 
-        // Note: We don't restore the clipboard - this matches Punto Switcher behavior
-        // and avoids race conditions with multiple rapid conversions
+        // Poll clipboard with short intervals instead of one long wait
+        // This makes fast apps respond quickly while still supporting slow ones
+        for i in 1...10 {
+            Thread.sleep(forTimeInterval: 0.02)  // 20ms per iteration, max 200ms total
+            if pasteboard.changeCount != initialChangeCount {
+                break
+            }
+            // After 60ms, try HID fallback
+            if i == 3 {
+                let sourceHID = CGEventSource(stateID: .hidSystemState)
+                if let keyDown = CGEvent(keyboardEventSource: sourceHID, virtualKey: 8, keyDown: true) {
+                    keyDown.flags = .maskCommand
+                    keyDown.post(tap: .cghidEventTap)
+                }
+                Thread.sleep(forTimeInterval: 0.01)
+                if let keyUp = CGEvent(keyboardEventSource: sourceHID, virtualKey: 8, keyDown: false) {
+                    keyUp.flags = .maskCommand
+                    keyUp.post(tap: .cghidEventTap)
+                }
+            }
+        }
+
+        let selected = pasteboard.string(forType: .string)
 
         guard let text = selected, !text.isEmpty else {
-            PuntoLog.info("getSelectedTextViaClipboard: no text in clipboard after Cmd+C")
+            PuntoLog.info("getSelectedTextViaClipboard: no text in clipboard")
             return nil
         }
 
-        // If clipboard didn't change, nothing was selected
-        if text == previousContent && pasteboard.changeCount == previousChangeCount + 1 {
-            // clearContents incremented changeCount by 1, but Cmd+C didn't add anything new
+        // If clipboard content is same as before, nothing was selected
+        if text == previousContent {
             PuntoLog.info("getSelectedTextViaClipboard: clipboard unchanged (nothing selected)")
             return nil
         }
 
         PuntoLog.info("getSelectedTextViaClipboard: got '\(text.prefix(30))'")
         return text
-    }
-
-    private func simulateCopy() {
-        // Use cgAnnotatedSessionEventTap - works for browsers (Chrome, Safari)
-        // Note: AppleScript via System Events requires additional Automation permission
-        let pasteboard = NSPasteboard.general
-        let initialChangeCount = pasteboard.changeCount
-        PuntoLog.info("simulateCopy: starting, changeCount=\(initialChangeCount)")
-
-        // Primary approach: CGEvent with cgAnnotatedSessionEventTap
-        // Works for most apps including browsers
-        let source = CGEventSource(stateID: .combinedSessionState)
-
-        if let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 8, keyDown: true) {
-            keyDown.flags = .maskCommand
-            keyDown.post(tap: .cgAnnotatedSessionEventTap)
-        }
-
-        Thread.sleep(forTimeInterval: 0.03)
-
-        if let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 8, keyDown: false) {
-            keyUp.flags = .maskCommand
-            keyUp.post(tap: .cgAnnotatedSessionEventTap)
-        }
-
-        // Wait and check if clipboard changed
-        Thread.sleep(forTimeInterval: 0.1)
-
-        if pasteboard.changeCount != initialChangeCount {
-            PuntoLog.info("simulateCopy: cgAnnotatedSessionEventTap succeeded")
-            return
-        }
-
-        // Fallback: CGEvent with cghidEventTap (for native apps that don't respond to annotated tap)
-        PuntoLog.info("simulateCopy: trying cghidEventTap fallback")
-        let sourceHID = CGEventSource(stateID: .hidSystemState)
-
-        if let keyDown = CGEvent(keyboardEventSource: sourceHID, virtualKey: 8, keyDown: true) {
-            keyDown.flags = .maskCommand
-            keyDown.post(tap: .cghidEventTap)
-        }
-
-        Thread.sleep(forTimeInterval: 0.03)
-
-        if let keyUp = CGEvent(keyboardEventSource: sourceHID, virtualKey: 8, keyDown: false) {
-            keyUp.flags = .maskCommand
-            keyUp.post(tap: .cghidEventTap)
-        }
-
-        Thread.sleep(forTimeInterval: 0.1)
-
-        if pasteboard.changeCount != initialChangeCount {
-            PuntoLog.info("simulateCopy: cghidEventTap succeeded")
-            return
-        }
-
-        // Third fallback: AppleScript - most reliable for browsers with JS-heavy fields
-        PuntoLog.info("simulateCopy: trying AppleScript fallback")
-        simulateCopyViaAppleScript()
-
-        Thread.sleep(forTimeInterval: 0.1)
-
-        if pasteboard.changeCount != initialChangeCount {
-            PuntoLog.info("simulateCopy: AppleScript succeeded")
-        } else {
-            PuntoLog.info("simulateCopy: all methods failed, no clipboard change")
-        }
-    }
-
-    private func simulateCopyViaAppleScript() {
-        let script = """
-        tell application "System Events"
-            keystroke "c" using command down
-        end tell
-        """
-
-        var error: NSDictionary?
-        if let appleScript = NSAppleScript(source: script) {
-            appleScript.executeAndReturnError(&error)
-            if let error = error {
-                PuntoLog.info("simulateCopyViaAppleScript: error - \(error)")
-            }
-        }
     }
 
     // MARK: - Set Selected Text
@@ -399,53 +333,63 @@ final class TextAccessor {
 
         PuntoLog.info("setSelectedTextViaClipboard: pasting \(text.count) chars")
 
-        // Small delay before paste
-        Thread.sleep(forTimeInterval: 0.05)
-
-        // Simulate Cmd+V using explicit key sequence
+        // Simulate Cmd+V
         simulatePaste()
-
-        // Longer delay for paste to complete
-        Thread.sleep(forTimeInterval: 0.15)
+        Thread.sleep(forTimeInterval: 0.03)
 
         PuntoLog.info("setSelectedTextViaClipboard: paste completed")
 
-        // Select the pasted text by simulating Shift+Left for each character
+        // Select the pasted text using Shift+Cmd+Left (select to beginning of line/word)
+        // Much faster than character-by-character selection
         if selectAfterPaste {
-            Thread.sleep(forTimeInterval: 0.05)
-            selectBackwards(characterCount: text.count)
-            PuntoLog.info("setSelectedTextViaClipboard: selected \(text.count) chars backwards")
+            Thread.sleep(forTimeInterval: 0.02)
+            selectBackwardsFast(characterCount: text.count)
+            PuntoLog.info("setSelectedTextViaClipboard: selected backwards")
         }
 
-        // Restore original clipboard after paste completes
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        // Restore original clipboard asynchronously
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             if let old = savedClipboard {
                 pasteboard.clearContents()
                 pasteboard.setString(old, forType: .string)
-                PuntoLog.info("setSelectedTextViaClipboard: clipboard restored")
             }
         }
     }
 
-    /// Selects text backwards by simulating Shift+Left arrow
-    private func selectBackwards(characterCount: Int) {
+    /// Fast backward selection using Shift+Arrow with batching
+    private func selectBackwardsFast(characterCount: Int) {
         let source = CGEventSource(stateID: .hidSystemState)
 
-        for _ in 0..<characterCount {
-            // Key code 123 = Left Arrow
-            if let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 123, keyDown: true) {
-                keyDown.flags = .maskShift
-                keyDown.post(tap: .cghidEventTap)
+        // For short text, use character-by-character (more precise)
+        // For longer text, use word-based selection or batch
+        if characterCount <= 10 {
+            // Character by character but without delays between
+            for _ in 0..<characterCount {
+                if let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 123, keyDown: true) {
+                    keyDown.flags = .maskShift
+                    keyDown.post(tap: .cghidEventTap)
+                }
+                if let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 123, keyDown: false) {
+                    keyUp.flags = .maskShift
+                    keyUp.post(tap: .cghidEventTap)
+                }
             }
-
-            Thread.sleep(forTimeInterval: 0.005)
-
-            if let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 123, keyDown: false) {
-                keyUp.flags = .maskShift
-                keyUp.post(tap: .cghidEventTap)
+            Thread.sleep(forTimeInterval: 0.02)
+        } else {
+            // Use Cmd+Shift+Left repeatedly to select by words (much faster)
+            // Each press selects ~1 word, estimate ~5 chars per word
+            let wordCount = (characterCount + 4) / 5
+            for _ in 0..<wordCount {
+                if let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 123, keyDown: true) {
+                    keyDown.flags = [.maskShift, .maskAlternate]  // Opt+Shift+Left = select word
+                    keyDown.post(tap: .cghidEventTap)
+                }
+                if let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 123, keyDown: false) {
+                    keyUp.flags = [.maskShift, .maskAlternate]
+                    keyUp.post(tap: .cghidEventTap)
+                }
             }
-
-            Thread.sleep(forTimeInterval: 0.005)
+            Thread.sleep(forTimeInterval: 0.02)
         }
     }
 
