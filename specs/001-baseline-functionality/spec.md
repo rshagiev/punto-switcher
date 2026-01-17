@@ -80,8 +80,13 @@ When enabled, after converting text the system keyboard layout automatically swi
 - What happens when user rapidly presses the hotkey multiple times?
   - Debouncing (0.5s) prevents multiple conversions; text converts once
 - How does system handle apps that block Accessibility API (Chrome, Safari, Electron)?
-  - Multi-fallback strategy: (1) Direct AX on focused element, (2) AX via app's focusedUIElement, (3) Recursive child search (depth 5), (4) Cmd+C clipboard with cgAnnotatedSessionEventTap, (5) cghidEventTap, (6) AppleScript System Events
-  - Original clipboard restored after 0.5s
+  - Multi-fallback strategy for GET: (1) Direct AX on focused element, (2) AX via app's focusedUIElement, (3) Recursive child search (depth 5), (4) Cmd+C clipboard with polling (20ms intervals, max 200ms)
+  - Clipboard fallback sends Cmd+C via `cgAnnotatedSessionEventTap` first, then `cghidEventTap` after 60ms if no response
+  - Original clipboard restored asynchronously after 0.3s via DispatchQueue.main.asyncAfter
+- What if AX returns empty string vs fails?
+  - Empty string = nothing selected, skip clipboard fallback (use WordTracker instead)
+  - AX failure = try clipboard fallback for browsers
+  - No focused element = try clipboard fallback (some apps like VS Code extension host don't expose AX but support Cmd+C)
 - What happens when the event tap is disabled by macOS?
   - System re-enables the tap automatically on `tapDisabledByTimeout` or `tapDisabledByUserInput` events
 - What happens when user holds modifier keys without releasing?
@@ -97,10 +102,17 @@ When enabled, after converting text the system keyboard layout automatically swi
 - What happens when user switches keyboard layout while typing?
   - WordTracker subscribes to `kTISNotifySelectedKeyboardInputSourceChanged` and clears buffer on layout change
   - Mixed-layout words (containing both EN and RU letters) are rejected and buffer is cleared
+  - Programmatic layout switches (after conversion with "switch layout" enabled) are ignored via `ignoreNextInputSourceChange` flag
+- What happens when user types Cmd+C or other shortcuts while typing a word?
+  - Keys with modifiers (except Shift) are not tracked by WordTracker to avoid corrupting the buffer
 - What happens in password fields or secure input mode?
   - System checks `IsSecureEventInputEnabled()` and blocks conversion for security
 - What happens when Accessibility API returns success but doesn't actually change text (Safari bug)?
   - System verifies text actually changed after AX set; falls back to clipboard if unchanged
+- What happens when AX API temporarily returns error -25212?
+  - getFocusedElement retries up to 3 times with 50ms delay between attempts
+- How does backward selection work after clipboard paste (for undo support)?
+  - Always character-by-character Shift+Left (word-based Opt+Shift+Left can overshoot)
 
 ## Requirements *(mandatory)*
 
@@ -114,11 +126,11 @@ When enabled, after converting text the system keyboard layout automatically swi
 - **FR-005**: System MUST skip hotkey interception when Punto's own settings window is focused (for hotkey recording)
 
 #### Word Tracking
-- **FR-006**: System MUST track last typed word in a ring buffer (max 50 characters)
+- **FR-006**: System MUST track last typed word in a ring buffer (max 50 characters). Only track keys without modifiers (except Shift for capital letters)
 - **FR-007**: System MUST clear word buffer on word boundaries: space, tab, newline, and separators (`! ? ( ) / \ | @ # $ % ^ & * + = - _`). Note: punctuation that maps to Russian letters (`;'[],.`) is NOT a boundary
 - **FR-008**: System MUST clear word buffer on navigation keys (arrows, Home, End, Page Up/Down, Forward Delete)
 - **FR-009**: System MUST handle Delete/Backspace by removing last character from buffer
-- **FR-009a**: System MUST clear word buffer when system keyboard layout changes (via `kTISNotifySelectedKeyboardInputSourceChanged`)
+- **FR-009a**: System MUST clear word buffer when system keyboard layout changes (via `kTISNotifySelectedKeyboardInputSourceChanged`), but ignore programmatic layout switches triggered by conversion (via `ignoreNextInputSourceChange` flag)
 - **FR-009b**: System MUST reject mixed-layout words (containing both EN and RU letters) and clear buffer
 
 #### Layout Conversion
@@ -129,19 +141,21 @@ When enabled, after converting text the system keyboard layout automatically swi
 
 #### Text Access
 - **FR-014**: System MUST access selected text via multi-level Accessibility API strategy:
-  - (1) Direct `kAXSelectedTextAttribute` on focused element
+  - (1) Direct `kAXSelectedTextAttribute` on focused element (with retry: 3 attempts, 50ms delay)
   - (2) Via application's `kAXFocusedUIElementAttribute` (for Safari/Electron)
   - (3) Recursive search in child elements (max depth 5)
 - **FR-015**: System MUST fall back to clipboard method when all AX strategies fail:
   - (1) Cmd+C via `cgAnnotatedSessionEventTap` (works for browsers)
-  - (2) Cmd+C via `cghidEventTap` (for native apps)
-  - (3) AppleScript `System Events` keystroke (last resort)
+  - (2) Poll clipboard every 20ms (max 10 iterations = 200ms total)
+  - (3) After 60ms without response, also send Cmd+C via `cghidEventTap` as HID fallback
 - **FR-015a**: System MUST track which method (AX or clipboard) was used for get, and use matching method for set
 - **FR-015b**: System MUST verify AX set actually changed text (Safari returns success but doesn't change); fall back to clipboard if unchanged
-- **FR-016**: System MUST restore original clipboard content after clipboard fallback operations (0.5s delay)
-- **FR-017**: System MUST replace last word using Opt+Backspace (delete word) + Cmd+V (paste from clipboard)
+- **FR-016**: System MUST restore original clipboard content after clipboard fallback operations (0.3s delay)
+- **FR-017**: System MUST replace last word using character-by-character Backspace + Cmd+V (paste from clipboard). Note: Opt+Backspace doesn't work reliably in browsers
 - **FR-018**: System MUST set `ignoreEvents` flag (thread-safe via DispatchQueue) during text replacement to prevent re-capture (0.3s duration)
 - **FR-018a**: System MUST block conversion when `IsSecureEventInputEnabled()` returns true (password fields)
+- **FR-018b**: System MUST use AXGetResult enum to distinguish between: text found, empty selection, no focus, AX failure
+- **FR-018c**: System MUST select converted text after clipboard paste using character-by-character backward selection (Shift+Left). Note: word-based selection (Opt+Shift+Left) can overshoot
 
 #### Undo Functionality
 - **FR-019**: System MUST store last conversion info (original text, converted text, timestamp, selection flag)
@@ -181,7 +195,8 @@ When enabled, after converting text the system keyboard layout automatically swi
 - **Settings**: UserDefaults-backed properties: isEnabled, isFirstLaunch, showInMenuBar, launchAtLogin, convertLayoutHotkey, toggleCaseHotkey, switchLayoutAfterConversion
 - **LastConversion**: Struct tracking originalText, convertedText, timestamp, wasSelection for undo support
 - **InputSourceManager**: TIS API wrapper for detecting and switching between English/Russian keyboard layouts
-- **TextAccessor**: Manages text access with AX API multi-level strategy + clipboard fallback; tracks `lastGetUsedClipboard` to match get/set methods; detects secure input mode
+- **TextAccessor**: Manages text access with AX API multi-level strategy + clipboard fallback; tracks `lastGetUsedClipboard` to match get/set methods; detects secure input mode; uses AXGetResult enum for granular result handling
+- **AXGetResult**: Enum distinguishing AX API outcomes: `.text(String)` for selected text, `.empty` for no selection, `.noFocus` for no focused element (try clipboard fallback), `.failed` for AX failure (try clipboard fallback)
 
 ## Success Criteria *(mandatory)*
 

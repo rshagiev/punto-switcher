@@ -24,7 +24,8 @@ final class TextAccessor {
     private enum AXGetResult {
         case text(String)       // Got non-empty selected text
         case empty              // AX worked, but nothing is selected
-        case failed             // AX API failed (should try clipboard fallback)
+        case noFocus            // Couldn't get focused element (skip clipboard, use WordTracker)
+        case failed             // AX API failed on element (should try clipboard fallback)
     }
 
     /// Attempts to get the currently selected text using Accessibility API
@@ -39,8 +40,15 @@ final class TextAccessor {
             // AX worked, nothing selected - no need for clipboard fallback
             lastGetUsedClipboard = false
             return nil
+        case .noFocus:
+            // Couldn't get focused element - still try clipboard fallback
+            // Some apps (like VS Code extension host) don't expose AX elements
+            // but still support Cmd+C for selected text
+            lastGetUsedClipboard = true
+            PuntoLog.info("getSelectedText: noFocus, trying clipboard fallback")
+            return getSelectedTextViaClipboard()
         case .failed:
-            // AX failed - try clipboard fallback for browsers
+            // AX failed on specific element - try clipboard fallback for browsers
             lastGetUsedClipboard = true
             return getSelectedTextViaClipboard()
         }
@@ -49,7 +57,7 @@ final class TextAccessor {
     private func getSelectedTextViaAccessibility() -> AXGetResult {
         guard let focusedElement = getFocusedElement() else {
             PuntoLog.info("getSelectedTextViaAccessibility: no focused element")
-            return .failed
+            return .noFocus
         }
 
         // Direct attempt on focused element
@@ -60,7 +68,7 @@ final class TextAccessor {
         case .empty:
             PuntoLog.info("getSelectedTextViaAccessibility: direct returned empty (nothing selected)")
             return .empty
-        case .failed:
+        case .noFocus, .failed:
             break  // Continue to other methods
         }
 
@@ -72,7 +80,7 @@ final class TextAccessor {
                 return .text(text)
             case .empty:
                 return .empty
-            case .failed:
+            case .noFocus, .failed:
                 break
             }
         }
@@ -372,37 +380,19 @@ final class TextAccessor {
     private func selectBackwardsFast(characterCount: Int) {
         let source = CGEventSource(stateID: .hidSystemState)
 
-        // For short text, use character-by-character (more precise)
-        // For longer text, use word-based selection or batch
-        if characterCount <= 10 {
-            // Character by character but without delays between
-            for _ in 0..<characterCount {
-                if let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 123, keyDown: true) {
-                    keyDown.flags = .maskShift
-                    keyDown.post(tap: .cghidEventTap)
-                }
-                if let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 123, keyDown: false) {
-                    keyUp.flags = .maskShift
-                    keyUp.post(tap: .cghidEventTap)
-                }
+        // Always use character-by-character selection for precision
+        // Word-based selection (Opt+Shift+Left) can overshoot and select extra content
+        for _ in 0..<characterCount {
+            if let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 123, keyDown: true) {
+                keyDown.flags = .maskShift
+                keyDown.post(tap: .cghidEventTap)
             }
-            Thread.sleep(forTimeInterval: 0.02)
-        } else {
-            // Use Cmd+Shift+Left repeatedly to select by words (much faster)
-            // Each press selects ~1 word, estimate ~5 chars per word
-            let wordCount = (characterCount + 4) / 5
-            for _ in 0..<wordCount {
-                if let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 123, keyDown: true) {
-                    keyDown.flags = [.maskShift, .maskAlternate]  // Opt+Shift+Left = select word
-                    keyDown.post(tap: .cghidEventTap)
-                }
-                if let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 123, keyDown: false) {
-                    keyUp.flags = [.maskShift, .maskAlternate]
-                    keyUp.post(tap: .cghidEventTap)
-                }
+            if let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 123, keyDown: false) {
+                keyUp.flags = .maskShift
+                keyUp.post(tap: .cghidEventTap)
             }
-            Thread.sleep(forTimeInterval: 0.02)
         }
+        Thread.sleep(forTimeInterval: 0.02)
     }
 
     /// Simulates Cmd+V keystroke for paste operation
@@ -430,17 +420,22 @@ final class TextAccessor {
     // MARK: - Replace Last Word
 
     /// Deletes the last word and pastes the replacement via clipboard
-    /// Much faster than character-by-character typing
     func replaceLastWord(wordLength: Int, with replacement: String) {
         PuntoLog.info("replaceLastWord: deleting \(wordLength) chars, replacing with '\(replacement)'")
 
-        // Use Opt+Backspace to delete word at once (faster than multiple backspaces)
-        // This works in most apps and deletes the entire word
-        simulateKeyPress(keyCode: 51, flags: .maskAlternate) // Opt+Delete
-        Thread.sleep(forTimeInterval: 0.02)
+        let source = CGEventSource(stateID: .hidSystemState)
 
-        // If Opt+Backspace didn't work (some apps don't support it), fall back to multiple backspaces
-        // We'll use clipboard paste anyway, so we rely on Opt+Backspace working
+        // Delete characters one by one using Backspace (keyCode 51)
+        // Opt+Backspace doesn't work reliably in all apps (especially browsers)
+        for _ in 0..<wordLength {
+            if let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 51, keyDown: true) {
+                keyDown.post(tap: .cghidEventTap)
+            }
+            if let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 51, keyDown: false) {
+                keyUp.post(tap: .cghidEventTap)
+            }
+        }
+        Thread.sleep(forTimeInterval: 0.02)
 
         // Paste replacement via clipboard (much faster than typing)
         let pasteboard = NSPasteboard.general

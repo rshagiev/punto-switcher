@@ -86,6 +86,39 @@ AXIsProcessTrusted() // returns Bool
 | Hotkey triggers multiple times | Check debounce (0.5s) and `convertHotkeyTriggered` flag |
 | Text converts back | Ensure `ignoreEvents` is set during replacement |
 | Event tap disabled | Re-enable on `tapDisabledByTimeout` event |
+| WordTracker empty after conversion | Check `ignoreNextInputSourceChange` flag (see below) |
+
+### 5. Input Source Change Handling
+When Punto programmatically switches keyboard layout after conversion, it triggers `kTISNotifySelectedKeyboardInputSourceChanged` notification. Without protection, this clears WordTracker buffer and breaks undo.
+
+**Solution:** Use `ignoreNextInputSourceChange` flag in `AppDelegate`:
+```swift
+// In switchLayoutIfEnabled():
+ignoreNextInputSourceChange = true
+inputSourceManager?.switchTo(.russian)
+
+// In inputSourceChanged():
+if ignoreNextInputSourceChange {
+    ignoreNextInputSourceChange = false
+    return  // Don't clear WordTracker
+}
+wordTracker?.clear()
+```
+
+### 6. WordTracker Mixed Layout Detection
+WordTracker rejects words with mixed layouts (e.g., "heпo" = English + Russian). This prevents corruption when layout change notification arrives with delay.
+
+```swift
+// getLastWord() returns nil if buffer contains both EN and RU letters
+if isMixedLayout(word) { clear(); return nil }
+```
+
+### 7. Safari/Browser Text Access
+Safari web content doesn't expose `selectedText` via Accessibility API. Strategy:
+1. Try `kAXSelectedTextAttribute` on focused element
+2. Try `kAXFocusedUIElementAttribute` from app (for Electron/Safari)
+3. Recursive search in children (maxDepth=5)
+4. **Fallback:** Cmd+C clipboard method
 
 ## Character Mapping (partial)
 ```

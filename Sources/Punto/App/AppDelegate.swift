@@ -26,6 +26,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var lastConversion: LastConversion?
     private let undoTimeout: TimeInterval = 3.0
     private var isConversionInProgress = false  // Prevents race condition with key press clearing undo
+    private var ignoreNextInputSourceChange = false  // Ignore notification when we switch layout programmatically
 
     // MARK: - Application Lifecycle
 
@@ -101,6 +102,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Input Source Change
 
     @objc private func inputSourceChanged() {
+        // Skip if we triggered the layout switch ourselves (after conversion)
+        if ignoreNextInputSourceChange {
+            ignoreNextInputSourceChange = false
+            PuntoLog.info("Input source changed - ignored (programmatic switch)")
+            return
+        }
+
         // Clear WordTracker when keyboard layout changes
         // This prevents buffer corruption from mixed-layout input
         wordTracker?.clear()
@@ -311,13 +319,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func switchLayoutIfEnabled(_ targetLayout: LayoutConverter.DetectedLayout) {
         guard settingsManager?.switchLayoutAfterConversion == true else { return }
 
+        // Set flag to ignore the input source change notification we're about to trigger
+        // This prevents WordTracker from being cleared by our own programmatic switch
+        ignoreNextInputSourceChange = true
+
         switch targetLayout {
         case .english:
             inputSourceManager?.switchTo(KeyboardLanguage.english)
         case .russian:
             inputSourceManager?.switchTo(KeyboardLanguage.russian)
         case .mixed, .unknown:
-            break
+            ignoreNextInputSourceChange = false  // Reset if no switch happened
         }
     }
 

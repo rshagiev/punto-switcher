@@ -121,10 +121,12 @@ final class WordTracker {
     private var count: Int = 0
 
     private let wordBoundaries: Set<Character> = [
-        " ", "\n", "\t", "\r", ".", ",", "!", "?", ";", ":",
-        "(", ")", "[", "]", "{", "}", "\"", "'", "`",
-        "/", "\\", "|", "<", ">", "@", "#", "$", "%", "^", "&", "*",
-        "+", "=", "-", "_", "~"
+        " ", "\n", "\t", "\r",
+        "!", "?",
+        "(", ")",
+        "/", "\\", "|",
+        "@", "#", "$", "%", "^", "&", "*",
+        "+", "=", "-", "_"
     ]
 
     init(maxSize: Int = 50) {
@@ -135,6 +137,7 @@ final class WordTracker {
     func trackKeyPress(keyCode: UInt16, characters: String?) {
         if keyCode == 51 { removeLastCharacter(); return }
         if [123, 124, 125, 126, 115, 119, 116, 121, 117].contains(keyCode) { clear(); return }
+        if keyCode == 36 || keyCode == 76 { clear(); return }  // Return/Enter
         guard let chars = characters, let firstChar = chars.first else { return }
         if keyCode == 49 || wordBoundaries.contains(firstChar) { clear(); return }
         addCharacter(firstChar)
@@ -147,7 +150,11 @@ final class WordTracker {
             let index = (head - count + i + maxSize) % maxSize
             result.append(buffer[index])
         }
-        return String(result)
+        let word = String(result)
+
+        // Validate: reject mixed-layout words
+        if isMixedLayout(word) { clear(); return nil }
+        return word
     }
 
     func clear() { count = 0 }
@@ -162,6 +169,29 @@ final class WordTracker {
         guard count > 0 else { return }
         head = (head - 1 + maxSize) % maxSize
         count -= 1
+    }
+
+    private func isMixedLayout(_ text: String) -> Bool {
+        var hasEnglish = false
+        var hasRussian = false
+        for char in text {
+            if isEnglishLetter(char) { hasEnglish = true }
+            else if isRussianLetter(char) { hasRussian = true }
+            if hasEnglish && hasRussian { return true }
+        }
+        return false
+    }
+
+    private func isEnglishLetter(_ char: Character) -> Bool {
+        guard let scalar = char.unicodeScalars.first else { return false }
+        return (scalar.value >= 0x41 && scalar.value <= 0x5A) ||
+               (scalar.value >= 0x61 && scalar.value <= 0x7A)
+    }
+
+    private func isRussianLetter(_ char: Character) -> Bool {
+        guard let scalar = char.unicodeScalars.first else { return false }
+        return (scalar.value >= 0x410 && scalar.value <= 0x44F) ||
+               scalar.value == 0x401 || scalar.value == 0x451
     }
 }
 
@@ -322,19 +352,99 @@ func testTracker() {
         failed += 1
     }
 
-    // Test 5: Punctuation clears
+    // Test 5: Punctuation that maps to Russian letters should NOT clear buffer
+    // Period (.) maps to ю, comma (,) maps to б, etc.
     let tracker3 = WordTracker()
     tracker3.trackKeyPress(keyCode: 4, characters: "t")
     tracker3.trackKeyPress(keyCode: 14, characters: "e")
     tracker3.trackKeyPress(keyCode: 1, characters: "s")
     tracker3.trackKeyPress(keyCode: 17, characters: "t")
-    tracker3.trackKeyPress(keyCode: 47, characters: ".")
+    tracker3.trackKeyPress(keyCode: 47, characters: ".")  // Period - should NOT clear (maps to ю)
 
-    if tracker3.getLastWord() == nil {
-        printSuccess("Punctuation clears buffer")
+    if tracker3.getLastWord() == "test." {
+        printSuccess("Period does NOT clear buffer (maps to ю): 'test.'")
         passed += 1
     } else {
-        printError("Punctuation should clear, got: '\(tracker3.getLastWord() ?? "nil")'")
+        printError("Period should NOT clear, got: '\(tracker3.getLastWord() ?? "nil")'")
+        failed += 1
+    }
+
+    // Test 6: Navigation keys clear buffer
+    let tracker4 = WordTracker()
+    tracker4.trackKeyPress(keyCode: 4, characters: "t")
+    tracker4.trackKeyPress(keyCode: 14, characters: "e")
+    tracker4.trackKeyPress(keyCode: 1, characters: "s")
+    tracker4.trackKeyPress(keyCode: 17, characters: "t")
+    tracker4.trackKeyPress(keyCode: 123, characters: nil)  // Left arrow
+
+    if tracker4.getLastWord() == nil {
+        printSuccess("Navigation key (Left arrow) clears buffer")
+        passed += 1
+    } else {
+        printError("Navigation should clear, got: '\(tracker4.getLastWord() ?? "nil")'")
+        failed += 1
+    }
+
+    // Test 7: Return/Enter clears buffer
+    let tracker5 = WordTracker()
+    tracker5.trackKeyPress(keyCode: 4, characters: "t")
+    tracker5.trackKeyPress(keyCode: 14, characters: "e")
+    tracker5.trackKeyPress(keyCode: 1, characters: "s")
+    tracker5.trackKeyPress(keyCode: 17, characters: "t")
+    tracker5.trackKeyPress(keyCode: 36, characters: "\n")  // Return
+
+    if tracker5.getLastWord() == nil {
+        printSuccess("Return key clears buffer")
+        passed += 1
+    } else {
+        printError("Return should clear, got: '\(tracker5.getLastWord() ?? "nil")'")
+        failed += 1
+    }
+
+    // Test 8: Mixed layout detection - should return nil
+    let tracker6 = WordTracker()
+    tracker6.trackKeyPress(keyCode: 4, characters: "h")
+    tracker6.trackKeyPress(keyCode: 14, characters: "e")
+    tracker6.trackKeyPress(keyCode: 35, characters: "п")  // Russian п
+    tracker6.trackKeyPress(keyCode: 31, characters: "o")
+
+    if tracker6.getLastWord() == nil {
+        printSuccess("Mixed layout (heпo) returns nil")
+        passed += 1
+    } else {
+        printError("Mixed layout should return nil, got: '\(tracker6.getLastWord() ?? "nil")'")
+        failed += 1
+    }
+
+    // Test 9: Clear method works
+    let tracker7 = WordTracker()
+    tracker7.trackKeyPress(keyCode: 4, characters: "t")
+    tracker7.trackKeyPress(keyCode: 14, characters: "e")
+    tracker7.trackKeyPress(keyCode: 1, characters: "s")
+    tracker7.trackKeyPress(keyCode: 17, characters: "t")
+    tracker7.clear()
+
+    if tracker7.getLastWord() == nil {
+        printSuccess("Manual clear() works")
+        passed += 1
+    } else {
+        printError("Clear should empty buffer, got: '\(tracker7.getLastWord() ?? "nil")'")
+        failed += 1
+    }
+
+    // Test 10: Pure punctuation word boundaries
+    let tracker8 = WordTracker()
+    tracker8.trackKeyPress(keyCode: 4, characters: "t")
+    tracker8.trackKeyPress(keyCode: 14, characters: "e")
+    tracker8.trackKeyPress(keyCode: 1, characters: "s")
+    tracker8.trackKeyPress(keyCode: 17, characters: "t")
+    tracker8.trackKeyPress(keyCode: 0, characters: "!")  // Exclamation - word boundary
+
+    if tracker8.getLastWord() == nil {
+        printSuccess("Exclamation mark clears buffer (word boundary)")
+        passed += 1
+    } else {
+        printError("Exclamation should clear, got: '\(tracker8.getLastWord() ?? "nil")'")
         failed += 1
     }
 

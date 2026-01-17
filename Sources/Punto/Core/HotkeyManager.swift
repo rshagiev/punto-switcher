@@ -198,8 +198,12 @@ final class HotkeyManager {
             return nil
         }
 
-        // Track key presses for word tracking
-        if let characters = getCharacters(from: event) {
+        // Track key presses for word tracking (only for regular keys without modifiers)
+        // Skip if any modifier is held (except Shift for capital letters)
+        let hasModifier = hasCmd || hasOpt || hasControl
+        if !hasModifier {
+            let characters = getCharacters(from: event)
+            PuntoLog.info("KeyDown: keyCode=\(keyCode), chars='\(characters ?? "nil")'")
             DispatchQueue.main.async { [weak self] in
                 self?.onKeyPress(keyCode, characters)
             }
