@@ -1,91 +1,162 @@
 # Punto
 
-Native macOS keyboard layout switcher. Pure Swift. No Yandex bloatware.
+**Native macOS keyboard layout converter. Pure Swift. No bloatware.**
 
-Typed `ghbdtn` instead of `привет`? Press **Cmd+Opt+Shift** — fixed.
+Typed `ghbdtn` instead of `привет`? Press **Cmd+Opt+Shift** — fixed instantly.
 
-## What It Does
+![macOS](https://img.shields.io/badge/macOS-13%2B-blue)
+![Swift](https://img.shields.io/badge/Swift-5.9-orange)
+![License](https://img.shields.io/badge/License-MIT-green)
 
-- Converts last typed word between Russian ↔ English layouts
-- Converts selected text if you have a selection
-- Switches keyboard layout to match the converted text
-- Undo with the same hotkey (within 3 seconds)
+---
+
+## Features
+
+- **Instant conversion** — Russian ↔ English layout with one hotkey
+- **Smart detection** — converts selected text or last typed word
+- **Auto layout switch** — changes system keyboard to match converted text
+- **Undo support** — press same hotkey within 3 seconds to revert
+- **Case toggle** — switch between HELLO ↔ hello
+- **Modifier-only hotkey** — no extra key needed, just Cmd+Opt+Shift
+- **Privacy first** — no telemetry, no network, no cloud
 
 ## Installation
 
+### From Release
+
+Download `Punto.app` from [Releases](../../releases) and move to `/Applications`.
+
+### Build from Source
+
 ```bash
-# Build
+# Clone
+git clone https://github.com/yourusername/Punto.git
+cd Punto
+
+# Build (Apple Silicon)
 swift build -c release --arch arm64
 
+# Build (Universal binary)
+./Scripts/build.sh
+
 # Install
-cp -r .build/arm64-apple-macosx/release/Punto.app /Applications/
+cp -r Release/Punto.app /Applications/
 ```
 
-Grant Accessibility permission when prompted (System Settings → Privacy & Security → Accessibility).
+### First Launch
 
-## Hotkeys
+1. Open Punto from Applications
+2. Grant **Accessibility** permission when prompted
+   - System Settings → Privacy & Security → Accessibility → Enable Punto
+3. The app appears in the menu bar (keyboard icon)
+
+## Usage
 
 | Hotkey | Action |
 |--------|--------|
-| **Cmd+Opt+Shift** | Convert layout (modifier-only, no extra key needed) |
-| **Cmd+Opt+Z** | Toggle case (HELLO ↔ hello) |
+| **Cmd+Opt+Shift** | Convert layout (last word or selection) |
+| **Cmd+Opt+Z** | Toggle case |
+
+### Examples
+
+| You typed | After Cmd+Opt+Shift |
+|-----------|---------------------|
+| `ghbdtn` | `привет` |
+| `руддщ` | `hello` |
+| `Vfrc` | `Макс` |
+
+### Undo
+
+Press the same hotkey again within 3 seconds to undo the conversion.
 
 ## How It Works
 
-1. **WordTracker** — ring buffer captures every keystroke
-2. **Press hotkey** — grabs last word from buffer (or selected text)
-3. **LayoutConverter** — maps characters between QWERTY ↔ ЙЦУКЕН
-4. **TextAccessor** — deletes old text, pastes converted via clipboard
-5. **InputSourceManager** — switches system keyboard layout
+```
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│  WordTracker    │────▶│  LayoutConverter │────▶│   TextAccessor  │
+│  (ring buffer)  │     │  (QWERTY↔ЙЦУКЕН) │     │  (paste result) │
+└─────────────────┘     └──────────────────┘     └─────────────────┘
+         ▲                                                │
+         │                                                ▼
+┌─────────────────┐                              ┌─────────────────┐
+│  HotkeyManager  │                              │InputSourceManager│
+│  (CGEvent tap)  │                              │ (switch layout) │
+└─────────────────┘                              └─────────────────┘
+```
 
-No daemon. No analytics. No cloud. Just 6 Swift files doing one job.
+1. **WordTracker** captures every keystroke in a ring buffer
+2. **HotkeyManager** detects Cmd+Opt+Shift press
+3. **LayoutConverter** maps characters between layouts
+4. **TextAccessor** replaces text via Accessibility API or clipboard
+5. **InputSourceManager** switches system keyboard layout
 
 ## Architecture
 
 ```
 Sources/Punto/
 ├── App/
-│   ├── AppDelegate.swift      # Lifecycle, hotkey callbacks
-│   └── StatusBarController.swift  # Menu bar icon
+│   ├── main.swift                 # Entry point
+│   ├── AppDelegate.swift          # App lifecycle, hotkey callbacks
+│   └── StatusBarController.swift  # Menu bar icon & menu
 ├── Core/
-│   ├── HotkeyManager.swift    # CGEvent tap for global hotkeys
-│   ├── TextAccessor.swift     # Accessibility API + clipboard fallback
-│   ├── LayoutConverter.swift  # Character mapping tables
-│   ├── WordTracker.swift      # Ring buffer for typed text
-│   └── InputSourceManager.swift  # TIS API for layout switching
-└── Settings/
-    └── SettingsManager.swift  # UserDefaults wrapper
+│   ├── HotkeyManager.swift        # Global hotkey detection (CGEvent)
+│   ├── TextAccessor.swift         # Get/set text via AX API + clipboard
+│   ├── LayoutConverter.swift      # Character mapping tables
+│   ├── WordTracker.swift          # Ring buffer for typed characters
+│   └── InputSourceManager.swift   # macOS keyboard layout switching
+├── Settings/
+│   └── SettingsManager.swift      # UserDefaults persistence
+└── UI/
+    ├── SettingsWindowController.swift  # Settings window
+    └── HotkeyRecorderView.swift        # Custom hotkey input
 ```
+
+## Comparison
+
+| Feature | Punto Switcher (Yandex) | Punto |
+|---------|------------------------|-------|
+| Telemetry | Yes | None |
+| Size | ~50 MB | ~2 MB |
+| Auto-updates | Forced popups | Manual |
+| Source code | Closed | Open (MIT) |
+| Dependencies | Many | Zero |
+| Network access | Required | None |
 
 ## Requirements
 
-- macOS 13+
-- Accessibility permission
-
-## Why Not Original Punto Switcher?
-
-| Punto Switcher | This |
-|----------------|------|
-| Yandex telemetry | None |
-| 50+ MB | ~2 MB |
-| Auto-update popups | Manual |
-| Dictionary downloads | Built-in mapping |
-| Closed source | MIT |
+- macOS 13.0+
+- Accessibility permission (for keyboard monitoring)
 
 ## Development
 
 ```bash
-# Build & deploy
+# Quick build (arm64 only)
 swift build -c release --arch arm64
 cp .build/arm64-apple-macosx/release/Punto /Applications/Punto.app/Contents/MacOS/
+
+# Full build (universal binary)
+./Scripts/build.sh
+open Release/Punto.app
 
 # View logs
 tail -f /tmp/punto.log
 
 # Run tests
-swift run PuntoDiag all
+swift run PuntoTest all
 ```
+
+## Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| Hotkey doesn't work | Check Accessibility permission in System Settings |
+| Converts wrong text | Wait for cursor to stop moving before pressing hotkey |
+| Double conversion | Known issue in some apps, press Cmd+Z to undo |
 
 ## License
 
-MIT
+MIT License. See [LICENSE](LICENSE) for details.
+
+---
+
+**Made with frustration after typing in the wrong layout one too many times.**
