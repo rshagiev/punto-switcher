@@ -19,7 +19,14 @@ final class HotkeyManager {
     private var _ignoreEvents = false
     var ignoreEvents: Bool {
         get { stateQueue.sync { _ignoreEvents } }
-        set { stateQueue.sync { _ignoreEvents = newValue } }
+        set {
+            stateQueue.sync {
+                if _ignoreEvents != newValue {
+                    PuntoLog.info("ignoreEvents: \(_ignoreEvents) → \(newValue)")
+                }
+                _ignoreEvents = newValue
+            }
+        }
     }
 
     // Track modifier state for modifier-only hotkeys (accessed from event tap thread)
@@ -112,13 +119,10 @@ final class HotkeyManager {
     private func handleEvent(proxy: CGEventTapProxy, type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
         // Ignore events during text replacement to prevent re-capture
         if ignoreEvents {
-            // Log when we're passing through events during ignore mode
+            // Log all keyDown events during ignore mode for debugging
             if type == .keyDown {
                 let keyCode = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
-                let flags = event.flags
-                if flags.contains(.maskCommand) && (keyCode == 8 || keyCode == 9) {
-                    PuntoLog.info("handleEvent: passing through Cmd+\(keyCode == 8 ? "C" : "V") (ignoreEvents=true)")
-                }
+                PuntoLog.debug("Skipping keyCode=\(keyCode) (ignoreEvents=true)")
             }
             return Unmanaged.passUnretained(event)
         }

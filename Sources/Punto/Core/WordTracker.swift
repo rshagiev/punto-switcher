@@ -60,22 +60,19 @@ final class WordTracker {
 
         // Navigation keys clear the buffer (cursor moved)
         if navigationKeyCodes.contains(keyCode) {
-            PuntoLog.info("WordTracker: navigation key \(keyCode), clearing buffer")
-            clear()
+            clear(reason: "navigation key \(keyCode)")
             return
         }
 
         // Return/Enter acts as word boundary
         if keyCode == returnKeyCode || keyCode == enterKeyCode {
-            PuntoLog.info("WordTracker: return/enter, clearing buffer")
-            clear()
+            clear(reason: "return/enter")
             return
         }
 
         // Tab clears the buffer (word boundary)
         if keyCode == tabKeyCode {
-            PuntoLog.info("WordTracker: tab, clearing buffer")
-            clear()
+            clear(reason: "tab")
             return
         }
 
@@ -86,8 +83,7 @@ final class WordTracker {
 
         // Space and other word boundaries clear the buffer
         if keyCode == spaceKeyCode || wordBoundaries.contains(firstChar) {
-            PuntoLog.info("WordTracker: word boundary '\(firstChar)', clearing buffer")
-            clear()
+            clear(reason: "word boundary '\(firstChar)'")
             return
         }
 
@@ -130,8 +126,7 @@ final class WordTracker {
         // Validate: reject mixed-layout words (e.g. "жеa" - Russian + English)
         // This happens when layout change notification arrives with delay
         if isMixedLayout(word) {
-            PuntoLog.info("WordTracker.getLastWord: mixed layout detected in '\(word)', clearing")
-            clear()
+            clear(reason: "mixed layout in '\(word)'")
             return nil
         }
 
@@ -173,7 +168,11 @@ final class WordTracker {
     }
 
     /// Clears the buffer
-    func clear() {
+    /// - Parameter reason: Why the buffer is being cleared (for logging)
+    func clear(reason: String = "unknown") {
+        if count > 0 {
+            PuntoLog.debug("WordTracker: clearing buffer '\(getCurrentBuffer())' (reason: \(reason))")
+        }
         count = 0
     }
 

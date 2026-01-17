@@ -111,7 +111,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Clear WordTracker when keyboard layout changes
         // This prevents buffer corruption from mixed-layout input
-        wordTracker?.clear()
+        wordTracker?.clear(reason: "input source changed")
         lastConversion = nil  // Also clear undo state
         PuntoLog.info("Input source changed - WordTracker cleared")
     }
@@ -294,7 +294,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 let replaceTime = (CFAbsoluteTimeGetCurrent() - t1) * 1000
                 PuntoLog.info("⏱️ replaceLastWord: \(String(format: "%.1f", replaceTime))ms")
 
-                wordTracker?.clear()
+                wordTracker?.clear(reason: "conversion completed")
                 statusBarController?.flashIcon()
                 switchLayoutIfEnabled(result.targetLayout)
 
@@ -322,6 +322,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Set flag to ignore the input source change notification we're about to trigger
         // This prevents WordTracker from being cleared by our own programmatic switch
         ignoreNextInputSourceChange = true
+        PuntoLog.debug("ignoreNextInputSourceChange = true (switching to \(targetLayout))")
 
         switch targetLayout {
         case .english:

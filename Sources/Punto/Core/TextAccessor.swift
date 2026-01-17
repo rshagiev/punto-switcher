@@ -427,14 +427,17 @@ final class TextAccessor {
 
         // Delete characters one by one using Backspace (keyCode 51)
         // Opt+Backspace doesn't work reliably in all apps (especially browsers)
-        for _ in 0..<wordLength {
+        PuntoLog.debug("Starting backspace loop: \(wordLength) iterations")
+        for i in 0..<wordLength {
             if let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 51, keyDown: true) {
                 keyDown.post(tap: .cghidEventTap)
             }
             if let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 51, keyDown: false) {
                 keyUp.post(tap: .cghidEventTap)
             }
+            PuntoLog.debug("backspace \(i + 1)/\(wordLength) sent")
         }
+        PuntoLog.debug("Backspace loop done, sleeping 20ms")
         Thread.sleep(forTimeInterval: 0.02)
 
         // Paste replacement via clipboard (much faster than typing)
