@@ -72,6 +72,13 @@ final class WordTracker {
             return
         }
 
+        // Tab clears the buffer (word boundary)
+        if keyCode == tabKeyCode {
+            PuntoLog.info("WordTracker: tab, clearing buffer")
+            clear()
+            return
+        }
+
         // Process the character
         guard let chars = characters, let firstChar = chars.first else {
             return

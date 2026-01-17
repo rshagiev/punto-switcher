@@ -78,7 +78,7 @@ When enabled, after converting text the system keyboard layout automatically swi
 ### Edge Cases
 
 - What happens when user rapidly presses the hotkey multiple times?
-  - Debouncing (0.5s) prevents multiple conversions; text converts once
+  - Debouncing (0.5s) prevents multiple conversions for modifier-only hotkey (Cmd+Opt+Shift); text converts once. Note: Key-based hotkeys like Cmd+Opt+Z have no debounce
 - How does system handle apps that block Accessibility API (Chrome, Safari, Electron)?
   - Multi-fallback strategy for GET: (1) Direct AX on focused element, (2) AX via app's focusedUIElement, (3) Recursive child search (depth 5), (4) Cmd+C clipboard with polling (20ms intervals, max 200ms)
   - Clipboard fallback sends Cmd+C via `cgAnnotatedSessionEventTap` first, then `cghidEventTap` after 60ms if no response
@@ -122,7 +122,7 @@ When enabled, after converting text the system keyboard layout automatically swi
 - **FR-001**: System MUST detect modifier-only hotkey (Cmd+Opt+Shift) via CGEvent tap on `flagsChanged` events, triggering on modifiers release
 - **FR-002**: System MUST detect key-based hotkey (Cmd+Opt+Z) via CGEvent tap on `keyDown` events
 - **FR-003**: System MUST cancel modifier-only detection if any regular key is pressed while modifiers are held
-- **FR-004**: System MUST implement 0.5s debouncing between conversion triggers via `lastTriggerTime` timestamp
+- **FR-004**: System MUST implement 0.5s debouncing for modifier-only hotkey (Cmd+Opt+Shift) triggers via `lastTriggerTime` timestamp. Note: Key-based hotkeys (Cmd+Opt+Z) have no debounce protection
 - **FR-005**: System MUST skip hotkey interception when Punto's own settings window is focused (for hotkey recording)
 
 #### Word Tracking

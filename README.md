@@ -30,8 +30,8 @@ Download `Punto.app` from [Releases](../../releases) and move to `/Applications`
 
 ```bash
 # Clone
-git clone https://github.com/yourusername/Punto.git
-cd Punto
+git clone https://github.com/rshagiev/punto-switcher.git
+cd punto-switcher
 
 # Build (Apple Silicon)
 swift build -c release --arch arm64

@@ -69,7 +69,7 @@ let eventMask: CGEventMask = (1 << CGEventType.keyDown.rawValue) |
 
 **Key Features:**
 - **Modifier-only hotkey detection:** Detects when Cmd+Opt+Shift are all pressed via `flagsChanged` events
-- **Debouncing:** 0.5 second minimum between conversions to prevent rapid re-triggers
+- **Debouncing:** 0.5 second minimum between modifier-only conversions (Cmd+Opt+Shift). Note: Key-based hotkeys like Cmd+Opt+Z have no debounce
 - **ignoreEvents flag:** Temporarily disables event capture during text replacement to prevent re-capture of simulated keystrokes
 
 **Critical Code Flow:**
@@ -90,7 +90,7 @@ CGEvent Tap callback
 ```
 
 **State Variables:**
-- `convertHotkeyTriggered: Bool` — Prevents re-trigger while modifiers held
+- `modifiersWerePressed: Bool` — Tracks if all modifiers were pressed for modifier-only hotkey
 - `lastConvertTime: Date` — For debouncing (0.5s minimum interval)
 - `ignoreEvents: Bool` — Set by AppDelegate during text replacement
 
@@ -115,15 +115,18 @@ AXUIElementSetAttributeValue(focusedElement, kAXSelectedTextAttribute, newText)
 **Replace Last Word Algorithm:**
 ```swift
 func replaceLastWord(wordLength: Int, with replacement: String) {
-    // 1. Send `wordLength` backspace key events
-    // 2. Type replacement using CGEvent with Unicode string
+    // 1. Send `wordLength` backspace key events (no delay between)
+    // 2. Wait 0.02s for backspaces to take effect
+    // 3. Paste replacement via clipboard + Cmd+V
+    // 4. Restore original clipboard after 0.3s
 }
 ```
 
 **Timing:**
-- 0.01s delay between backspaces
-- 0.005s delay between typed characters
-- 0.05s delay for clipboard operations
+- No delay between backspaces (sent immediately)
+- 0.02s delay after backspaces before paste
+- 0.03s delay after Cmd+V paste
+- 0.3s delay before restoring original clipboard
 
 ---
 
@@ -171,8 +174,10 @@ private var count: Int = 0
 
 **Word Boundaries (clear buffer):**
 - Space, Tab, Newline
-- Punctuation: `.` `,` `!` `?` `;` `:` `(` `)` `[` `]` `{` `}` `"` `'` etc.
-- Navigation keys: Arrow keys, Home, End, Page Up/Down
+- Separators: `!` `?` `(` `)` `/` `\` `|` `@` `#` `$` `%` `^` `&` `*` `+` `=` `-` `_`
+- Navigation keys: Arrow keys, Home, End, Page Up/Down, Forward Delete
+
+**Note:** Punctuation that maps to Russian letters is NOT a boundary: `;` `'` `[` `]` `` ` `` `,` `.`
 
 **Key Code Handling:**
 - Delete (keyCode 51): Remove last character from buffer
@@ -235,7 +240,29 @@ struct Hotkey: Codable, Equatable {
 
 **Icon:** SF Symbol `keyboard` or Unicode `⌨`
 
-**Flash Animation:** Brief icon highlight on successful conversion
+**Flash Animation:** Brief icon highlight on successful conversion (0.15s accent color tint)
+
+---
+
+### 7. InputSourceManager (`Sources/Punto/Core/InputSourceManager.swift`)
+
+**Purpose:** Manages system keyboard layout switching via TIS API.
+
+**Layout Detection:**
+- Finds English layout by: `languages.contains("en")` OR sourceId contains "US"/"ABC"
+- Finds Russian layout by: `languages.contains("ru")` OR sourceId contains "Russian"
+
+**API:**
+```swift
+class InputSourceManager {
+    func switchTo(_ language: KeyboardLanguage) -> Bool
+    func refreshInputSources()
+}
+```
+
+**Usage:** Called by AppDelegate when `switchLayoutAfterConversion` setting is enabled. The switch happens after successful text conversion.
+
+**Note:** When Punto programmatically switches layout, it sets `ignoreNextInputSourceChange` flag in AppDelegate to prevent the system notification from clearing WordTracker buffer.
 
 ---
 
@@ -276,8 +303,10 @@ struct Hotkey: Codable, Equatable {
    ▼
 10. TextAccessor.replaceLastWord(6, "привет")
     │
-    ├─► Send 6 backspace events (deletes "ghbdtn")
-    └─► Type "привет" using CGEvent Unicode
+    ├─► Send 6 backspace events (no delay between)
+    ├─► Wait 0.02s
+    ├─► Paste "привет" via clipboard + Cmd+V
+    └─► Restore original clipboard after 0.3s
    │
    ▼
 11. WordTracker.clear()
@@ -479,10 +508,11 @@ let returnKeyCode: UInt16 = 36
 let zKeyCode: UInt16 = 6
 
 // Timing
-let debounceInterval: TimeInterval = 0.5    // Between hotkey triggers
-let ignoreEventsDelay: TimeInterval = 0.3   // After text replacement
-let typeCharDelay: TimeInterval = 0.005     // Between typed characters
-let backspaceDelay: TimeInterval = 0.01     // Between backspaces
+let debounceInterval: TimeInterval = 0.5      // Between modifier-only hotkey triggers
+let ignoreEventsDelay: TimeInterval = 0.3     // After text replacement
+let postBackspaceDelay: TimeInterval = 0.02   // After all backspaces, before paste
+let postPasteDelay: TimeInterval = 0.03       // After Cmd+V paste
+let clipboardRestoreDelay: TimeInterval = 0.3 // Before restoring original clipboard
 
 // Buffer
 let maxWordLength: Int = 50                 // Ring buffer size
