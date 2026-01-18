@@ -229,6 +229,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
+        // Check for password fields (browser password inputs)
+        if textAccessor?.isPasswordField() == true {
+            PuntoLog.info("Password field detected - conversion blocked")
+            return
+        }
+
         // Prevent race condition: block key press from clearing undo during conversion
         isConversionInProgress = true
         defer {

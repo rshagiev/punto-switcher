@@ -18,6 +18,24 @@ final class TextAccessor {
         return IsSecureEventInputEnabled()
     }
 
+    /// Checks if focused element is a secure/password text field
+    /// Used to skip conversion in browser password fields
+    func isPasswordField() -> Bool {
+        guard let element = getFocusedElement() else {
+            return false
+        }
+
+        // Check subrole for AXSecureTextField
+        var subrole: AnyObject?
+        if AXUIElementCopyAttributeValue(element, kAXSubroleAttribute as CFString, &subrole) == .success,
+           let sr = subrole as? String,
+           sr == "AXSecureTextField" {
+            return true
+        }
+
+        return false
+    }
+
     // MARK: - Get Selected Text
 
     /// Result of trying to get selected text via Accessibility API
