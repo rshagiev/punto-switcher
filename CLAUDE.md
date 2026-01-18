@@ -128,4 +128,4 @@ EN → RU: q→й w→ц e→у r→к t→е y→н u→г i→ш o→щ p→з
 ```
 
 ## Full Spec
-See `TECHNICAL_SPEC.md` for complete documentation.
+See `docs/TECHNICAL_SPEC.md` for complete documentation.
