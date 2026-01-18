@@ -1,0 +1,2 @@
+# Exclude scripts from language statistics
+Scripts/* linguist-vendored
