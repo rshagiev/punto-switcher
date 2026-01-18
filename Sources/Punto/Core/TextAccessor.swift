@@ -487,7 +487,12 @@ final class TextAccessor {
         }
 
         guard appResult == .success, let app = focusedApp else {
-            PuntoLog.info("getFocusedElement: failed to get focused app, error=\(appResult.rawValue)")
+            // Log which app is frontmost via NSWorkspace (works even when AX fails)
+            if let frontApp = NSWorkspace.shared.frontmostApplication {
+                PuntoLog.info("getFocusedElement: AX failed (error=\(appResult.rawValue)) for app '\(frontApp.localizedName ?? "?")' bundle=\(frontApp.bundleIdentifier ?? "?")")
+            } else {
+                PuntoLog.info("getFocusedElement: AX failed (error=\(appResult.rawValue)), no frontmost app")
+            }
             return nil
         }
 

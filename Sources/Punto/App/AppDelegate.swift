@@ -202,6 +202,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func handleConvertLayout() {
         let startTime = CFAbsoluteTimeGetCurrent()
 
+        // Log which app is frontmost at the start of conversion
+        if let frontApp = NSWorkspace.shared.frontmostApplication {
+            PuntoLog.info(">>> Convert layout triggered <<< (app: '\(frontApp.localizedName ?? "?")' bundle=\(frontApp.bundleIdentifier ?? "?"))")
+        } else {
+            PuntoLog.info(">>> Convert layout triggered <<< (no frontmost app)")
+        }
+
         guard settingsManager?.isEnabled == true else {
             PuntoLog.info("Disabled, skipping conversion")
             return

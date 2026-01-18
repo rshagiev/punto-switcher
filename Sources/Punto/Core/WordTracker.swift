@@ -49,8 +49,14 @@ final class WordTracker {
     /// Tracks a key press event
     /// - Parameters:
     ///   - keyCode: The virtual key code
-    ///   - characters: The characters produced by the key press
+    ///   - characters: The characters produced by the key press (nil means "clear buffer" signal)
     func trackKeyPress(keyCode: UInt16, characters: String?) {
+        // nil characters is a signal to clear buffer (e.g., from Cmd+V paste or Cmd+Z undo)
+        if characters == nil && keyCode != deleteKeyCode {
+            clear(reason: "external command (keyCode=\(keyCode))")
+            return
+        }
+
         // Handle special keys
         if keyCode == deleteKeyCode {
             removeLastCharacter()

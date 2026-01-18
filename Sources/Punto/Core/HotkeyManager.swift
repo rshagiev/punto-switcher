@@ -202,6 +202,26 @@ final class HotkeyManager {
             return nil
         }
 
+        // Detect Cmd+V (paste) - clear WordTracker buffer since pasted text wasn't typed
+        // keyCode 9 = V key
+        if hasCmd && !hasOpt && !hasControl && keyCode == 9 {
+            PuntoLog.info("Cmd+V detected - will clear WordTracker (pasted text)")
+            DispatchQueue.main.async { [weak self] in
+                self?.onKeyPress(keyCode, nil)  // Signal to clear buffer
+            }
+            return Unmanaged.passUnretained(event)
+        }
+
+        // Detect Cmd+Z (undo) - clear WordTracker buffer since text state changed
+        // keyCode 6 = Z key
+        if hasCmd && !hasOpt && !hasControl && keyCode == 6 {
+            PuntoLog.info("Cmd+Z detected - will clear WordTracker (undo)")
+            DispatchQueue.main.async { [weak self] in
+                self?.onKeyPress(keyCode, nil)  // Signal to clear buffer
+            }
+            return Unmanaged.passUnretained(event)
+        }
+
         // Track key presses for word tracking (only for regular keys without modifiers)
         // Skip if any modifier is held (except Shift for capital letters)
         let hasModifier = hasCmd || hasOpt || hasControl
