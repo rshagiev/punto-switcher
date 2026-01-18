@@ -236,6 +236,57 @@ tail -f /tmp/punto.log
 
 ---
 
+## Technical Highlights
+
+Built from scratch in Swift. ~7000 lines of code. Zero dependencies.
+
+### Low-Level macOS Integration
+
+| Component | Challenge | Solution |
+|-----------|-----------|----------|
+| **CGEvent Tap** | Global hotkey interception at system level | Event tap with `kCGEventTapOptionDefault`, handles `flagsChanged` for modifier-only detection |
+| **Accessibility API** | Read/replace text in any app | `kAXSelectedTextAttribute` with fallback to clipboard for Safari/Electron |
+| **Input Source API** | Programmatic keyboard switch | `TISSelectInputSource` with notification filtering |
+
+### Non-Trivial Problems Solved
+
+**Modifier-only hotkeys** — Most apps require Cmd+Opt+Shift+*Key*. Punto triggers on Cmd+Opt+Shift alone via `flagsChanged` event tracking. Requires careful state machine to avoid false triggers.
+
+**Self-capture prevention** — When Punto types replacement text, those keystrokes would be captured by its own event tap. Solved with `ignoreEvents` flag and 300ms cooldown window.
+
+**Layout switch echo** — Switching keyboard layout fires `kTISNotifySelectedKeyboardInputSourceChanged`, which normally clears the word buffer. `ignoreNextInputSourceChange` flag prevents clearing after programmatic switch.
+
+**Mixed layout detection** — WordTracker rejects words containing both Cyrillic and Latin characters (e.g., "heпо"). This catches race conditions when layout change notification arrives with delay.
+
+**Safari/Electron compatibility** — Web content doesn't expose `selectedText` via Accessibility. TextAccessor performs recursive AX tree traversal (depth 5) before falling back to Cmd+C clipboard method.
+
+**Password field protection** — Detects `kAXSecureTextField` role and blocks conversion in password inputs.
+
+**Ring buffer word tracking** — Efficient fixed-size buffer tracks last 100 characters. Handles backspace, word boundaries (Space, Tab, Enter), and special keys (Cmd+V clears buffer).
+
+### Architecture
+
+```
+Sources/Punto/
+├── Core/
+│   ├── HotkeyManager.swift    # CGEvent tap, modifier detection
+│   ├── TextAccessor.swift     # AX API, clipboard fallback (800+ lines)
+│   ├── LayoutConverter.swift  # QWERTY ↔ ЙЦУКЕН mapping
+│   ├── WordTracker.swift      # Ring buffer, word boundaries
+│   ├── InputSourceManager.swift
+│   └── Logger.swift
+├── App/
+│   ├── AppDelegate.swift      # Lifecycle, component orchestration
+│   └── StatusBarController.swift
+├── UI/
+│   ├── SettingsWindowController.swift
+│   └── OnboardingWindowController.swift
+└── Settings/
+    └── SettingsManager.swift
+```
+
+---
+
 ## Requirements
 
 - macOS 13.0 (Ventura) or later
