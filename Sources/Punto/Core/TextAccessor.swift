@@ -240,8 +240,15 @@ final class TextAccessor {
             return nil
         }
 
-        PuntoLog.info("getSelectedTextViaClipboard: got '\(text.prefix(30))'")
-        return text
+        // Trim trailing whitespace - some apps (like Cursor) add newlines when copying
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            PuntoLog.info("getSelectedTextViaClipboard: got only whitespace, treating as empty")
+            return nil
+        }
+
+        PuntoLog.info("getSelectedTextViaClipboard: got '\(trimmed.prefix(30))' (trimmed from \(text.count) to \(trimmed.count) chars)")
+        return trimmed
     }
 
     // MARK: - Set Selected Text
@@ -421,23 +428,60 @@ final class TextAccessor {
 
     /// Deletes the last word and pastes the replacement via clipboard
     func replaceLastWord(wordLength: Int, with replacement: String) {
+        let startTime = Date()
+
+        // Log active app state before sending events
+        if let frontApp = NSWorkspace.shared.frontmostApplication {
+            let isActive = frontApp.isActive
+            let isHidden = frontApp.isHidden
+            PuntoLog.info("replaceLastWord: target app='\(frontApp.localizedName ?? "?")' isActive=\(isActive) isHidden=\(isHidden) pid=\(frontApp.processIdentifier)")
+        }
+
+        // Check keyboard focus via AX before sending events
+        let axFocusCheck = checkKeyboardFocus()
+        PuntoLog.info("replaceLastWord: AX focus check: \(axFocusCheck)")
+
         PuntoLog.info("replaceLastWord: deleting \(wordLength) chars, replacing with '\(replacement)'")
+
+        // Check current modifier state BEFORE delay
+        let modifiersBefore = CGEventSource.flagsState(.hidSystemState)
+        let modDescBefore = describeModifiers(modifiersBefore)
+        PuntoLog.info("replaceLastWord: modifiers BEFORE delay: \(modDescBefore)")
+
+        // Small delay before starting to let the app stabilize after modifier release
+        Thread.sleep(forTimeInterval: 0.05)
+
+        // Check modifier state AFTER delay
+        let modifiersAfter = CGEventSource.flagsState(.hidSystemState)
+        let modDescAfter = describeModifiers(modifiersAfter)
+        PuntoLog.info("replaceLastWord: modifiers AFTER 50ms delay: \(modDescAfter)")
 
         let source = CGEventSource(stateID: .hidSystemState)
 
-        // Delete characters one by one using Backspace (keyCode 51)
-        // Opt+Backspace doesn't work reliably in all apps (especially browsers)
-        PuntoLog.debug("Starting backspace loop: \(wordLength) iterations")
-        for i in 0..<wordLength {
-            if let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 51, keyDown: true) {
-                keyDown.post(tap: .cghidEventTap)
-            }
-            if let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 51, keyDown: false) {
-                keyUp.post(tap: .cghidEventTap)
-            }
-            PuntoLog.debug("backspace \(i + 1)/\(wordLength) sent")
+        // Check if event source was created
+        if source == nil {
+            PuntoLog.error("replaceLastWord: FAILED to create CGEventSource!")
         }
-        PuntoLog.debug("Backspace loop done, sleeping 20ms")
+
+        // Delete characters one by one using Backspace (keyCode 51)
+        // Using .cghidEventTap which works for most apps
+        PuntoLog.info("replaceLastWord: sending \(wordLength) backspaces via cghidEventTap (after 50ms delay)")
+        var backspacesSent = 0
+        for i in 0..<wordLength {
+            let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 51, keyDown: true)
+            let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 51, keyDown: false)
+
+            if keyDown == nil || keyUp == nil {
+                PuntoLog.error("replaceLastWord: FAILED to create backspace event #\(i+1)")
+                continue
+            }
+
+            keyDown!.post(tap: .cghidEventTap)
+            keyUp!.post(tap: .cghidEventTap)
+            backspacesSent += 1
+        }
+        let backspaceTime = Date().timeIntervalSince(startTime) * 1000
+        PuntoLog.info("replaceLastWord: \(backspacesSent)/\(wordLength) backspaces sent in \(String(format: "%.1f", backspaceTime))ms, waiting 20ms")
         Thread.sleep(forTimeInterval: 0.02)
 
         // Paste replacement via clipboard (much faster than typing)
@@ -448,18 +492,34 @@ final class TextAccessor {
         pasteboard.setString(replacement, forType: .string)
 
         // Simulate Cmd+V
+        let pasteStartTime = Date()
         simulatePaste()
         Thread.sleep(forTimeInterval: 0.03)
+        let pasteTime = Date().timeIntervalSince(pasteStartTime) * 1000
+        PuntoLog.info("replaceLastWord: paste took \(String(format: "%.1f", pasteTime))ms")
+
+        // Verify paste worked by checking clipboard wasn't cleared by app
+        let clipboardAfterPaste = pasteboard.string(forType: .string)
+        if clipboardAfterPaste == replacement {
+            PuntoLog.info("replaceLastWord: clipboard still contains replacement (paste likely succeeded)")
+        } else {
+            PuntoLog.info("replaceLastWord: clipboard changed to '\(clipboardAfterPaste?.prefix(20) ?? "nil")' (app may have modified it)")
+        }
+
+        // Note: Active verification via select+copy is destructive - removed
+        // Instead rely on AX focus check and clipboard state for diagnostics
 
         // Restore clipboard asynchronously
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             if let old = savedClipboard {
                 pasteboard.clearContents()
                 pasteboard.setString(old, forType: .string)
+                PuntoLog.debug("replaceLastWord: clipboard restored to original")
             }
         }
 
-        PuntoLog.info("replaceLastWord: completed")
+        let totalTime = Date().timeIntervalSince(startTime) * 1000
+        PuntoLog.info("replaceLastWord: completed in \(String(format: "%.1f", totalTime))ms (sent \(backspacesSent) backspaces + Cmd+V with '\(replacement)')")
     }
 
     // MARK: - Helpers
@@ -541,6 +601,142 @@ final class TextAccessor {
         if let keyUp = CGEvent(keyboardEventSource: source, virtualKey: keyCode, keyDown: false) {
             keyUp.flags = flags
             keyUp.post(tap: .cghidEventTap)
+        }
+    }
+
+    // MARK: - Debugging Helpers
+
+    /// Describes current modifier key state
+    private func describeModifiers(_ flags: CGEventFlags) -> String {
+        var parts: [String] = []
+        if flags.contains(.maskCommand) { parts.append("⌘") }
+        if flags.contains(.maskAlternate) { parts.append("⌥") }
+        if flags.contains(.maskShift) { parts.append("⇧") }
+        if flags.contains(.maskControl) { parts.append("⌃") }
+        return parts.isEmpty ? "none" : parts.joined()
+    }
+
+    /// Checks keyboard focus state via AX API
+    /// Returns a string describing the current focus state
+    private func checkKeyboardFocus() -> String {
+        let systemWide = AXUIElementCreateSystemWide()
+
+        // Get focused app
+        var focusedApp: AnyObject?
+        let appResult = AXUIElementCopyAttributeValue(
+            systemWide,
+            kAXFocusedApplicationAttribute as CFString,
+            &focusedApp
+        )
+
+        guard appResult == .success, let app = focusedApp else {
+            return "NO_FOCUSED_APP (error=\(appResult.rawValue))"
+        }
+
+        let appElement = app as! AXUIElement
+
+        // Get app title
+        var appTitle: AnyObject?
+        AXUIElementCopyAttributeValue(appElement, kAXTitleAttribute as CFString, &appTitle)
+        let appName = appTitle as? String ?? "?"
+
+        // Get focused UI element
+        var focusedElement: AnyObject?
+        let elemResult = AXUIElementCopyAttributeValue(
+            appElement,
+            kAXFocusedUIElementAttribute as CFString,
+            &focusedElement
+        )
+
+        guard elemResult == .success, let element = focusedElement else {
+            return "app='\(appName)' NO_FOCUSED_ELEMENT (error=\(elemResult.rawValue))"
+        }
+
+        let axElement = element as! AXUIElement
+
+        // Get element role
+        var role: AnyObject?
+        AXUIElementCopyAttributeValue(axElement, kAXRoleAttribute as CFString, &role)
+        let roleName = role as? String ?? "?"
+
+        // Check if element is enabled
+        var enabled: AnyObject?
+        AXUIElementCopyAttributeValue(axElement, kAXEnabledAttribute as CFString, &enabled)
+        let isEnabled = enabled as? Bool ?? true
+
+        // Check if element has keyboard focus
+        var focused: AnyObject?
+        AXUIElementCopyAttributeValue(axElement, kAXFocusedAttribute as CFString, &focused)
+        let hasFocus = focused as? Bool ?? false
+
+        return "app='\(appName)' role='\(roleName)' enabled=\(isEnabled) focused=\(hasFocus)"
+    }
+
+    /// Verifies that replacement was actually applied by selecting and copying the text
+    /// Returns description of what was found
+    private func verifyReplacementApplied(expectedText: String, charCount: Int) -> String {
+        let pasteboard = NSPasteboard.general
+        let beforeVerify = pasteboard.changeCount
+
+        // Clear clipboard
+        pasteboard.clearContents()
+
+        // Select backwards (Shift+Left Arrow) to select the just-pasted text
+        let source = CGEventSource(stateID: .hidSystemState)
+        for _ in 0..<charCount {
+            if let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 123, keyDown: true) {
+                keyDown.flags = .maskShift
+                keyDown.post(tap: .cghidEventTap)
+            }
+            if let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 123, keyDown: false) {
+                keyUp.flags = .maskShift
+                keyUp.post(tap: .cghidEventTap)
+            }
+        }
+        Thread.sleep(forTimeInterval: 0.03)
+
+        // Copy selected text (Cmd+C)
+        if let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 8, keyDown: true) {
+            keyDown.flags = .maskCommand
+            keyDown.post(tap: .cghidEventTap)
+        }
+        Thread.sleep(forTimeInterval: 0.01)
+        if let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 8, keyDown: false) {
+            keyUp.flags = .maskCommand
+            keyUp.post(tap: .cghidEventTap)
+        }
+        Thread.sleep(forTimeInterval: 0.05)
+
+        // Check what we got
+        let afterVerify = pasteboard.changeCount
+        if afterVerify == beforeVerify {
+            // Clipboard didn't change - selection/copy failed
+            // Deselect by pressing Right arrow
+            if let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 124, keyDown: true) {
+                keyDown.post(tap: .cghidEventTap)
+            }
+            if let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 124, keyDown: false) {
+                keyUp.post(tap: .cghidEventTap)
+            }
+            return "CLIPBOARD_UNCHANGED (copy failed?)"
+        }
+
+        let copiedText = pasteboard.string(forType: .string) ?? ""
+
+        // Deselect by pressing Right arrow to move cursor to end
+        if let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 124, keyDown: true) {
+            keyDown.post(tap: .cghidEventTap)
+        }
+        if let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 124, keyDown: false) {
+            keyUp.post(tap: .cghidEventTap)
+        }
+
+        if copiedText == expectedText {
+            return "OK (verified '\(expectedText)')"
+        } else if copiedText.isEmpty {
+            return "EMPTY (expected '\(expectedText)')"
+        } else {
+            return "MISMATCH got='\(copiedText)' expected='\(expectedText)'"
         }
     }
 }

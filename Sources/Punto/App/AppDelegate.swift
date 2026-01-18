@@ -27,6 +27,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let undoTimeout: TimeInterval = 3.0
     private var isConversionInProgress = false  // Prevents race condition with key press clearing undo
     private var ignoreNextInputSourceChange = false  // Ignore notification when we switch layout programmatically
+    private var lastKeyPressTime: Date?  // Track when last key was pressed for debugging timing issues
 
     // MARK: - Application Lifecycle
 
@@ -177,7 +178,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         hotkeyManager = HotkeyManager(
             settingsManager: settingsManager,
             onConvertLayout: { [weak self] in
-                PuntoLog.info(">>> Convert layout triggered <<<")
                 self?.handleConvertLayout()
             },
             onToggleCase: { [weak self] in
@@ -185,6 +185,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.handleToggleCase()
             },
             onKeyPress: { [weak self, weak wordTracker] keyCode, characters in
+                self?.lastKeyPressTime = Date()
                 wordTracker?.trackKeyPress(keyCode: keyCode, characters: characters)
                 // Clear undo on any key press, but only if we're not in the middle of a conversion
                 // This prevents race condition where async key event clears undo right after hotkey
@@ -202,11 +203,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func handleConvertLayout() {
         let startTime = CFAbsoluteTimeGetCurrent()
 
-        // Log which app is frontmost at the start of conversion
-        if let frontApp = NSWorkspace.shared.frontmostApplication {
-            PuntoLog.info(">>> Convert layout triggered <<< (app: '\(frontApp.localizedName ?? "?")' bundle=\(frontApp.bundleIdentifier ?? "?"))")
+        // Log which app is frontmost and time since last keypress
+        let timeSinceLastKey: String
+        if let lastKey = lastKeyPressTime {
+            let elapsed = Date().timeIntervalSince(lastKey) * 1000
+            timeSinceLastKey = String(format: "%.0fms", elapsed)
         } else {
-            PuntoLog.info(">>> Convert layout triggered <<< (no frontmost app)")
+            timeSinceLastKey = "n/a"
+        }
+
+        if let frontApp = NSWorkspace.shared.frontmostApplication {
+            PuntoLog.info(">>> Convert triggered <<< app='\(frontApp.localizedName ?? "?")' sinceLastKey=\(timeSinceLastKey)")
+        } else {
+            PuntoLog.info(">>> Convert triggered <<< (no frontmost app) sinceLastKey=\(timeSinceLastKey)")
         }
 
         guard settingsManager?.isEnabled == true else {
