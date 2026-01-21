@@ -277,7 +277,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         var t1 = CFAbsoluteTimeGetCurrent()
 
         // Normal conversion
-        if let selectedText = textAccessor?.getSelectedText(), !selectedText.isEmpty {
+        // For terminals: skip selected text (doesn't work), use WordTracker only
+        let isTerminal = textAccessor?.isTerminalApp() ?? false
+        if isTerminal {
+            PuntoLog.info("Terminal detected - using WordTracker lineMode")
+            wordTracker?.lineMode = true
+        }
+        
+        if !isTerminal, let selectedText = textAccessor?.getSelectedText(), !selectedText.isEmpty {
             let getTextTime = (CFAbsoluteTimeGetCurrent() - t1) * 1000
             PuntoLog.info("⏱️ getSelectedText: \(String(format: "%.1f", getTextTime))ms")
 

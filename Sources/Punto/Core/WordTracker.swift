@@ -31,6 +31,9 @@ final class WordTracker {
     private let tabKeyCode: UInt16 = 48
     private let escapeKeyCode: UInt16 = 53
     private let spaceKeyCode: UInt16 = 49
+    
+    /// When true, spaces are added to buffer instead of clearing it (for terminals)
+    var lineMode: Bool = false
 
     // Arrow and navigation keys (should clear the buffer)
     private let navigationKeyCodes: Set<UInt16> = [
@@ -87,8 +90,14 @@ final class WordTracker {
             return
         }
 
-        // Space and other word boundaries clear the buffer
+        // Space and other word boundaries clear the buffer (unless lineMode)
         if keyCode == spaceKeyCode || wordBoundaries.contains(firstChar) {
+            if lineMode && keyCode == spaceKeyCode {
+                // In line mode, add space to buffer
+                addCharacter(firstChar)
+                PuntoLog.info("WordTracker: added space in lineMode, buffer now '\(getCurrentBuffer())'")
+                return
+            }
             clear(reason: "word boundary '\(firstChar)'")
             return
         }

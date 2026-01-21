@@ -1,4 +1,22 @@
-# Punto — Quick Reference for Claude Agents
+# Punto — macOS Keyboard Layout Switcher
+
+> **Domain:** macOS tool (Swift)
+> **Location:** `~/Projects/Punto`
+> **Tier:** 1 (Slim reference)
+> **Maturity:** basic
+
+## Quick Context
+- Menu bar app for keyboard layout conversion (EN ↔ RU)
+- Modifier-only hotkey: Cmd+Opt+Shift (no extra key needed)
+- Uses Accessibility API for text manipulation
+- Single-developer Swift project
+
+## Quick Start
+1. Build: `swift build -c release --arch arm64`
+2. Deploy: `cp .build/arm64-apple-macosx/release/Punto /Applications/Punto.app/Contents/MacOS/`
+3. Test: `swift run PuntoTest all`
+
+---
 
 ## What is Punto?
 macOS menu bar app for keyboard layout conversion (Russian ↔ English).
@@ -129,3 +147,34 @@ EN → RU: q→й w→ц e→у r→к t→е y→н u→г i→ш o→щ p→з
 
 ## Full Spec
 See `docs/TECHNICAL_SPEC.md` for complete documentation.
+
+### 8. Terminal Support (Ghostty, iTerm2, Terminal.app)
+Terminals handle keyboard input differently from GUI apps. Special handling:
+
+**lineMode in WordTracker:**
+- When terminal detected, `lineMode = true`
+- Spaces are added to buffer instead of clearing it
+- Whole line is tracked, not just last word
+
+**Deletion:**
+- Uses `Ctrl+U` (clear line) instead of backspaces
+- More reliable than individual backspaces in terminals
+
+**Selection:**
+- Selected text conversion is skipped for terminals
+- Only WordTracker-based conversion is used
+
+**Supported terminals:**
+- Ghostty (`com.mitchellh.ghostty`)
+- iTerm2 (`com.googlecode.iterm2`)
+- Terminal.app (`com.apple.Terminal`)
+- Alacritty (`io.alacritty`)
+- Kitty (`net.kovidgoyal.kitty`)
+
+```swift
+// Detection in TextAccessor.swift
+func isTerminalApp() -> Bool
+
+// lineMode in WordTracker.swift
+var lineMode: Bool = false
+```

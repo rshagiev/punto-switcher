@@ -10,6 +10,22 @@ final class TextAccessor {
     /// If true, setSelectedText should also use clipboard (Cmd+V) since AX won't work
     private var lastGetUsedClipboard = false
 
+    // MARK: - Terminal Detection
+    
+    private static let terminalBundleIDs: Set<String> = [
+        "com.apple.Terminal",
+        "com.googlecode.iterm2",
+        "com.mitchellh.ghostty",
+        "io.alacritty",
+        "net.kovidgoyal.kitty"
+    ]
+    
+    func isTerminalApp() -> Bool {
+        guard let frontApp = NSWorkspace.shared.frontmostApplication,
+              let bundleID = frontApp.bundleIdentifier else { return false }
+        return Self.terminalBundleIDs.contains(bundleID)
+    }
+
     // MARK: - Security Detection
 
     /// Checks if Secure Keyboard Input is enabled (e.g., in Terminal password prompts)
@@ -485,18 +501,33 @@ final class TextAccessor {
         // Using .cghidEventTap which works for most apps
         PuntoLog.info("replaceLastWord: sending \(wordLength) backspaces via cghidEventTap (after 50ms delay)")
         var backspacesSent = 0
-        for i in 0..<wordLength {
-            let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 51, keyDown: true)
-            let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 51, keyDown: false)
-
-            if keyDown == nil || keyUp == nil {
-                PuntoLog.error("replaceLastWord: FAILED to create backspace event #\(i+1)")
-                continue
+        // For terminals: use Ctrl+U to clear line instead of backspaces
+        if isTerminalApp() {
+            PuntoLog.info("replaceLastWord: terminal detected, using Ctrl+U")
+            if let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 32, keyDown: true),
+               let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 32, keyDown: false) {
+                keyDown.flags = .maskControl
+                keyUp.flags = .maskControl
+                keyDown.post(tap: .cghidEventTap)
+                keyUp.post(tap: .cghidEventTap)
+                backspacesSent = wordLength
             }
+            Thread.sleep(forTimeInterval: 0.05)
+        } else {
+            for i in 0..<wordLength {
+                let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 51, keyDown: true)
+                let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 51, keyDown: false)
 
-            keyDown!.post(tap: .cghidEventTap)
-            keyUp!.post(tap: .cghidEventTap)
-            backspacesSent += 1
+                if keyDown == nil || keyUp == nil {
+                    PuntoLog.error("replaceLastWord: FAILED to create backspace event #\(i+1)")
+                    continue
+                }
+
+                keyDown!.post(tap: .cghidEventTap)
+                keyUp!.post(tap: .cghidEventTap)
+                Thread.sleep(forTimeInterval: 0.02)
+                backspacesSent += 1
+            }
         }
         let backspaceTime = Date().timeIntervalSince(startTime) * 1000
         PuntoLog.info("replaceLastWord: \(backspacesSent)/\(wordLength) backspaces sent in \(String(format: "%.1f", backspaceTime))ms, waiting 20ms")
