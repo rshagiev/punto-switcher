@@ -26,6 +26,21 @@ for symbol in "${removed_symbols[@]}"; do
     echo "PASS removed helper absent: $symbol"
 done
 
+debug_inline_core_symbols=(
+    "final class LayoutConverter"
+    "final class WordTracker"
+    "private let enToRu:"
+    "private let wordBoundaries:"
+)
+
+for symbol in "${debug_inline_core_symbols[@]}"; do
+    if rg --fixed-strings --quiet "$symbol" Scripts/debug.sh; then
+        echo "legacy boundary failed: debug script contains inline duplicate core implementation: $symbol" >&2
+        exit 1
+    fi
+    echo "PASS debug inline duplicate absent: $symbol"
+done
+
 /usr/bin/python3 - "$ROOT_DIR/Sources/Punto/Settings/SettingsManager.swift" <<'PY'
 import re
 import sys

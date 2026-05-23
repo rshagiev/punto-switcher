@@ -8,6 +8,7 @@ Punto now has a small importable `PuntoCore` module and a macOS app target.
 - `Punto`: macOS integration layer: app lifecycle, event tap, Accessibility, clipboard, input source switching, status bar, settings UI.
 - `PuntoCoreTest`: executable test harness that imports real `PuntoCore` classes. This exists because the installed CLT Swift toolchain currently does not provide `XCTest` or Swift `Testing`.
 - `PuntoTest`: legacy broad simulation harness. It is still useful, but much of it is copy-based, so it should not be the only regression gate.
+- `PuntoDiag`: command-line diagnostics that exercise real production modules. `Scripts/debug.sh components` delegates to `PuntoCoreTest` and `PuntoDiag`; it must not carry inline copies of `LayoutConverter`, `WordTracker`, or other core logic.
 
 ## Native Punto Switcher Equivalents
 
@@ -178,6 +179,7 @@ Export writes the normalized effective rule set as JSON so user-authored rules c
 - Last-word and auto-correction tracked-tail updates use the same suffix-boundary guard, so a stale/glued tail like `otherghbdtn` cannot be rewritten as if `ghbdtn` were the current word.
 - Production `WordTracker` keeps a larger typed-tail buffer than the compact last-word buffer, so terminal command-tail validation can cover longer commands without making ordinary last-word conversion stale.
 - `PuntoTest` remains copy-heavy. It can catch scenario drift, but it cannot prove production classes still behave the same. High-value cases should keep moving into `PuntoCoreTest`; dash-suffix auto-correction and mapped-punctuation boundaries now exercise production `WordBoundaryPolicy`, `WordTracker`, and `AutoCorrectionReplacementPolicy` directly.
+- Diagnostic scripts should compose production harnesses instead of recreating core classes inline. `Scripts/test-legacy-boundary.sh` now fails if `Scripts/debug.sh` grows duplicate `LayoutConverter` / `WordTracker` implementations again.
 - Per-app layout memory is default-off, exposed in Settings, and persisted through `SettingsManager`. Activation restore is guarded so frontmost-app layout observations cannot corrupt the previous app's remembered layout. Settings also exposes the remembered layout snapshot so stale per-app records can be inspected, removed, or cleared.
 - The observed screen saver engine bundle id is classified as a volatile system context for layout memory. App-context switching still clears text/undo state, but layout restore and remembered-layout writes are skipped for `com.apple.ScreenSaver.Engine`.
 - App context isolation clears typed buffers and undo records on real external app switches, while preserving state when Punto's own window activates.

@@ -873,6 +873,7 @@ tail -f /tmp/punto.log
 ```bash
 # Запуск тестов
 swift run PuntoTest all
+swift run PuntoCoreTest
 
 # Отдельные тесты
 swift run PuntoTest convert   # Тест конвертации
@@ -886,6 +887,7 @@ swift run PuntoTest sim       # Симуляция ввода
 # Проверка прав и состояния
 swift run PuntoDiag all
 swift run PuntoDiag permissions
+./Scripts/debug.sh components  # Production core harnesses, без inline-копий core
 ```
 
 ### Частые проблемы

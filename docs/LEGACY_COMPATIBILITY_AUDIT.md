@@ -74,6 +74,12 @@ settings setters, sound state, startup presentation, status icons, undo
 learning, and user-rule UI now live in `PuntoSwitcherObservedSurface` instead of
 the behavior policies that parse settings or execute native logic.
 
+The boundary also protects diagnostic code from becoming another legacy fork.
+`Scripts/debug.sh components` now runs `PuntoCoreTest` and `PuntoDiag` against
+the production module instead of carrying inline copies of `LayoutConverter` and
+`WordTracker`; the boundary script fails if those duplicate classes or their old
+mapping/boundary tables reappear.
+
 ## Next Candidates
 
 - Continue splitting only the remaining constants where the policy currently
