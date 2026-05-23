@@ -629,27 +629,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 return
             }
 
-            statusBarController?.flashIcon()
-            soundFeedbackController?.play(.layoutConversion)
-            settingsManager?.recordProductStatisticsEvent(.manualSwitch)
-            switchLayoutIfEnabled(replacement.targetLayout, surface: .selectedText)
-
-            if let rewrittenTail = replacement.trackedTailAfterReplacement {
-                wordTracker?.replaceTrackedTail(
-                    with: rewrittenTail,
-                    reason: "terminal selection conversion completed",
-                    suppressAutoCorrectionForCurrentToken: settingsManager?.suppressAutoCorrectionAfterManualConversion
-                        ?? SettingsPersistencePolicy.defaultSuppressAutoCorrectionAfterManualConversion,
-                    russianLayoutType: settingsManager?.russianKeyboardLayoutType
-                        ?? KeyboardLayoutTypePolicy.defaultRussianLayoutType
-                )
-            }
-
-            // Save for undo
-            conversionSession.record(
-                originalText: replacement.capturedText.text,
-                convertedText: replacement.convertedText,
-                replacementMethod: replacement.undoMethod,
+            commitSuccessfulTextReplacement(
+                TextReplacementCommitPolicy.manualSelectedText(
+                    replacement,
+                    suppressAutoCorrectionAfterManualConversion: settingsManager?.suppressAutoCorrectionAfterManualConversion
+                        ?? SettingsPersistencePolicy.defaultSuppressAutoCorrectionAfterManualConversion
+                ),
                 contextID: conversionContextID
             )
 
@@ -672,26 +657,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 return
             }
 
-            wordTracker?.clear(reason: "conversion completed")
-            if let updatedTail = replacement.trackedTailAfterReplacement {
-                wordTracker?.replaceTrackedTail(
-                    with: updatedTail,
-                    reason: "last-word conversion completed",
-                    suppressAutoCorrectionForCurrentToken: settingsManager?.suppressAutoCorrectionAfterManualConversion
-                        ?? SettingsPersistencePolicy.defaultSuppressAutoCorrectionAfterManualConversion,
-                    russianLayoutType: settingsManager?.russianKeyboardLayoutType
-                        ?? KeyboardLayoutTypePolicy.defaultRussianLayoutType
-                )
-            }
-            statusBarController?.flashIcon()
-            soundFeedbackController?.play(.layoutConversion)
-            settingsManager?.recordProductStatisticsEvent(.manualSwitch)
-            switchLayoutIfEnabled(replacement.targetLayout, surface: .lastWord)
-
-            conversionSession.record(
-                originalText: replacement.capturedText.text,
-                convertedText: replacement.convertedText,
-                replacementMethod: replacement.undoMethod,
+            commitSuccessfulTextReplacement(
+                TextReplacementCommitPolicy.manualLastWord(
+                    replacement,
+                    suppressAutoCorrectionAfterManualConversion: settingsManager?.suppressAutoCorrectionAfterManualConversion
+                        ?? SettingsPersistencePolicy.defaultSuppressAutoCorrectionAfterManualConversion
+                ),
                 contextID: conversionContextID
             )
 
@@ -953,22 +924,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 with: replacement.replacementText
             ) ?? false
             if applied {
-                wordTracker?.replaceTrackedTail(
-                    with: replacement.trackedTailAfterReplacement,
-                    reason: "auto-correction completed",
-                    russianLayoutType: settingsManager?.russianKeyboardLayoutType
-                        ?? KeyboardLayoutTypePolicy.defaultRussianLayoutType
+                commitSuccessfulTextReplacement(
+                    TextReplacementCommitPolicy.autoCorrection(decision: decision, replacement: replacement),
+                    contextID: activeApplicationBundleID ?? NSWorkspace.shared.frontmostApplication?.bundleIdentifier
                 )
-                conversionSession.record(
-                    originalText: replacement.originalText,
-                    convertedText: replacement.replacementText,
-                    replacementMethod: replacement.undoMethod,
-                    contextID: activeApplicationBundleID ?? NSWorkspace.shared.frontmostApplication?.bundleIdentifier,
-                    origin: .autoCorrection(rule: decision.rule)
-                )
-                statusBarController?.flashIcon()
-                soundFeedbackController?.play(.autoCorrection)
-                settingsManager?.recordProductStatisticsEvent(.automaticSwitch)
             } else {
                 PuntoLog.info("Auto-correction replacement aborted")
                 clearTrackedTextAfterFailedReplacement(method: replacement.undoMethod)
@@ -1001,23 +960,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             PuntoLog.info("Toggling case for captured text: '\(replacement.originalText)'")
             let keepSelection = TextReplacementPolicy.shouldKeepSelectionAfterReplacement(method: capturedText.replacementMethod)
             if textAccessor?.replaceCapturedText(capturedText, with: replacement.toggledText, keepSelection: keepSelection) == true {
-                if let rewrittenTail = replacement.trackedTailAfterReplacement {
-                    wordTracker?.replaceTrackedTail(
-                        with: rewrittenTail,
-                        reason: "toggle-case completed",
-                        russianLayoutType: settingsManager?.russianKeyboardLayoutType
-                            ?? KeyboardLayoutTypePolicy.defaultRussianLayoutType
-                    )
-                }
-                conversionSession.record(
-                    originalText: replacement.originalText,
-                    convertedText: replacement.toggledText,
-                    replacementMethod: replacement.undoMethod,
-                    contextID: conversionContextID,
-                    origin: .toggleCase
+                commitSuccessfulTextReplacement(
+                    TextReplacementCommitPolicy.toggleCase(replacement),
+                    contextID: conversionContextID
                 )
-                statusBarController?.flashIcon()
-                soundFeedbackController?.play(.toggleCase)
             } else {
                 PuntoLog.info("Toggle case replacement aborted")
                 clearTrackedTextAfterFailedReplacement(method: replacement.undoMethod)
@@ -1038,6 +984,40 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         conversionSession.clear(reason: "auto-correction toggled")
         PuntoLog.info("Auto-correction \(wasEnabled ? "disabled" : "enabled") by hotkey")
         statusBarController?.flashIcon()
+    }
+
+    private func commitSuccessfulTextReplacement(_ plan: TextReplacementCommitPlan, contextID: String?) {
+        if plan.clearTrackedTextBeforeTailCommit {
+            wordTracker?.clear(reason: "conversion completed")
+        }
+
+        if let trackedTailCommit = plan.trackedTailCommit {
+            wordTracker?.replaceTrackedTail(
+                with: trackedTailCommit.text,
+                reason: trackedTailCommit.reason,
+                suppressAutoCorrectionForCurrentToken: trackedTailCommit.suppressAutoCorrectionForCurrentToken,
+                russianLayoutType: settingsManager?.russianKeyboardLayoutType
+                    ?? KeyboardLayoutTypePolicy.defaultRussianLayoutType
+            )
+        }
+
+        if let layoutSwitchCommit = plan.layoutSwitchCommit {
+            switchLayoutIfEnabled(layoutSwitchCommit.targetLayout, surface: layoutSwitchCommit.surface)
+        }
+
+        statusBarController?.flashIcon()
+        soundFeedbackController?.play(plan.soundFeedbackEvent)
+        if let productStatisticsEvent = plan.productStatisticsEvent {
+            settingsManager?.recordProductStatisticsEvent(productStatisticsEvent)
+        }
+
+        conversionSession.record(
+            originalText: plan.conversionRecordCommit.originalText,
+            convertedText: plan.conversionRecordCommit.convertedText,
+            replacementMethod: plan.conversionRecordCommit.replacementMethod,
+            contextID: contextID,
+            origin: plan.conversionRecordCommit.origin
+        )
     }
 
     private func beginReplacementWindow() -> ReplacementWindowAction {
