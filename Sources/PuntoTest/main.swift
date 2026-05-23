@@ -9,26 +9,15 @@ typealias RealWordTracker = PuntoCore.WordTracker
 typealias TestHotkey = PuntoCore.Hotkey
 typealias TestKeyCodeNames = PuntoCore.KeyCodeNames
 
-/// Legacy test adapter over the production WordTracker.
-class TestWordTracker {
-    private let tracker = PuntoCore.WordTracker()
-
-    func trackKeyPress(character: Character) {
-        tracker.trackKeyPress(keyCode: keyCode(for: character), characters: characters(for: character))
+private extension PuntoCore.WordTracker {
+    func trackPuntoTestCharacter(_ character: Character) {
+        trackKeyPress(keyCode: puntoTestKeyCode(for: character), characters: puntoTestCharacters(for: character))
     }
 
-    func getLastWord() -> String {
-        tracker.getLastWord() ?? ""
-    }
-
-    func clear() {
-        tracker.clear(reason: "legacy test adapter")
-    }
-
-    private func keyCode(for character: Character) -> UInt16 {
+    private func puntoTestKeyCode(for character: Character) -> UInt16 {
         switch character {
         case "\u{7F}":
-            return 51
+            return KeyboardEventKeyCodePolicy.backspaceKeyCode
         case "\n", "\r":
             return 36
         case "\t":
@@ -40,7 +29,7 @@ class TestWordTracker {
         }
     }
 
-    private func characters(for character: Character) -> String? {
+    private func puntoTestCharacters(for character: Character) -> String? {
         character == "\u{7F}" ? nil : String(character)
     }
 }
@@ -272,13 +261,13 @@ func runWordTrackingTests() {
     var failed = 0
 
     for test in wordTrackingTests {
-        let tracker = TestWordTracker()
+        let tracker = RealWordTracker()
 
         for char in test.keystrokes {
-            tracker.trackKeyPress(character: char)
+            tracker.trackPuntoTestCharacter(char)
         }
 
-        let result = tracker.getLastWord()
+        let result = tracker.getLastWord() ?? ""
         let success = result == test.expectedWord
 
         if success {
@@ -301,7 +290,7 @@ func runSimulation() {
     print("  TYPING SIMULATION")
     print(String(repeating: "=", count: 50))
 
-    let tracker = TestWordTracker()
+    let tracker = RealWordTracker()
     let converter = TestLayoutConverter()
 
     // Simulate typing "ghbdtn" (привет on English layout)
@@ -309,13 +298,13 @@ func runSimulation() {
     print("\nSimulating typing: '\(typedText)'")
 
     for char in typedText {
-        tracker.trackKeyPress(character: char)
-        print("  Typed '\(char)' -> buffer: '\(tracker.getLastWord())'")
+        tracker.trackPuntoTestCharacter(char)
+        print("  Typed '\(char)' -> buffer: '\(tracker.getLastWord() ?? "")'")
     }
 
     // Simulate hotkey press
     print("\n[HOTKEY PRESSED: Cmd+Opt+Shift]")
-    let lastWord = tracker.getLastWord()
+    let lastWord = tracker.getLastWord() ?? ""
     print("Last word: '\(lastWord)'")
 
     let converted = converter.convert(lastWord)
@@ -326,7 +315,7 @@ func runSimulation() {
     print("  Before: '\(lastWord)'")
     print("  After:  '\(converted)'")
 
-    tracker.clear()
+    tracker.clear(reason: "PuntoTest simulation")
     print("  Buffer cleared")
 
     // Now simulate typing in Russian and converting back
@@ -337,11 +326,11 @@ func runSimulation() {
     print("\nSimulating typing: '\(russianTyped)'")
 
     for char in russianTyped {
-        tracker.trackKeyPress(character: char)
+        tracker.trackPuntoTestCharacter(char)
     }
 
     print("\n[HOTKEY PRESSED: Cmd+Opt+Shift]")
-    let lastWord2 = tracker.getLastWord()
+    let lastWord2 = tracker.getLastWord() ?? ""
     print("Last word: '\(lastWord2)'")
 
     let converted2 = converter.convert(lastWord2)
@@ -454,7 +443,7 @@ func runLongStringTests() {
     print(String(repeating: "=", count: 50))
 
     let converter = TestLayoutConverter()
-    let tracker = TestWordTracker()
+    let tracker = RealWordTracker()
     var passed = 0
     var failed = 0
 
@@ -472,11 +461,11 @@ func runLongStringTests() {
         let conversionOK = input == backConverted
 
         // Test tracking (simulates typing)
-        tracker.clear()
+        tracker.clear(reason: "PuntoTest long string test")
         for char in input {
-            tracker.trackKeyPress(character: char)
+            tracker.trackPuntoTestCharacter(char)
         }
-        let tracked = tracker.getLastWord()
+        let tracked = tracker.getLastWord() ?? ""
         // Buffer is limited to 50, so we expect last 50 chars
         let expectedTracked = String(input.suffix(50))
         let trackingOK = tracked == expectedTracked

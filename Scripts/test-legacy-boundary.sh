@@ -54,6 +54,9 @@ puntotest_copy_heavy_patterns=(
     "TestPassiveClipboardTailPolicy"
     "runTextAccessStrategyTests"
     "TEXT ACCESS STRATEGY TESTS"
+    "class TestWordTracker"
+    "legacy test adapter"
+    "trackKeyPress(character:"
 )
 
 for pattern in "${puntotest_copy_heavy_patterns[@]}"; do
