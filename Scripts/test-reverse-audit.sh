@@ -280,6 +280,8 @@ required_strings=(
     "AXWindowCreated"
     "AXSelectedTextChanged"
     "AXValueChanged"
+    "launchAccessibilityPreferences"
+    "openAccesibilityPrefPane:"
     "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
     "tell application \"System Preferences\""
     "reveal anchor \"Privacy_Accessibility\" of pane id \"com.apple.preference.security\""

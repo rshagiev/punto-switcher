@@ -4457,6 +4457,16 @@ private func runStatusIconPolicyTests() throws {
 
 private func runAccessibilityPreferencesPolicyTests() throws {
     try expect(
+        AccessibilityPreferencesPolicy.observedLaunchAccessibilityPreferencesSelector,
+        "launchAccessibilityPreferences",
+        "accessibility preferences policy pins observed launch selector"
+    )
+    try expect(
+        AccessibilityPreferencesPolicy.observedOpenAccessibilityPrefPaneSelector,
+        "openAccesibilityPrefPane:",
+        "accessibility preferences policy pins observed Accessibility pane opener selector"
+    )
+    try expect(
         AccessibilityPreferencesPolicy.observedSecurityPrivacyPaneID,
         "com.apple.preference.security",
         "accessibility preferences policy preserves observed security pane id"
