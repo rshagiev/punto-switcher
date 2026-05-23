@@ -2115,37 +2115,7 @@ func runRapidConversionTests() {
         failed += 1
     }
 
-    // Test 4: AppDelegate undo state should remain reversible across repeated
-    // modifier-only presses without requiring WordTracker to still have text.
-    print("\n--- Repeated Undo Toggle State ---")
-
-    var currentText = "руддщ"
-    var undoOriginal = "hello"
-    var undoConverted = "руддщ"
-    var repeatedToggleOK = true
-
-    for _ in 0..<10 {
-        if currentText != undoConverted {
-            repeatedToggleOK = false
-            break
-        }
-        currentText = undoOriginal
-        let nextOriginal = undoConverted
-        let nextConverted = undoOriginal
-        undoOriginal = nextOriginal
-        undoConverted = nextConverted
-    }
-
-    if repeatedToggleOK && currentText == "руддщ" && undoOriginal == "hello" && undoConverted == "руддщ" {
-        print("✅ Repeated undo toggle state survives 10 hotkey presses")
-        passed += 1
-    } else {
-        print("❌ Repeated undo toggle state failed")
-        print("   current='\(currentText)', next='\(undoConverted)'")
-        failed += 1
-    }
-
-    // Test 5: Multiple words in sequence
+    // Test 4: Multiple words in sequence
     print("\n--- Multiple Words Sequence ---")
 
     let sentences = [

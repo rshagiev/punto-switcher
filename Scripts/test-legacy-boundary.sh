@@ -47,6 +47,20 @@ if rg --fixed-strings --quiet "Placeholder - actual tests" Tests 2>/dev/null; th
 fi
 echo "PASS placeholder SwiftPM tests absent"
 
+puntotest_copy_heavy_patterns=(
+    "Repeated Undo Toggle State"
+    "var undoOriginal"
+    "var undoConverted"
+)
+
+for pattern in "${puntotest_copy_heavy_patterns[@]}"; do
+    if rg --fixed-strings --quiet "$pattern" Sources/PuntoTest/main.swift; then
+        echo "legacy boundary failed: copy-heavy PuntoTest undo simulation returned: $pattern" >&2
+        exit 1
+    fi
+    echo "PASS PuntoTest copy-heavy undo simulation absent: $pattern"
+done
+
 /usr/bin/python3 - "$ROOT_DIR/Sources/Punto/Settings/SettingsManager.swift" <<'PY'
 import re
 import sys
