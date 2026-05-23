@@ -2232,6 +2232,28 @@ private func runConversionSessionTests() throws {
         contextID: "com.example.editor"
     )
     try expectNil(session.undoCandidate(now: now, contextID: "com.example.editor"), "undo session rejects blocked replacement records")
+
+    let commitSession = ConversionSession(undoTimeout: 3)
+    commitSession.record(
+        ConversionRecordCommit(
+            originalText: "hello",
+            convertedText: "руддщ",
+            replacementMethod: .keyboardBackspacePaste,
+            origin: .layoutConversion
+        ),
+        now: now,
+        contextID: "com.example.editor"
+    )
+    try expect(
+        commitSession.undoCandidate(now: now.addingTimeInterval(1), contextID: "com.example.editor")?.convertedText,
+        "руддщ",
+        "undo session records conversion commit payloads"
+    )
+    try expect(
+        commitSession.undoCandidate(now: now.addingTimeInterval(1), contextID: "com.example.editor")?.origin,
+        .layoutConversion,
+        "undo session preserves commit payload origin"
+    )
 }
 
 private func runUndoReplacementPolicyTests() throws {
@@ -2615,6 +2637,60 @@ private func runUndoRuntimePolicyTests() throws {
     } else {
         throw TestFailure(description: "undo runtime keeps rules when undo learning is disabled: expected replacement plan")
     }
+
+    let repeatSession = ConversionSession(undoTimeout: 3)
+    let repeatContextID = "com.example.editor"
+    var currentText = "руддщ"
+    var currentTime = now
+    repeatSession.record(
+        originalText: "hello",
+        convertedText: "руддщ",
+        replacementMethod: .keyboardBackspacePaste,
+        now: currentTime,
+        contextID: repeatContextID,
+        origin: .layoutConversion
+    )
+
+    for index in 0..<10 {
+        currentTime = currentTime.addingTimeInterval(0.2)
+        guard let record = repeatSession.undoCandidate(now: currentTime, contextID: repeatContextID) else {
+            throw TestFailure(description: "repeat undo/redo scenario step \(index): expected undo candidate")
+        }
+        try expect(
+            record.convertedText,
+            currentText,
+            "repeat undo/redo scenario step \(index) targets current text"
+        )
+
+        guard case .replacement(let repeatPlan) = UndoRuntimePolicy.plan(
+            record: record,
+            autoCorrectionRules: [],
+            isUndoLearningEnabled: false
+        ) else {
+            throw TestFailure(description: "repeat undo/redo scenario step \(index): expected replacement plan")
+        }
+
+        let commitPlan = UndoRuntimePolicy.appliedCommitPlan(for: repeatPlan)
+        currentText = commitPlan.conversionRecordCommit.convertedText
+        repeatSession.record(commitPlan.conversionRecordCommit, now: currentTime, contextID: repeatContextID)
+    }
+
+    try expect(currentText, "руддщ", "repeat undo/redo scenario returns to original visible text after even presses")
+    try expect(
+        repeatSession.undoCandidate(now: currentTime.addingTimeInterval(0.1), contextID: repeatContextID)?.originalText,
+        "hello",
+        "repeat undo/redo scenario leaves next undo original ready"
+    )
+    try expect(
+        repeatSession.undoCandidate(now: currentTime.addingTimeInterval(0.1), contextID: repeatContextID)?.convertedText,
+        "руддщ",
+        "repeat undo/redo scenario leaves next undo converted ready"
+    )
+    try expect(
+        repeatSession.undoCandidate(now: currentTime.addingTimeInterval(0.1), contextID: repeatContextID)?.origin,
+        .layoutConversion,
+        "repeat undo/redo scenario restores layout-conversion origin after even presses"
+    )
 }
 
 private func runTextReplacementCommitPolicyTests() throws {

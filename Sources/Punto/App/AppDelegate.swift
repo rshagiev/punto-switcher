@@ -751,13 +751,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             }
 
-            conversionSession.record(
-                originalText: commitPlan.conversionRecordCommit.originalText,
-                convertedText: commitPlan.conversionRecordCommit.convertedText,
-                replacementMethod: commitPlan.conversionRecordCommit.replacementMethod,
-                contextID: contextID,
-                origin: commitPlan.conversionRecordCommit.origin
-            )
+            conversionSession.record(commitPlan.conversionRecordCommit, contextID: contextID)
 
             return true
         }
@@ -1012,13 +1006,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             settingsManager?.recordProductStatisticsEvent(productStatisticsEvent)
         }
 
-        conversionSession.record(
-            originalText: plan.conversionRecordCommit.originalText,
-            convertedText: plan.conversionRecordCommit.convertedText,
-            replacementMethod: plan.conversionRecordCommit.replacementMethod,
-            contextID: contextID,
-            origin: plan.conversionRecordCommit.origin
-        )
+        conversionSession.record(plan.conversionRecordCommit, contextID: contextID)
     }
 
     private func beginReplacementWindow() -> ReplacementWindowAction {

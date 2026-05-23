@@ -90,6 +90,21 @@ public final class ConversionSession {
         )
     }
 
+    public func record(
+        _ commit: ConversionRecordCommit,
+        now: Date = Date(),
+        contextID: String? = nil
+    ) {
+        record(
+            originalText: commit.originalText,
+            convertedText: commit.convertedText,
+            replacementMethod: commit.replacementMethod,
+            now: now,
+            contextID: contextID,
+            origin: commit.origin
+        )
+    }
+
     public func clear(reason: String = "unknown") {
         if let lastConversion {
             PuntoLog.debug("ConversionSession: clearing last conversion '\(lastConversion.convertedText)' (reason: \(reason))")
