@@ -2428,6 +2428,15 @@ private func runUndoRuntimePolicyTests() throws {
         )),
         "undo runtime plans layout undo with layout switch and manual redo origin"
     )
+    try expect(
+        UndoRuntimePolicy.planFailureAction(record: layoutRecord),
+        UndoPlanFailureAction(
+            clearConversionSession: true,
+            clearConversionSessionReason: "undo plan derivation failed",
+            logMessage: "Undo aborted: replacement plan could not be derived"
+        ),
+        "undo runtime owns plan-failure cleanup and log action"
+    )
     if case .replacement(let layoutUndoPlan) = UndoRuntimePolicy.plan(
         record: layoutRecord,
         autoCorrectionRules: [],
@@ -5930,6 +5939,22 @@ private func runHotkeyRoutingPolicyTests() throws {
         false,
         "enabled transition keeps state when disabled stays disabled"
     )
+    try expect(
+        HotkeyRoutingPolicy.stateClearActionAfterEnabledChange(wasEnabled: true, isEnabled: false),
+        HotkeyRoutingStateClearAction(
+            clearTrackedText: true,
+            clearConversionSession: true,
+            clearTrackedTextReason: "Punto disabled",
+            clearConversionSessionReason: "Punto disabled",
+            logMessage: "Punto disabled - cleared text state"
+        ),
+        "hotkey routing owns global-disable state cleanup action"
+    )
+    try expect(
+        HotkeyRoutingPolicy.stateClearActionAfterEnabledChange(wasEnabled: true, isEnabled: true),
+        HotkeyRoutingStateClearAction(clearTrackedText: false, clearConversionSession: false),
+        "hotkey routing keeps state when enabled state does not transition to disabled"
+    )
 }
 
 private func runKeyTrackingRuntimePolicyTests() throws {
@@ -6502,6 +6527,50 @@ private func runTextTrackingSecurityPolicyTests() throws {
         TextTrackingSecurityPolicy.diagnosticContext(isSecureInputEnabled: true, isPasswordField: true),
         "secure input",
         "text tracking security gives secure input diagnostics priority over password field"
+    )
+    try expect(
+        TextTrackingSecurityPolicy.clearAction(isSecureInputEnabled: false, isPasswordField: false),
+        TextTrackingSecurityClearAction(clearTrackedText: false, clearConversionSession: false),
+        "text tracking security keeps state for normal clear action"
+    )
+    try expect(
+        TextTrackingSecurityPolicy.clearAction(isSecureInputEnabled: true, isPasswordField: false),
+        TextTrackingSecurityClearAction(
+            clearTrackedText: true,
+            clearConversionSession: true,
+            clearTrackedTextReason: "secure text input",
+            clearConversionSessionReason: "secure text input",
+            shouldWriteDiagnostics: true,
+            diagnosticContext: "secure input",
+            logMessage: "Secure/password input - cleared text state"
+        ),
+        "text tracking security owns secure-input state cleanup action"
+    )
+    try expect(
+        TextTrackingSecurityPolicy.clearAction(isSecureInputEnabled: false, isPasswordField: true),
+        TextTrackingSecurityClearAction(
+            clearTrackedText: true,
+            clearConversionSession: true,
+            clearTrackedTextReason: "secure text input",
+            clearConversionSessionReason: "secure text input",
+            shouldWriteDiagnostics: true,
+            diagnosticContext: "password field",
+            logMessage: "Secure/password input - cleared text state"
+        ),
+        "text tracking security owns password-field state cleanup action"
+    )
+    try expect(
+        TextTrackingSecurityPolicy.clearAction(isSecureInputEnabled: true, isPasswordField: true),
+        TextTrackingSecurityClearAction(
+            clearTrackedText: true,
+            clearConversionSession: true,
+            clearTrackedTextReason: "secure text input",
+            clearConversionSessionReason: "secure text input",
+            shouldWriteDiagnostics: true,
+            diagnosticContext: "secure input",
+            logMessage: "Secure/password input - cleared text state"
+        ),
+        "text tracking security gives secure input priority in combined cleanup action"
     )
     try expect(
         TextTrackingSecurityPolicy.isPasswordLikeAccessibilityElement(role: "AXTextField", subrole: "AXSecureTextField"),

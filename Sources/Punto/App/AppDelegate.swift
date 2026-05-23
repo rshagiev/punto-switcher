@@ -696,9 +696,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .noCandidate:
             return false
 
-        case .planFailure:
-            PuntoLog.info("Undo aborted: replacement plan could not be derived")
-            conversionSession.clear(reason: "undo plan derivation failed")
+        case .planFailure(let record):
+            let action = UndoRuntimePolicy.planFailureAction(record: record)
+            if let logMessage = action.logMessage {
+                PuntoLog.info(logMessage)
+            }
+            if action.clearConversionSession,
+               let reason = action.clearConversionSessionReason {
+                conversionSession.clear(reason: reason)
+            }
             return true
 
         case .replacement(let plan):
@@ -1134,30 +1140,40 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func handleGlobalEnabledChanged(wasEnabled: Bool, isEnabled: Bool) {
-        guard HotkeyRoutingPolicy.shouldClearStateAfterEnabledChange(
+        let action = HotkeyRoutingPolicy.stateClearActionAfterEnabledChange(
             wasEnabled: wasEnabled,
             isEnabled: isEnabled
-        ) else {
-            return
-        }
+        )
 
-        wordTracker?.clear(reason: "Punto disabled")
-        conversionSession.clear(reason: "Punto disabled")
-        PuntoLog.info("Punto disabled - cleared text state")
+        if action.clearTrackedText, let reason = action.clearTrackedTextReason {
+            wordTracker?.clear(reason: reason)
+        }
+        if action.clearConversionSession, let reason = action.clearConversionSessionReason {
+            conversionSession.clear(reason: reason)
+        }
+        if let logMessage = action.logMessage {
+            PuntoLog.info(logMessage)
+        }
     }
 
     private func clearTextStateForSecureInput(context: String = "secure input") {
-        guard TextTrackingSecurityPolicy.shouldClearTrackedState(
-            isSecureInputEnabled: true,
-            isPasswordField: true
-        ) else {
-            return
-        }
+        let action = TextTrackingSecurityPolicy.clearAction(
+            isSecureInputEnabled: context == "secure input",
+            isPasswordField: context == "password field"
+        )
 
-        wordTracker?.clear(reason: "secure text input")
-        conversionSession.clear(reason: "secure text input")
-        writeSecureInputDiagnostics(context: context)
-        PuntoLog.info("Secure/password input - cleared text state")
+        if action.clearTrackedText, let reason = action.clearTrackedTextReason {
+            wordTracker?.clear(reason: reason)
+        }
+        if action.clearConversionSession, let reason = action.clearConversionSessionReason {
+            conversionSession.clear(reason: reason)
+        }
+        if action.shouldWriteDiagnostics, let diagnosticContext = action.diagnosticContext {
+            writeSecureInputDiagnostics(context: diagnosticContext)
+        }
+        if let logMessage = action.logMessage {
+            PuntoLog.info(logMessage)
+        }
     }
 
     private func writeSecureInputDiagnostics(context: String) {

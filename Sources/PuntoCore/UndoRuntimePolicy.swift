@@ -59,6 +59,22 @@ public enum UndoRuntimePlan: Equatable {
     case replacement(UndoRuntimeReplacement)
 }
 
+public struct UndoPlanFailureAction: Equatable {
+    public let clearConversionSession: Bool
+    public let clearConversionSessionReason: String?
+    public let logMessage: String?
+
+    public init(
+        clearConversionSession: Bool,
+        clearConversionSessionReason: String? = nil,
+        logMessage: String? = nil
+    ) {
+        self.clearConversionSession = clearConversionSession
+        self.clearConversionSessionReason = clearConversionSessionReason
+        self.logMessage = logMessage
+    }
+}
+
 public enum UndoRuntimePolicy {
     public static func plan(
         record: ConversionRecord?,
@@ -84,6 +100,14 @@ public enum UndoRuntimePolicy {
                 isUndoLearningEnabled: isUndoLearningEnabled
             )
         ))
+    }
+
+    public static func planFailureAction(record: ConversionRecord) -> UndoPlanFailureAction {
+        UndoPlanFailureAction(
+            clearConversionSession: true,
+            clearConversionSessionReason: "undo plan derivation failed",
+            logMessage: "Undo aborted: replacement plan could not be derived"
+        )
     }
 
     public static func appliedCommitPlan(
