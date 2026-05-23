@@ -7972,6 +7972,74 @@ private func runToggleCasePolicyTests() throws {
     )
 }
 
+private func runToggleCaseConversionPolicyTests() throws {
+    let axCapture = CapturedText(
+        text: "Hello",
+        replacementMethod: .accessibilitySelection,
+        source: "AX editable selection"
+    )
+    try expect(
+        ToggleCaseConversionPolicy.plan(capturedText: axCapture),
+        .capturedText(
+            capture: axCapture,
+            replacement: ToggleCaseReplacement(
+                originalText: "Hello",
+                toggledText: "hELLO",
+                undoMethod: .accessibilitySelection,
+                trackedTailAfterReplacement: nil
+            )
+        ),
+        "toggle-case conversion policy plans editable selected text"
+    )
+
+    let tailCapture = CapturedText(
+        text: "commit",
+        replacementMethod: .keyboardRewriteTail(originalTail: "git commit"),
+        source: "AX non-settable command-tail selection"
+    )
+    try expect(
+        ToggleCaseConversionPolicy.plan(capturedText: tailCapture),
+        .capturedText(
+            capture: tailCapture,
+            replacement: ToggleCaseReplacement(
+                originalText: "commit",
+                toggledText: "COMMIT",
+                undoMethod: .keyboardRewriteTail(originalTail: "git COMMIT"),
+                trackedTailAfterReplacement: "git COMMIT"
+            )
+        ),
+        "toggle-case conversion policy plans terminal-tail selected text"
+    )
+
+    try expect(
+        ToggleCaseConversionPolicy.plan(capturedText: CapturedText(
+            text: "Hello",
+            replacementMethod: .blocked,
+            source: "unsafe stale clipboard fallback"
+        )),
+        .blockedCapture(CapturedText(
+            text: "Hello",
+            replacementMethod: .blocked,
+            source: "unsafe stale clipboard fallback"
+        )),
+        "toggle-case conversion policy blocks unsafe capture"
+    )
+    try expect(
+        ToggleCaseConversionPolicy.plan(capturedText: CapturedText(
+            text: "",
+            replacementMethod: .accessibilitySelection,
+            source: "empty selection"
+        )),
+        .noText,
+        "toggle-case conversion policy reports empty capture as no text"
+    )
+    try expect(
+        ToggleCaseConversionPolicy.plan(capturedText: nil),
+        .noText,
+        "toggle-case conversion policy reports nil capture as no text"
+    )
+}
+
 private func runAutoCorrectionEngineTests() throws {
     let engine = AutoCorrectionEngine(rules: [
         AutoCorrectionRule(trigger: "ghbdtn", replacement: "привет"),
@@ -8293,6 +8361,106 @@ private func runAutoCorrectionReplacementPolicyTests() throws {
         AutoCorrectionReplacementPolicy.shouldClearConversionSessionAfterPlanFailure(),
         true,
         "auto-correction clears stale undo session after replacement plan failure"
+    )
+}
+
+private func runAutoCorrectionRuntimePolicyTests() throws {
+    let token = WordTracker.CompletedToken(word: "ghbdtn", separator: " ")
+    let suppressedToken = WordTracker.CompletedToken(
+        word: "ghbdtn",
+        separator: " ",
+        isAutoCorrectionSuppressed: true
+    )
+
+    try expect(
+        AutoCorrectionRuntimePolicy.routePreflightAction(
+            isEnabled: true,
+            autoCorrectionEnabled: true,
+            isConversionInProgress: false,
+            isCurrentApplicationDisabled: false,
+            token: token
+        ),
+        .proceed,
+        "auto-correction runtime route proceeds for enabled completed token"
+    )
+    try expect(
+        AutoCorrectionRuntimePolicy.routePreflightAction(
+            isEnabled: false,
+            autoCorrectionEnabled: true,
+            isConversionInProgress: false,
+            isCurrentApplicationDisabled: false,
+            token: token
+        ),
+        .consumeTokenAndSkip(reason: "Punto disabled"),
+        "auto-correction runtime route consumes token when Punto is disabled"
+    )
+    try expect(
+        AutoCorrectionRuntimePolicy.routePreflightAction(
+            isEnabled: true,
+            autoCorrectionEnabled: true,
+            isConversionInProgress: false,
+            isCurrentApplicationDisabled: false,
+            token: suppressedToken
+        ),
+        .consumeTokenAndSkip(reason: "completed token auto-correction cancelled"),
+        "auto-correction runtime route consumes suppressed token"
+    )
+    try expect(
+        AutoCorrectionRuntimePolicy.securityPreflightAction(
+            token: token,
+            isSecureInputEnabled: false,
+            isPasswordField: true
+        ),
+        .blockAndClear(reason: "password field"),
+        "auto-correction runtime security blocks password fields"
+    )
+    try expect(
+        AutoCorrectionRuntimePolicy.securityPreflightAction(
+            token: token,
+            isSecureInputEnabled: true,
+            isPasswordField: true
+        ),
+        .blockAndClear(reason: "secure input"),
+        "auto-correction runtime security prioritizes secure input"
+    )
+
+    let rule = AutoCorrectionRule(trigger: "ghbdtn", replacement: "привет")
+    let engine = AutoCorrectionEngine(rules: [rule])
+    try expect(
+        AutoCorrectionRuntimePolicy.replacementPlan(
+            token: token,
+            trackedTailBeforeCorrection: "say ghbdtn ",
+            engine: engine
+        ),
+        .replacement(
+            decision: AutoCorrectionDecision(original: "ghbdtn", replacement: "привет", rule: rule),
+            replacement: AutoCorrectionReplacement(
+                originalText: "ghbdtn ",
+                replacementText: "привет ",
+                replacementLength: 7,
+                undoMethod: .keyboardBackspacePaste,
+                trackedTailAfterReplacement: "say привет "
+            )
+        ),
+        "auto-correction runtime derives executable replacement plan"
+    )
+    try expect(
+        AutoCorrectionRuntimePolicy.replacementPlan(
+            token: WordTracker.CompletedToken(word: "unknown", separator: " "),
+            trackedTailBeforeCorrection: "unknown ",
+            engine: engine
+        ),
+        .noCorrection,
+        "auto-correction runtime reports no correction without a matching rule"
+    )
+    try expect(
+        AutoCorrectionRuntimePolicy.replacementPlan(
+            token: WordTracker.CompletedToken(word: "ghbdtn", separator: ""),
+            trackedTailBeforeCorrection: "ghbdtn",
+            engine: engine
+        ),
+        .planFailure(decision: AutoCorrectionDecision(original: "ghbdtn", replacement: "привет", rule: rule)),
+        "auto-correction runtime reports plan failure for invalid completed token boundary"
     )
 }
 
@@ -9292,9 +9460,11 @@ do {
     try runSearchbarSettingsPolicyTests()
     try runCaseConverterTests()
     try runToggleCasePolicyTests()
+    try runToggleCaseConversionPolicyTests()
     try runAutoCorrectionEngineTests()
     try runAutoCorrectionPreflightPolicyTests()
     try runAutoCorrectionReplacementPolicyTests()
+    try runAutoCorrectionRuntimePolicyTests()
     try runAutoCorrectionUndoLearningPolicyTests()
     try runAutoCorrectionRuleStoreTests()
     try runAutoCorrectionRuleSourcePolicyTests()

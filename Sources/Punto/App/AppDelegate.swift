@@ -873,18 +873,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let statisticsEvent = ProductStatisticsPolicy.eventAfterCompletedTokenConsumption(token != nil) {
             settingsManager?.recordProductStatisticsEvent(statisticsEvent)
         }
-        let routePreflight = AutoCorrectionPreflightPolicy.action(
+        let routePreflight = AutoCorrectionRuntimePolicy.routePreflightAction(
             isEnabled: settingsManager?.isEnabled == true,
             autoCorrectionEnabled: settingsManager?.autoCorrectionEnabled == true,
             autoCorrectOnEnterAndTab: settingsManager?.autoCorrectOnEnterAndTab
                 ?? SettingsPersistencePolicy.defaultAutoCorrectOnEnterAndTab,
             isConversionInProgress: isConversionInProgress,
             isCurrentApplicationDisabled: isCurrentApplicationDisabled(),
-            hasCompletedToken: token != nil,
-            completedTokenSeparator: token?.separator,
-            isCompletedTokenAutoCorrectionSuppressed: token?.isAutoCorrectionSuppressed == true,
-            isSecureInputEnabled: false,
-            isPasswordField: false
+            token: token
         )
 
         switch routePreflight {
@@ -901,16 +897,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         guard let token else { return }
 
-        let securityPreflight = AutoCorrectionPreflightPolicy.action(
-            isEnabled: true,
-            autoCorrectionEnabled: true,
+        let securityPreflight = AutoCorrectionRuntimePolicy.securityPreflightAction(
+            token: token,
             autoCorrectOnEnterAndTab: settingsManager?.autoCorrectOnEnterAndTab
                 ?? SettingsPersistencePolicy.defaultAutoCorrectOnEnterAndTab,
-            isConversionInProgress: false,
-            isCurrentApplicationDisabled: false,
-            hasCompletedToken: true,
-            completedTokenSeparator: token.separator,
-            isCompletedTokenAutoCorrectionSuppressed: token.isAutoCorrectionSuppressed,
             isSecureInputEnabled: textAccessor?.isSecureInputEnabled() == true,
             isPasswordField: textAccessor?.isPasswordField() == true
         )
@@ -926,7 +916,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         reloadAutoCorrectionRules()
         let trackedTailBeforeCorrection = wordTracker?.getTypedTailPreservingBoundaryWhitespace()
 
-        guard let decision = autoCorrectionEngine.correction(for: token.word) else {
+        let plan = AutoCorrectionRuntimePolicy.replacementPlan(
+            token: token,
+            trackedTailBeforeCorrection: trackedTailBeforeCorrection,
+            engine: autoCorrectionEngine
+        )
+
+        if case .noCorrection = plan {
             return
         }
 
@@ -935,43 +931,45 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             finishReplacementWindow()
         }
 
-        guard let replacement = AutoCorrectionReplacementPolicy.replacement(
-            for: decision,
-            completedToken: token,
-            trackedTailBeforeCorrection: trackedTailBeforeCorrection
-        ) else {
+        switch plan {
+        case .noCorrection:
+            return
+
+        case .planFailure:
             PuntoLog.info("Auto-correction aborted: replacement plan could not be derived")
             if AutoCorrectionReplacementPolicy.shouldClearConversionSessionAfterPlanFailure() {
                 conversionSession.clear(reason: "auto-correction plan derivation failed")
             }
             return
-        }
-        PuntoLog.info("Auto-correcting completed word '\(decision.original)' -> '\(decision.replacement)'")
 
-        let applied = textAccessor?.replaceRecentText(
-            length: replacement.replacementLength,
-            with: replacement.replacementText
-        ) ?? false
-        if applied {
-            wordTracker?.replaceTrackedTail(
-                with: replacement.trackedTailAfterReplacement,
-                reason: "auto-correction completed",
-                russianLayoutType: settingsManager?.russianKeyboardLayoutType
-                    ?? KeyboardLayoutTypePolicy.defaultRussianLayoutType
-            )
-            conversionSession.record(
-                originalText: replacement.originalText,
-                convertedText: replacement.replacementText,
-                replacementMethod: replacement.undoMethod,
-                contextID: activeApplicationBundleID ?? NSWorkspace.shared.frontmostApplication?.bundleIdentifier,
-                origin: .autoCorrection(rule: decision.rule)
-            )
-            statusBarController?.flashIcon()
-            soundFeedbackController?.play(.autoCorrection)
-            settingsManager?.recordProductStatisticsEvent(.automaticSwitch)
-        } else {
-            PuntoLog.info("Auto-correction replacement aborted")
-            clearTrackedTextAfterFailedReplacement(method: replacement.undoMethod)
+        case .replacement(let decision, let replacement):
+            PuntoLog.info("Auto-correcting completed word '\(decision.original)' -> '\(decision.replacement)'")
+
+            let applied = textAccessor?.replaceRecentText(
+                length: replacement.replacementLength,
+                with: replacement.replacementText
+            ) ?? false
+            if applied {
+                wordTracker?.replaceTrackedTail(
+                    with: replacement.trackedTailAfterReplacement,
+                    reason: "auto-correction completed",
+                    russianLayoutType: settingsManager?.russianKeyboardLayoutType
+                        ?? KeyboardLayoutTypePolicy.defaultRussianLayoutType
+                )
+                conversionSession.record(
+                    originalText: replacement.originalText,
+                    convertedText: replacement.replacementText,
+                    replacementMethod: replacement.undoMethod,
+                    contextID: activeApplicationBundleID ?? NSWorkspace.shared.frontmostApplication?.bundleIdentifier,
+                    origin: .autoCorrection(rule: decision.rule)
+                )
+                statusBarController?.flashIcon()
+                soundFeedbackController?.play(.autoCorrection)
+                settingsManager?.recordProductStatisticsEvent(.automaticSwitch)
+            } else {
+                PuntoLog.info("Auto-correction replacement aborted")
+                clearTrackedTextAfterFailedReplacement(method: replacement.undoMethod)
+            }
         }
     }
 
@@ -991,16 +989,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let lastTrackedTail = wordTracker?.getTypedTail()
         let capturedText = textAccessor?.captureSelectedText(lastTrackedWord: lastTrackedWord, lastTrackedTail: lastTrackedTail)
 
-        if let capturedText = capturedText, TextCapturePolicy.shouldStopAfterBlockedCapture(capturedText) {
+        switch ToggleCaseConversionPolicy.plan(capturedText: capturedText) {
+        case .blockedCapture(let capturedText):
             PuntoLog.info("Toggle case blocked unsafe selection fallback: \(capturedText.source)")
             clearStateAfterBlockedCapture(capturedText)
-            return
-        } else if let capturedText = capturedText, !capturedText.text.isEmpty {
-            PuntoLog.info("Toggling case for captured text (\(capturedText.source)): '\(capturedText.text)'")
-            guard let replacement = ToggleCasePolicy.replacement(for: capturedText) else {
-                PuntoLog.info("Toggle case aborted: replacement plan could not be derived")
-                return
-            }
+
+        case .capturedText(let capturedText, let replacement):
+            PuntoLog.info("Toggling case for captured text: '\(replacement.originalText)'")
             let keepSelection = TextReplacementPolicy.shouldKeepSelectionAfterReplacement(method: capturedText.replacementMethod)
             if textAccessor?.replaceCapturedText(capturedText, with: replacement.toggledText, keepSelection: keepSelection) == true {
                 if let rewrittenTail = replacement.trackedTailAfterReplacement {
@@ -1022,9 +1017,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 soundFeedbackController?.play(.toggleCase)
             } else {
                 PuntoLog.info("Toggle case replacement aborted")
-                clearTrackedTextAfterFailedReplacement(method: capturedText.replacementMethod)
+                clearTrackedTextAfterFailedReplacement(method: replacement.undoMethod)
             }
-        } else {
+
+        case .skipped:
+            PuntoLog.info("Toggle case aborted: replacement plan could not be derived")
+
+        case .noText:
             PuntoLog.info("Toggle case: no selected text")
         }
     }
