@@ -4,11 +4,21 @@ public struct ApplicationDisableToggleAction: Equatable {
     public let bundleID: String
     public let disabled: Bool
     public let shouldClearState: Bool
+    public let clearTrackedTextReason: String?
+    public let clearConversionSessionReason: String?
 
-    public init(bundleID: String, disabled: Bool, shouldClearState: Bool) {
+    public init(
+        bundleID: String,
+        disabled: Bool,
+        shouldClearState: Bool,
+        clearTrackedTextReason: String? = nil,
+        clearConversionSessionReason: String? = nil
+    ) {
         self.bundleID = bundleID
         self.disabled = disabled
         self.shouldClearState = shouldClearState
+        self.clearTrackedTextReason = clearTrackedTextReason
+        self.clearConversionSessionReason = clearConversionSessionReason
     }
 }
 
@@ -103,8 +113,18 @@ public enum ApplicationDisablePolicy {
         return ApplicationDisableToggleAction(
             bundleID: bundleID,
             disabled: nextDisabled,
-            shouldClearState: nextDisabled
+            shouldClearState: nextDisabled,
+            clearTrackedTextReason: nextDisabled ? "disabled current app" : nil,
+            clearConversionSessionReason: nextDisabled ? "disabled current app" : nil
         )
+    }
+
+    public static func toggleLogMessage(
+        action: ApplicationDisableToggleAction,
+        applicationName: String?
+    ) -> String {
+        let name = normalizedDisplayName(applicationName) ?? action.bundleID
+        return "\(action.disabled ? "Disabled" : "Enabled") Punto in app '\(name)' (\(action.bundleID))"
     }
 
     public static func menuStateForCurrentApplication(

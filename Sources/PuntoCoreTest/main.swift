@@ -4863,7 +4863,9 @@ private func runApplicationDisablePolicyTests() throws {
         ApplicationDisableToggleAction(
             bundleID: "com.example.editor",
             disabled: true,
-            shouldClearState: true
+            shouldClearState: true,
+            clearTrackedTextReason: "disabled current app",
+            clearConversionSessionReason: "disabled current app"
         ),
         "application disable policy disables current external app and clears state"
     )
@@ -4879,6 +4881,32 @@ private func runApplicationDisablePolicyTests() throws {
             shouldClearState: false
         ),
         "application disable policy re-enables current external app without clearing state"
+    )
+    try expect(
+        ApplicationDisablePolicy.toggleLogMessage(
+            action: ApplicationDisableToggleAction(
+                bundleID: "com.example.editor",
+                disabled: true,
+                shouldClearState: true,
+                clearTrackedTextReason: "disabled current app",
+                clearConversionSessionReason: "disabled current app"
+            ),
+            applicationName: " TextEdit "
+        ),
+        "Disabled Punto in app 'TextEdit' (com.example.editor)",
+        "application disable policy trims display name in toggle log"
+    )
+    try expect(
+        ApplicationDisablePolicy.toggleLogMessage(
+            action: ApplicationDisableToggleAction(
+                bundleID: "com.example.editor",
+                disabled: false,
+                shouldClearState: false
+            ),
+            applicationName: "   "
+        ),
+        "Enabled Punto in app 'com.example.editor' (com.example.editor)",
+        "application disable policy falls back to bundle id in toggle log"
     )
     try expectNil(
         ApplicationDisablePolicy.toggleAction(
@@ -4965,6 +4993,31 @@ private func runApplicationDisablePolicyTests() throws {
             isChecked: false
         ),
         "application disable policy disables menu action without current bundle id"
+    )
+}
+
+private func runAutoCorrectionTogglePolicyTests() throws {
+    try expect(
+        AutoCorrectionTogglePolicy.action(wasEnabled: true),
+        AutoCorrectionToggleAction(
+            newEnabledValue: false,
+            clearTrackedTextReason: "auto-correction toggled",
+            clearConversionSessionReason: "auto-correction toggled",
+            logMessage: "Auto-correction disabled by hotkey",
+            shouldFlashIcon: true
+        ),
+        "auto-correction toggle policy disables enabled setting and clears runtime state"
+    )
+    try expect(
+        AutoCorrectionTogglePolicy.action(wasEnabled: false),
+        AutoCorrectionToggleAction(
+            newEnabledValue: true,
+            clearTrackedTextReason: "auto-correction toggled",
+            clearConversionSessionReason: "auto-correction toggled",
+            logMessage: "Auto-correction enabled by hotkey",
+            shouldFlashIcon: true
+        ),
+        "auto-correction toggle policy enables disabled setting and clears runtime state"
     )
 }
 
@@ -10428,6 +10481,7 @@ do {
     try runStartupPresentationPolicyTests()
     try runLayoutSwitchPolicyTests()
     try runApplicationDisablePolicyTests()
+    try runAutoCorrectionTogglePolicyTests()
     try runStatusIconPolicyTests()
     try runAccessibilityPreferencesPolicyTests()
     try runInputSourceChangePolicyTests()

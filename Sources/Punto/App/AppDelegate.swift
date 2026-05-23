@@ -966,12 +966,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func handleToggleAutoCorrection() {
-        let wasEnabled = settingsManager?.autoCorrectionEnabled == true
-        settingsManager?.autoCorrectionEnabled = !wasEnabled
-        wordTracker?.clear(reason: "auto-correction toggled")
-        conversionSession.clear(reason: "auto-correction toggled")
-        PuntoLog.info("Auto-correction \(wasEnabled ? "disabled" : "enabled") by hotkey")
-        statusBarController?.flashIcon()
+        let action = AutoCorrectionTogglePolicy.action(
+            wasEnabled: settingsManager?.autoCorrectionEnabled == true
+        )
+        settingsManager?.autoCorrectionEnabled = action.newEnabledValue
+        wordTracker?.clear(reason: action.clearTrackedTextReason)
+        conversionSession.clear(reason: action.clearConversionSessionReason)
+        PuntoLog.info(action.logMessage)
+        if action.shouldFlashIcon {
+            statusBarController?.flashIcon()
+        }
     }
 
     private func commitSuccessfulTextReplacement(_ plan: TextReplacementCommitPlan, contextID: String?) {
@@ -1114,11 +1118,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         settingsManager?.setApplicationDisabled(bundleID: action.bundleID, disabled: action.disabled)
-        if action.shouldClearState {
-            wordTracker?.clear(reason: "disabled current app")
-            conversionSession.clear(reason: "disabled current app")
+        if action.shouldClearState,
+           let clearTrackedTextReason = action.clearTrackedTextReason,
+           let clearConversionSessionReason = action.clearConversionSessionReason {
+            wordTracker?.clear(reason: clearTrackedTextReason)
+            conversionSession.clear(reason: clearConversionSessionReason)
         }
-        PuntoLog.info("\(action.disabled ? "Disabled" : "Enabled") Punto in app '\(activeApplicationName ?? action.bundleID)' (\(action.bundleID))")
+        PuntoLog.info(ApplicationDisablePolicy.toggleLogMessage(
+            action: action,
+            applicationName: activeApplicationName
+        ))
     }
 
     private func handleGlobalEnabledChanged(wasEnabled: Bool, isEnabled: Bool) {
