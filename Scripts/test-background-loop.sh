@@ -46,6 +46,7 @@ run_loop() {
     while [[ "$(date +%s)" -lt "$end_ts" ]]; do
         echo "=== iteration ${iteration} started at $(date) ==="
         ./Scripts/test-reverse-audit.sh
+        ./Scripts/test-legacy-boundary.sh
         swift run PuntoCoreTest
         swift run PuntoTest all
         swift run PuntoDiag converter
@@ -66,6 +67,7 @@ if [[ "${PUNTO_BG_TEST_CHILD:-}" == "1" ]]; then
     exec >> "$LOG_FILE" 2>&1
     trap 'rm -f "$PID_FILE"' EXIT
     run_loop
+    launchctl remove "$LAUNCH_LABEL" >/dev/null 2>&1 || true
     exit 0
 fi
 

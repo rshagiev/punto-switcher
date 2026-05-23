@@ -65,12 +65,15 @@ legacy booleans as well as the native state so imported `isFirstInstallation`,
 removed legacy export helpers return, and it scans `SettingsManager` writes so
 native-owned settings cannot start writing Punto Switcher plist keys again by
 accident. The script is part of `Scripts/test-cycle.sh`, alongside the reverse
-audit that still pins observed Punto Switcher evidence.
+audit that still pins observed Punto Switcher evidence. Reverse-audit-only
+selectors, class names, resources, and tooltip/window identifiers for cancelling
+keys, undo learning, and user-rule UI now live in `PuntoSwitcherObservedSurface`
+instead of the behavior policies that parse settings or execute native logic.
 
 ## Next Candidates
 
-- Split reverse-audit constants from behavior policies where the constants are
-  only test anchors.
+- Continue splitting reverse-audit constants from behavior policies where the
+  constants are only test anchors.
 - Add an explicit export path if we ever need to generate Punto Switcher-shaped
   settings intentionally; keep routine runtime writes native-only.
 - Keep searchbar/click-search split this way: selected-text Yandex shortcuts and

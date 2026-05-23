@@ -21,22 +21,6 @@ public enum UndoLearningSettingsPolicy {
     public static let undoCollectionEnabledKey = "undoCollectionEnabled"
     public static let mustShowUndoWindowKey = "mustShowUndoWindow"
     public static let undoDictionaryKey = "undoDictionary"
-    public static let observedSetUndoCollectionEnabledSelector = "setUndoCollectionEnabled:"
-    public static let observedSetMustShowUndoWindowSelector = "setMustShowUndoWindow:"
-    public static let observedSetUndoDictionarySelector = "setUndoDictionary:"
-    public static let observedUndoWindowControllerClassName = "UndoWindowController"
-    public static let observedUndoWindowDelegateProtocolName = "UndoWindowDelegate"
-    public static let observedUndoWindowResourceName = "UndoWindow"
-    public static let observedUndoAlertFormatKey = "PMUserRuleUndoAlertFormat"
-    public static let observedShowUndoLearningWindowCheckboxChangedSelector = "showUndoLearningWindowCheckboxChanged:"
-    public static let observedUndoLearningCheckboxChangedSelector = "undoLearningCheckboxChanged:"
-    public static let observedUndoLearningCheckboxKey = "undoLearningCheckbox"
-    public static let observedShowUndoLearningWindowCheckboxKey = "showUndoLearningWindowCheckbox"
-    public static let observedUndoTriesKey = "undoTries"
-    public static let observedUndoPersistsKey = "undoPersists"
-    public static let observedUndoWasDoneKey = "undoWasDone"
-    public static let observedUndoConvertionSelector = "undoConvertion"
-    public static let observedResetUndoBufferSelector = "resetUndoBuffer"
 
     public static let defaultSnapshot = UndoLearningSettingsSnapshot(
         undoCollectionEnabled: false,

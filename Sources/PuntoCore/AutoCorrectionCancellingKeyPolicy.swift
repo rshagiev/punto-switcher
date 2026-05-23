@@ -1,20 +1,12 @@
 import Foundation
 
 public enum AutoCorrectionCancellingKeyPolicy {
-    public static let observedSetCancellingKeyStateSelector = "setCancellingKeyState:doEnable:"
     public static let observedBackspaceName = "dontAutoconvertWordWithBackspace"
     public static let observedDeleteName = "dontAutoconvertWordWithDelete"
     public static let observedLeftArrowName = "dontAutoconvertWordWithLeftArrow"
     public static let observedRightArrowName = "dontAutoconvertWordWithRightArrow"
     public static let observedUpArrowName = "dontAutoconvertWordWithUpArrow"
     public static let observedDownArrowName = "dontAutoconvertWordWithDownArrow"
-    public static let observedBackspaceSelector = "dontAutoconvertWordWithBackspace:"
-    public static let observedDeleteSelector = "dontAutoconvertWordWithDelete:"
-    public static let observedLeftArrowSelector = "dontAutoconvertWordWithLeftArrow:"
-    public static let observedRightArrowSelector = "dontAutoconvertWordWithRightArrow:"
-    public static let observedUpArrowSelector = "dontAutoconvertWordWithUpArrow:"
-    public static let observedDownArrowSelector = "dontAutoconvertWordWithDownArrow:"
-
     public static let backspace = "backspace"
     public static let delete = "delete"
     public static let leftArrow = "leftArrow"
@@ -49,12 +41,12 @@ public enum AutoCorrectionCancellingKeyPolicy {
         observedRightArrowName: rightArrow,
         observedUpArrowName: upArrow,
         observedDownArrowName: downArrow,
-        observedBackspaceSelector: backspace,
-        observedDeleteSelector: delete,
-        observedLeftArrowSelector: leftArrow,
-        observedRightArrowSelector: rightArrow,
-        observedUpArrowSelector: upArrow,
-        observedDownArrowSelector: downArrow
+        PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.backspaceSelector: backspace,
+        PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.deleteSelector: delete,
+        PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.leftArrowSelector: leftArrow,
+        PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.rightArrowSelector: rightArrow,
+        PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.upArrowSelector: upArrow,
+        PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.downArrowSelector: downArrow
     ]
 
     private static let canonicalNamesByLowercaseName: [String: String] = {

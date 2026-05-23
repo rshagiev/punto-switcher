@@ -433,39 +433,39 @@ private func runWordTrackerTests() throws {
             "auto-correction cancelling key policy mirrors supported Punto Switcher cancelling key names"
         )
         try expect(
-            AutoCorrectionCancellingKeyPolicy.observedSetCancellingKeyStateSelector,
+            PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.setCancellingKeyStateSelector,
             "setCancellingKeyState:doEnable:",
-            "auto-correction cancelling key policy preserves observed setter selector"
+            "observed surface preserves auto-correction cancelling-key setter selector"
         )
         try expect(
-            AutoCorrectionCancellingKeyPolicy.observedBackspaceSelector,
+            PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.backspaceSelector,
             "dontAutoconvertWordWithBackspace:",
-            "auto-correction cancelling key policy preserves observed backspace selector"
+            "observed surface preserves auto-correction cancelling-key backspace selector"
         )
         try expect(
-            AutoCorrectionCancellingKeyPolicy.observedDeleteSelector,
+            PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.deleteSelector,
             "dontAutoconvertWordWithDelete:",
-            "auto-correction cancelling key policy preserves observed delete selector"
+            "observed surface preserves auto-correction cancelling-key delete selector"
         )
         try expect(
-            AutoCorrectionCancellingKeyPolicy.observedLeftArrowSelector,
+            PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.leftArrowSelector,
             "dontAutoconvertWordWithLeftArrow:",
-            "auto-correction cancelling key policy preserves observed left-arrow selector"
+            "observed surface preserves auto-correction cancelling-key left-arrow selector"
         )
         try expect(
-            AutoCorrectionCancellingKeyPolicy.observedRightArrowSelector,
+            PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.rightArrowSelector,
             "dontAutoconvertWordWithRightArrow:",
-            "auto-correction cancelling key policy preserves observed right-arrow selector"
+            "observed surface preserves auto-correction cancelling-key right-arrow selector"
         )
         try expect(
-            AutoCorrectionCancellingKeyPolicy.observedUpArrowSelector,
+            PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.upArrowSelector,
             "dontAutoconvertWordWithUpArrow:",
-            "auto-correction cancelling key policy preserves observed up-arrow selector"
+            "observed surface preserves auto-correction cancelling-key up-arrow selector"
         )
         try expect(
-            AutoCorrectionCancellingKeyPolicy.observedDownArrowSelector,
+            PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.downArrowSelector,
             "dontAutoconvertWordWithDownArrow:",
-            "auto-correction cancelling key policy preserves observed down-arrow selector"
+            "observed surface preserves auto-correction cancelling-key down-arrow selector"
         )
         try expect(
             AutoCorrectionCancellingKeyPolicy.normalizedEnabledKeyNames([
@@ -481,12 +481,12 @@ private func runWordTrackerTests() throws {
         )
         try expect(
             AutoCorrectionCancellingKeyPolicy.normalizedEnabledKeyNames([
-                " dontAutoconvertWordWithBackspace: ",
-                "dontAutoconvertWordWithDelete:",
-                "dontAutoconvertWordWithLeftArrow:",
-                "dontAutoconvertWordWithRightArrow:",
-                "dontAutoconvertWordWithUpArrow:",
-                "dontAutoconvertWordWithDownArrow:"
+                " \(PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.backspaceSelector) ",
+                PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.deleteSelector,
+                PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.leftArrowSelector,
+                PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.rightArrowSelector,
+                PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.upArrowSelector,
+                PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.downArrowSelector
             ]),
             AutoCorrectionCancellingKeyPolicy.supportedKeyNames,
             "auto-correction cancelling key policy accepts observed Punto Switcher selector names"
@@ -3342,84 +3342,84 @@ private func runUndoLearningSettingsPolicyTests() throws {
         "undo learning policy mirrors observed Punto Switcher defaults"
     )
     try expect(
-        UndoLearningSettingsPolicy.observedSetUndoCollectionEnabledSelector,
+        PuntoSwitcherObservedSurface.UndoLearning.setUndoCollectionEnabledSelector,
         "setUndoCollectionEnabled:",
-        "undo learning policy preserves observed collection setter"
+        "observed surface preserves undo learning collection setter"
     )
     try expect(
-        UndoLearningSettingsPolicy.observedSetMustShowUndoWindowSelector,
+        PuntoSwitcherObservedSurface.UndoLearning.setMustShowUndoWindowSelector,
         "setMustShowUndoWindow:",
-        "undo learning policy preserves observed undo-window setter"
+        "observed surface preserves undo learning undo-window setter"
     )
     try expect(
-        UndoLearningSettingsPolicy.observedSetUndoDictionarySelector,
+        PuntoSwitcherObservedSurface.UndoLearning.setUndoDictionarySelector,
         "setUndoDictionary:",
-        "undo learning policy preserves observed undo dictionary setter"
+        "observed surface preserves undo learning undo dictionary setter"
     )
     try expect(
-        UndoLearningSettingsPolicy.observedUndoWindowControllerClassName,
+        PuntoSwitcherObservedSurface.UndoLearning.undoWindowControllerClassName,
         "UndoWindowController",
-        "undo learning policy preserves observed undo window controller name"
+        "observed surface preserves undo window controller name"
     )
     try expect(
-        UndoLearningSettingsPolicy.observedUndoWindowDelegateProtocolName,
+        PuntoSwitcherObservedSurface.UndoLearning.undoWindowDelegateProtocolName,
         "UndoWindowDelegate",
-        "undo learning policy preserves observed undo window delegate name"
+        "observed surface preserves undo window delegate name"
     )
     try expect(
-        UndoLearningSettingsPolicy.observedUndoWindowResourceName,
+        PuntoSwitcherObservedSurface.UndoLearning.undoWindowResourceName,
         "UndoWindow",
-        "undo learning policy preserves observed undo window resource name"
+        "observed surface preserves undo window resource name"
     )
     try expect(
-        UndoLearningSettingsPolicy.observedUndoAlertFormatKey,
+        PuntoSwitcherObservedSurface.UndoLearning.undoAlertFormatKey,
         "PMUserRuleUndoAlertFormat",
-        "undo learning policy preserves observed undo alert format key"
+        "observed surface preserves undo alert format key"
     )
     try expect(
-        UndoLearningSettingsPolicy.observedShowUndoLearningWindowCheckboxChangedSelector,
+        PuntoSwitcherObservedSurface.UndoLearning.showUndoLearningWindowCheckboxChangedSelector,
         "showUndoLearningWindowCheckboxChanged:",
-        "undo learning policy preserves observed show-window checkbox selector"
+        "observed surface preserves undo show-window checkbox selector"
     )
     try expect(
-        UndoLearningSettingsPolicy.observedUndoLearningCheckboxChangedSelector,
+        PuntoSwitcherObservedSurface.UndoLearning.undoLearningCheckboxChangedSelector,
         "undoLearningCheckboxChanged:",
-        "undo learning policy preserves observed learning checkbox selector"
+        "observed surface preserves undo learning checkbox selector"
     )
     try expect(
-        UndoLearningSettingsPolicy.observedUndoLearningCheckboxKey,
+        PuntoSwitcherObservedSurface.UndoLearning.undoLearningCheckboxKey,
         "undoLearningCheckbox",
-        "undo learning policy preserves observed learning checkbox key"
+        "observed surface preserves undo learning checkbox key"
     )
     try expect(
-        UndoLearningSettingsPolicy.observedShowUndoLearningWindowCheckboxKey,
+        PuntoSwitcherObservedSurface.UndoLearning.showUndoLearningWindowCheckboxKey,
         "showUndoLearningWindowCheckbox",
-        "undo learning policy preserves observed show-window checkbox key"
+        "observed surface preserves undo show-window checkbox key"
     )
     try expect(
-        UndoLearningSettingsPolicy.observedUndoTriesKey,
+        PuntoSwitcherObservedSurface.UndoLearning.undoTriesKey,
         "undoTries",
-        "undo learning policy preserves observed undo tries key"
+        "observed surface preserves undo tries key"
     )
     try expect(
-        UndoLearningSettingsPolicy.observedUndoPersistsKey,
+        PuntoSwitcherObservedSurface.UndoLearning.undoPersistsKey,
         "undoPersists",
-        "undo learning policy preserves observed undo persistence key"
+        "observed surface preserves undo persistence key"
     )
     try expect(
-        UndoLearningSettingsPolicy.observedUndoWasDoneKey,
+        PuntoSwitcherObservedSurface.UndoLearning.undoWasDoneKey,
         "undoWasDone",
-        "undo learning policy preserves observed undo completion key"
+        "observed surface preserves undo completion key"
     )
     try expect(
-        UndoLearningSettingsPolicy.observedUndoConvertionSelector,
+        PuntoSwitcherObservedSurface.UndoLearning.undoConvertionSelector,
         "undoConvertion",
-        "undo learning policy preserves observed legacy undo selector spelling"
+        "observed surface preserves legacy undo selector spelling"
     )
     try expect(
-        UndoLearningSettingsPolicy.observedResetUndoBufferSelector,
+        PuntoSwitcherObservedSurface.UndoLearning.resetUndoBufferSelector,
         "resetUndoBuffer",
-        "undo learning policy preserves observed undo-buffer reset selector"
+        "observed surface preserves undo-buffer reset selector"
     )
     try expectNil(
         UndoLearningSettingsPolicy.snapshot(from: nil),
@@ -8495,34 +8495,34 @@ private func runAutoCorrectionRuleStoreTests() throws {
         "legacy user rule policy imports active non-regexp Punto Switcher replacement rules"
     )
     try expect(
-        LegacyUserRulePolicy.observedCreateUserRuleSelector,
+        PuntoSwitcherObservedSurface.UserRules.createUserRuleSelector,
         "createUserRule",
-        "legacy user rule policy preserves observed create selector"
+        "observed surface preserves user-rule create selector"
     )
     try expect(
-        LegacyUserRulePolicy.observedModifyUserRuleSelector,
+        PuntoSwitcherObservedSurface.UserRules.modifyUserRuleSelector,
         "modifyUserRule",
-        "legacy user rule policy preserves observed modify selector"
+        "observed surface preserves user-rule modify selector"
     )
     try expect(
-        LegacyUserRulePolicy.observedRemoveUserRuleWithIndexSelector,
+        PuntoSwitcherObservedSurface.UserRules.removeUserRuleWithIndexSelector,
         "removeUserRuleWithIndex:",
-        "legacy user rule policy preserves observed remove selector"
+        "observed surface preserves user-rule remove selector"
     )
     try expect(
-        LegacyUserRulePolicy.observedAddUserRuleSelector,
+        PuntoSwitcherObservedSurface.UserRules.addUserRuleSelector,
         "addUserRuleWithString:rule:shouldSwitchLayout:isRuleActive:isRegExp:",
-        "legacy user rule policy preserves observed add selector"
+        "observed surface preserves user-rule add selector"
     )
     try expect(
-        LegacyUserRulePolicy.observedModifyUserRuleWithIndexSelector,
+        PuntoSwitcherObservedSurface.UserRules.modifyUserRuleWithIndexSelector,
         "modifyUserRuleWithIndex:string:rule:shouldSwitchLayout:isRuleActive:isRegExp:",
-        "legacy user rule policy preserves observed indexed modify selector"
+        "observed surface preserves user-rule indexed modify selector"
     )
     try expect(
-        LegacyUserRulePolicy.observedShowWordAddedTooltipSelector,
+        PuntoSwitcherObservedSurface.UserRules.showWordAddedTooltipSelector,
         "showWordAddedTooltip:",
-        "legacy user rule policy preserves observed word-added tooltip selector"
+        "observed surface preserves user-rule word-added tooltip selector"
     )
     try expect(
         LegacyUserRulePolicy.rules(from: []),

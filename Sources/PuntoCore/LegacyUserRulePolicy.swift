@@ -1,13 +1,6 @@
 import Foundation
 
 public enum LegacyUserRulePolicy {
-    public static let observedCreateUserRuleSelector = "createUserRule"
-    public static let observedModifyUserRuleSelector = "modifyUserRule"
-    public static let observedRemoveUserRuleWithIndexSelector = "removeUserRuleWithIndex:"
-    public static let observedAddUserRuleSelector = "addUserRuleWithString:rule:shouldSwitchLayout:isRuleActive:isRegExp:"
-    public static let observedModifyUserRuleWithIndexSelector = "modifyUserRuleWithIndex:string:rule:shouldSwitchLayout:isRuleActive:isRegExp:"
-    public static let observedShowWordAddedTooltipSelector = "showWordAddedTooltip:"
-
     public static let userRulesDictionaryKey = "userRulesDictionary"
     public static let ruleStringKey = "rule_string"
     public static let stringKey = "string"
