@@ -111,6 +111,7 @@ forbidden_legacy_write_keys = {
     "manualSwitches",
     "reverts",
     "dayuseSettings",
+    "isFirstInstallation",
 }
 
 with open(path, "r", encoding="utf-8") as handle:
@@ -133,8 +134,17 @@ for index, line in enumerate(lines):
             break
 
     call = "\n".join(call_lines)
+    allowed_one_shot_calls = {
+        "isFirstInstallation": "consumeFirstLaunchPresentationFlags",
+    }
+
     for key in sorted(forbidden_legacy_write_keys):
         if re.search(rf"\bKeys\.{re.escape(key)}\b", call):
+            allowed_method = allowed_one_shot_calls.get(key)
+            if allowed_method:
+                prefix = "".join(lines[max(0, index - 8):index + 1])
+                if allowed_method in prefix:
+                    continue
             violations.append((index + 1, key, call))
 
 if violations:

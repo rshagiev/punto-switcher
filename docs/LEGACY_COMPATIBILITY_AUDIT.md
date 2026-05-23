@@ -54,10 +54,11 @@ old Punto Switcher key names remain pinned in policies, tests, and reverse audit
 so imported preferences still work, but normal use no longer rewrites the old
 plist shape on every settings change.
 
-The intentional exception is first-run/update consumption. When onboarding or an
-installer/update presentation consumes old state, Punto still clears the observed
-legacy booleans as well as the native state so imported `isFirstInstallation`,
-`isJustInstalled`, or `isJustUpdated` values cannot reopen one-shot UI.
+The intentional exception is first-run/update consumption. Routine first-launch
+writes are native-only, but when onboarding or an installer/update presentation
+consumes old state, Punto still clears the observed legacy booleans as well as
+the native state so imported `isFirstInstallation`, `isJustInstalled`, or
+`isJustUpdated` values cannot reopen one-shot UI.
 
 ## Enforced Boundary
 

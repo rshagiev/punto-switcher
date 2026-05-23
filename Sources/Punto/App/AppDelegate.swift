@@ -107,7 +107,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ) {
             PuntoLog.info(StartupPresentationPolicy.observedWelcomeLogMessage)
             showOnboardingAlert()
-            settingsManager!.isFirstLaunch = false
+            settingsManager!.consumeFirstLaunchPresentationFlags()
             updateSettings = StartupPresentationPolicy.updateSettingsAfterWelcome(updateSettings)
             settingsManager!.applicationUpdateSettings = updateSettings
         }

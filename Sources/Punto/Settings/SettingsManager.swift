@@ -123,10 +123,13 @@ final class SettingsManager {
                 defaultValue: SettingsPersistencePolicy.defaultIsFirstLaunch
             )
         }
-        set {
-            defaults.set(newValue, forKey: Keys.isFirstLaunch)
-            defaults.set(newValue, forKey: Keys.isFirstInstallation)
-        }
+        set { defaults.set(newValue, forKey: Keys.isFirstLaunch) }
+    }
+
+    /// Consumes native and imported Punto Switcher first-run flags after onboarding.
+    func consumeFirstLaunchPresentationFlags() {
+        defaults.set(false, forKey: Keys.isFirstLaunch)
+        defaults.set(false, forKey: Keys.isFirstInstallation)
     }
 
     /// Whether to show the icon in the menu bar
