@@ -197,23 +197,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
 
         switch action {
-        case .ignoreProgrammaticSwitch:
-            PuntoLog.info("Input source changed - ignored (programmatic switch grace window)")
+        case .ignoreProgrammaticSwitch(let logMessage):
+            PuntoLog.info(logMessage)
             return
-        case .ignoreConversionInProgress:
-            PuntoLog.info("Input source changed - ignored (conversion in progress)")
+        case .ignoreConversionInProgress(let logMessage):
+            PuntoLog.info(logMessage)
             return
-        case .rememberLayoutAndClearTextState:
-            break
+        case .rememberLayoutAndClearTextState(let plan):
+            rememberCurrentLayoutForActiveApplication(reason: plan.layoutMemoryReason)
+            wordTracker?.clear(reason: plan.clearTrackedTextReason)
+            conversionSession.clear(reason: plan.clearConversionSessionReason)
+            PuntoLog.info(plan.logMessage)
         }
-
-        rememberCurrentLayoutForActiveApplication(reason: "input source changed")
-
-        // Clear WordTracker when keyboard layout changes
-        // This prevents buffer corruption from mixed-layout input
-        wordTracker?.clear(reason: "input source changed")
-        conversionSession.clear(reason: "input source changed")
-        PuntoLog.info("Input source changed - WordTracker cleared")
     }
 
     @objc private func activeApplicationChanged(_ notification: Notification) {
@@ -228,18 +223,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             rememberCurrentLayoutForActiveApplication(reason: "active application changed")
         }
 
-        guard newBundleID != Bundle.main.bundleIdentifier else {
-            PuntoLog.info("Punto window activated - preserving last external app '\(activeApplicationBundleID ?? "?")'")
-            return
-        }
-
-        if ApplicationContextPolicy.shouldResetTextState(
+        let action = ApplicationContextPolicy.activationAction(
             previousBundleID: activeApplicationBundleID,
             newBundleID: newBundleID,
             ownBundleID: Bundle.main.bundleIdentifier
-        ) {
-            wordTracker?.clear(reason: "active application changed")
-            conversionSession.clear(reason: "active application changed")
+        )
+
+        switch action {
+        case .preserveCurrentExternalContext(let logMessage):
+            PuntoLog.info(logMessage)
+            return
+        case .activateExternal(let plan):
+            if plan.shouldResetTextState,
+               let clearTrackedTextReason = plan.clearTrackedTextReason,
+               let clearConversionSessionReason = plan.clearConversionSessionReason {
+                wordTracker?.clear(reason: clearTrackedTextReason)
+                conversionSession.clear(reason: clearConversionSessionReason)
+            }
         }
 
         activeApplicationBundleID = newBundleID
@@ -325,10 +325,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func inputSourcePreferencesChanged() {
-        inputSourceManager?.refreshInputSources()
-        wordTracker?.clear(reason: "Input source preferences changed")
-        conversionSession.clear(reason: "Input source preferences changed")
-        PuntoLog.info("Input source preferences changed - input sources refreshed")
+        let action = InputSourceChangePolicy.preferencesChangeAction()
+        if action.shouldRefreshInputSources {
+            inputSourceManager?.refreshInputSources()
+        }
+        wordTracker?.clear(reason: action.clearTrackedTextReason)
+        conversionSession.clear(reason: action.clearConversionSessionReason)
+        PuntoLog.info(action.logMessage)
     }
 
     // MARK: - Permission Monitoring

@@ -5145,7 +5145,9 @@ private func runInputSourceChangePolicyTests() throws {
             ignoreChangesUntil: future,
             isConversionInProgress: false
         ),
-        .ignoreProgrammaticSwitch,
+        .ignoreProgrammaticSwitch(
+            logMessage: "Input source changed - ignored (programmatic switch grace window)"
+        ),
         "input source policy ignores programmatic switch inside grace window"
     )
     try expect(
@@ -5162,7 +5164,9 @@ private func runInputSourceChangePolicyTests() throws {
             ignoreChangesUntil: past,
             isConversionInProgress: true
         ),
-        .ignoreConversionInProgress,
+        .ignoreConversionInProgress(
+            logMessage: "Input source changed - ignored (conversion in progress)"
+        ),
         "input source policy ignores changes during conversion after expired grace"
     )
     try expectNil(
@@ -5178,8 +5182,23 @@ private func runInputSourceChangePolicyTests() throws {
             ignoreChangesUntil: nil,
             isConversionInProgress: false
         ),
-        .rememberLayoutAndClearTextState,
+        .rememberLayoutAndClearTextState(InputSourceChangeRuntimePlan(
+            layoutMemoryReason: "input source changed",
+            clearTrackedTextReason: "input source changed",
+            clearConversionSessionReason: "input source changed",
+            logMessage: "Input source changed - WordTracker cleared"
+        )),
         "input source policy clears state for ordinary user layout change"
+    )
+    try expect(
+        InputSourceChangePolicy.preferencesChangeAction(),
+        InputSourcePreferencesChangeAction(
+            shouldRefreshInputSources: true,
+            clearTrackedTextReason: "Input source preferences changed",
+            clearConversionSessionReason: "Input source preferences changed",
+            logMessage: "Input source preferences changed - input sources refreshed"
+        ),
+        "input source policy owns preference-refresh cleanup plan"
     )
 }
 
@@ -5738,6 +5757,43 @@ private func runInputSourceLanguagePolicyTests() throws {
 }
 
 private func runApplicationContextPolicyTests() throws {
+    try expect(
+        ApplicationContextPolicy.activationAction(
+            previousBundleID: "com.example.editor",
+            newBundleID: "com.example.punto",
+            ownBundleID: "com.example.punto"
+        ),
+        .preserveCurrentExternalContext(
+            logMessage: "Punto window activated - preserving last external app 'com.example.editor'"
+        ),
+        "app context policy preserves external context when Punto activates"
+    )
+    try expect(
+        ApplicationContextPolicy.activationAction(
+            previousBundleID: "com.example.editor",
+            newBundleID: "com.example.chat",
+            ownBundleID: "com.example.punto"
+        ),
+        .activateExternal(ApplicationContextActivationPlan(
+            shouldResetTextState: true,
+            clearTrackedTextReason: "active application changed",
+            clearConversionSessionReason: "active application changed"
+        )),
+        "app context policy plans external app-switch cleanup"
+    )
+    try expect(
+        ApplicationContextPolicy.activationAction(
+            previousBundleID: nil,
+            newBundleID: "com.example.editor",
+            ownBundleID: "com.example.punto"
+        ),
+        .activateExternal(ApplicationContextActivationPlan(
+            shouldResetTextState: false,
+            clearTrackedTextReason: nil,
+            clearConversionSessionReason: nil
+        )),
+        "app context policy keeps initial external activation clean"
+    )
     try expect(
         ApplicationContextPolicy.shouldResetTextState(
             previousBundleID: nil,
