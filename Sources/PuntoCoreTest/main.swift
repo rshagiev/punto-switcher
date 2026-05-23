@@ -7836,69 +7836,40 @@ private func runSearchbarSettingsPolicyTests() throws {
         "searchbar settings policy clamps negative prompt counters"
     )
 
-    let dictionary = SearchbarSettingsPolicy.dictionary(from: SearchbarSettingsSnapshot(
-        activationShortcut: Hotkey(keyCode: 9, command: true, option: true, shift: false, control: false),
-        shouldOfferSearchbarAutoactivation: false,
-        autoactivationExceptions: ["COM.Example.App", " org.example.Editor "],
-        alertShownIn: Date(timeIntervalSince1970: 1_230_757_300),
-        shouldSearchByDoubleClick: true,
-        sitesearchPromptCounter: 9
-    ))
-    let activationShortcutDictionary = dictionary[SearchbarSettingsPolicy.activationShortcutKey] as? [String: Any]
     try expect(
-        activationShortcutDictionary?[LegacyHotkeyPolicy.keyCodeKey] as? Int,
-        9,
-        "searchbar settings policy writes observed ActivationShortcut key"
-    )
-    try expect(
-        dictionary[SearchbarSettingsPolicy.autoactivationKey] as? Bool,
-        false,
-        "searchbar settings policy writes observed Autoactivation key"
-    )
-    try expect(
-        dictionary[SearchbarSettingsPolicy.autoactivationExceptionsKey] as? [String],
-        ["com.example.app", "org.example.editor"],
-        "searchbar settings policy writes observed AutoactivationExceptions key"
-    )
-    try expect(
-        dictionary[SearchbarSettingsPolicy.alertShownInKey] as? Date,
-        Date(timeIntervalSince1970: 1_230_757_300),
-        "searchbar settings policy writes observed AlertShownIn key"
-    )
-    try expect(
-        dictionary[SearchbarSettingsPolicy.shouldSearchByDoubleClickKey] as? Bool,
-        true,
-        "searchbar settings policy writes observed ShouldSearchByDoubleClick key"
-    )
-    try expect(
-        dictionary[SearchbarSettingsPolicy.sitesearchPromptCounterKey] as? Int,
-        9,
-        "searchbar settings policy writes observed SitesearchPromptCounter key"
-    )
-
-    let originalSnapshot = SearchbarSettingsSnapshot(
-        activationShortcut: Hotkey(keyCode: 12, command: true, option: false, shift: false, control: false),
-        shouldOfferSearchbarAutoactivation: false,
-        autoactivationExceptions: ["com.example.app"],
-        alertShownIn: Date(timeIntervalSince1970: 1_230_757_320),
-        shouldSearchByDoubleClick: false,
-        sitesearchPromptCounter: 5
-    )
-    let doubleClickEnabledSnapshot = SearchbarSettingsPolicy.snapshot(
-        originalSnapshot,
-        settingDoubleClickSearch: true
-    )
-    try expect(
-        doubleClickEnabledSnapshot,
-        SearchbarSettingsSnapshot(
-            activationShortcut: Hotkey(keyCode: 12, command: true, option: false, shift: false, control: false),
-            shouldOfferSearchbarAutoactivation: false,
-            autoactivationExceptions: ["com.example.app"],
-            alertShownIn: Date(timeIntervalSince1970: 1_230_757_320),
-            shouldSearchByDoubleClick: true,
-            sitesearchPromptCounter: 5
+        SearchbarSettingsPolicy.effectiveShouldSearchByDoubleClick(
+            hasNativeValue: true,
+            nativeValue: false,
+            legacySnapshot: SearchbarSettingsSnapshot(
+                shouldOfferSearchbarAutoactivation: true,
+                shouldSearchByDoubleClick: true,
+                sitesearchPromptCounter: 3
+            )
         ),
-        "searchbar settings policy toggles only observed ShouldSearchByDoubleClick setting"
+        false,
+        "searchbar settings policy lets native double-click search setting override imported PSSearchbarSettings"
+    )
+    try expect(
+        SearchbarSettingsPolicy.effectiveShouldSearchByDoubleClick(
+            hasNativeValue: false,
+            nativeValue: nil,
+            legacySnapshot: SearchbarSettingsSnapshot(
+                shouldOfferSearchbarAutoactivation: true,
+                shouldSearchByDoubleClick: true,
+                sitesearchPromptCounter: 3
+            )
+        ),
+        true,
+        "searchbar settings policy imports legacy ShouldSearchByDoubleClick when native setting is absent"
+    )
+    try expect(
+        SearchbarSettingsPolicy.effectiveShouldSearchByDoubleClick(
+            hasNativeValue: false,
+            nativeValue: nil,
+            legacySnapshot: nil
+        ),
+        false,
+        "searchbar settings policy defaults double-click search off without native or legacy settings"
     )
 }
 

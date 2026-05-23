@@ -51,6 +51,22 @@ public enum SearchbarSettingsPolicy {
         sitesearchPromptCounter: 3
     )
 
+    public static func effectiveShouldSearchByDoubleClick(
+        hasNativeValue: Bool,
+        nativeValue: Bool?,
+        legacySnapshot: SearchbarSettingsSnapshot?
+    ) -> Bool {
+        if hasNativeValue {
+            return nativeValue ?? defaultSnapshot.shouldSearchByDoubleClick
+        }
+
+        if let legacySnapshot {
+            return legacySnapshot.shouldSearchByDoubleClick
+        }
+
+        return defaultSnapshot.shouldSearchByDoubleClick
+    }
+
     public static func snapshot(from dictionary: [String: Any]?) -> SearchbarSettingsSnapshot? {
         guard let dictionary else {
             return nil
@@ -80,31 +96,6 @@ public enum SearchbarSettingsPolicy {
                 dictionary[sitesearchPromptCounterKey],
                 defaultValue: defaultSnapshot.sitesearchPromptCounter
             )
-        )
-    }
-
-    public static func dictionary(from snapshot: SearchbarSettingsSnapshot) -> [String: Any] {
-        [
-            activationShortcutKey: LegacyHotkeyPolicy.dictionary(from: snapshot.activationShortcut),
-            autoactivationKey: snapshot.shouldOfferSearchbarAutoactivation,
-            autoactivationExceptionsKey: snapshot.autoactivationExceptions,
-            alertShownInKey: snapshot.alertShownIn,
-            shouldSearchByDoubleClickKey: snapshot.shouldSearchByDoubleClick,
-            sitesearchPromptCounterKey: max(0, snapshot.sitesearchPromptCounter)
-        ]
-    }
-
-    public static func snapshot(
-        _ snapshot: SearchbarSettingsSnapshot,
-        settingDoubleClickSearch enabled: Bool
-    ) -> SearchbarSettingsSnapshot {
-        SearchbarSettingsSnapshot(
-            activationShortcut: snapshot.activationShortcut,
-            shouldOfferSearchbarAutoactivation: snapshot.shouldOfferSearchbarAutoactivation,
-            autoactivationExceptions: snapshot.autoactivationExceptions,
-            alertShownIn: snapshot.alertShownIn,
-            shouldSearchByDoubleClick: enabled,
-            sitesearchPromptCounter: snapshot.sitesearchPromptCounter
         )
     }
 

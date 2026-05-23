@@ -33,6 +33,7 @@ final class SettingsManager {
         static let shortcutFindInYandex = "shortcutFindInYandex"
         static let shortcutFindInSlovari = "shortcutFindInSlovari"
         static let searchbarSettings = SearchbarSettingsPolicy.settingsKey
+        static let searchSelectedTextByDoubleClick = "searchSelectedTextByDoubleClick"
         static let switchLayoutAfterConversion = "switchLayoutAfterConversion"
         static let switchLayoutAfterSelectedTextConversion = "switchLayoutAfterSelectedTextConversion"
         static let switchLayoutOnSelectedTextSwitch = SettingsPersistencePolicy.observedSwitchLayoutOnSelectedTextSwitchKey
@@ -271,25 +272,16 @@ final class SettingsManager {
         }
     }
 
-    var searchbarSettings: SearchbarSettingsSnapshot {
-        get {
-            SearchbarSettingsPolicy.snapshot(from: defaults.dictionary(forKey: Keys.searchbarSettings))
-                ?? SearchbarSettingsPolicy.defaultSnapshot
-        }
-        set {
-            defaults.set(SearchbarSettingsPolicy.dictionary(from: newValue), forKey: Keys.searchbarSettings)
-        }
-    }
-
     var searchSelectedTextByDoubleClick: Bool {
         get {
-            searchbarSettings.shouldSearchByDoubleClick
+            SearchbarSettingsPolicy.effectiveShouldSearchByDoubleClick(
+                hasNativeValue: hasStoredValue(forKey: Keys.searchSelectedTextByDoubleClick),
+                nativeValue: persistedBool(forKey: Keys.searchSelectedTextByDoubleClick),
+                legacySnapshot: SearchbarSettingsPolicy.snapshot(from: defaults.dictionary(forKey: Keys.searchbarSettings))
+            )
         }
         set {
-            searchbarSettings = SearchbarSettingsPolicy.snapshot(
-                searchbarSettings,
-                settingDoubleClickSearch: newValue
-            )
+            defaults.set(newValue, forKey: Keys.searchSelectedTextByDoubleClick)
         }
     }
 

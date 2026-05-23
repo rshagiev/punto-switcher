@@ -187,13 +187,14 @@ final class HotkeyManager {
         case .clearTrackedText(let reason):
             PuntoLog.info("Pointer event detected - will clear tracked text (\(reason))")
             let clickCount = Int(event.getIntegerValueField(.mouseEventClickState))
+            let shouldSearchByDoubleClick = settingsManager.searchSelectedTextByDoubleClick
             let shouldCheckSearchCapability = type.rawValue == PointerEventPolicy.leftMouseDownRawValue
                 && clickCount >= 2
-                && settingsManager.searchbarSettings.shouldSearchByDoubleClick
+                && shouldSearchByDoubleClick
             let shouldSearchClick = SearchClickPolicy.shouldSearchSelectedTextAfterClick(
                 eventTypeRawValue: type.rawValue,
                 clickCount: clickCount,
-                shouldSearchByDoubleClick: settingsManager.searchbarSettings.shouldSearchByDoubleClick,
+                shouldSearchByDoubleClick: shouldSearchByDoubleClick,
                 canDoSearchClick: shouldCheckSearchCapability && canDoSearchClick()
             )
             DispatchQueue.main.async { [weak self] in

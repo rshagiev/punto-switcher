@@ -65,5 +65,6 @@ legacy booleans as well as the native state so imported `isFirstInstallation`,
   only test anchors.
 - Add an explicit export path if we ever need to generate Punto Switcher-shaped
   settings intentionally; keep routine runtime writes native-only.
-- Review searchbar/click-search code separately: selected-text Yandex shortcuts
-  are real behavior, proprietary searchbar state is mostly compatibility shell.
+- Keep searchbar/click-search split this way: selected-text Yandex shortcuts and
+  double-click search are real native behavior; proprietary `PSSearchbarSettings`
+  remains an import fallback and audit shell.
