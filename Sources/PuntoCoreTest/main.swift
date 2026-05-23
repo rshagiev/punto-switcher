@@ -2260,6 +2260,147 @@ private func runUndoReplacementPolicyTests() throws {
     )
 }
 
+private func runUndoRuntimePolicyTests() throws {
+    let now = Date(timeIntervalSince1970: 100)
+    let layoutRecord = ConversionRecord(
+        originalText: "ghbdtn",
+        convertedText: "привет",
+        timestamp: now,
+        replacementMethod: .keyboardBackspacePaste,
+        contextID: "com.example.editor",
+        origin: .layoutConversion
+    )
+
+    try expect(
+        UndoRuntimePolicy.plan(
+            record: nil,
+            autoCorrectionRules: [],
+            isUndoLearningEnabled: true
+        ),
+        .noCandidate,
+        "undo runtime reports missing candidate"
+    )
+
+    try expect(
+        UndoRuntimePolicy.plan(
+            record: layoutRecord,
+            autoCorrectionRules: [],
+            isUndoLearningEnabled: true
+        ),
+        .replacement(UndoRuntimeReplacement(
+            record: layoutRecord,
+            undoReplacement: UndoReplacement(
+                capturedText: CapturedText(text: "привет", replacementMethod: .keyboardBackspacePaste, source: "undo"),
+                replacementText: "ghbdtn",
+                keepSelection: false,
+                nextReplacementMethod: .keyboardBackspacePaste,
+                trackedTailAfterUndo: nil
+            ),
+            shouldSwitchLayoutAfterUndo: true,
+            redoOrigin: .manualRedo,
+            learnedAutoCorrectionRules: nil
+        )),
+        "undo runtime plans layout undo with layout switch and manual redo origin"
+    )
+
+    let terminalRecord = ConversionRecord(
+        originalText: "ghbdtn",
+        convertedText: "привет",
+        timestamp: now,
+        replacementMethod: .keyboardRewriteTail(originalTail: "git commit привет"),
+        contextID: "com.example.terminal",
+        origin: .manualRedo
+    )
+    try expect(
+        UndoRuntimePolicy.plan(
+            record: terminalRecord,
+            autoCorrectionRules: [],
+            isUndoLearningEnabled: true
+        ),
+        .replacement(UndoRuntimeReplacement(
+            record: terminalRecord,
+            undoReplacement: UndoReplacement(
+                capturedText: CapturedText(
+                    text: "привет",
+                    replacementMethod: .keyboardRewriteTail(originalTail: "git commit привет"),
+                    source: "undo"
+                ),
+                replacementText: "ghbdtn",
+                keepSelection: false,
+                nextReplacementMethod: .keyboardRewriteTail(originalTail: "git commit ghbdtn"),
+                trackedTailAfterUndo: "git commit ghbdtn"
+            ),
+            shouldSwitchLayoutAfterUndo: true,
+            redoOrigin: .layoutConversion,
+            learnedAutoCorrectionRules: nil
+        )),
+        "undo runtime plans terminal-tail undo with rewritten redo tail"
+    )
+
+    let badTailRecord = ConversionRecord(
+        originalText: "ghbdtn",
+        convertedText: "missing",
+        timestamp: now,
+        replacementMethod: .keyboardRewriteTail(originalTail: "git commit привет"),
+        contextID: "com.example.terminal",
+        origin: .layoutConversion
+    )
+    try expect(
+        UndoRuntimePolicy.plan(
+            record: badTailRecord,
+            autoCorrectionRules: [],
+            isUndoLearningEnabled: true
+        ),
+        .planFailure(record: badTailRecord),
+        "undo runtime reports replacement plan failure"
+    )
+
+    let undoneRule = AutoCorrectionRule(trigger: "teh", replacement: "the", matchMode: .caseInsensitive)
+    let otherRule = AutoCorrectionRule(trigger: "ghbdtn", replacement: "привет")
+    let autoCorrectionRecord = ConversionRecord(
+        originalText: "teh ",
+        convertedText: "the ",
+        timestamp: now,
+        replacementMethod: .keyboardBackspacePaste,
+        contextID: "com.example.editor",
+        origin: .autoCorrection(rule: undoneRule)
+    )
+    try expect(
+        UndoRuntimePolicy.plan(
+            record: autoCorrectionRecord,
+            autoCorrectionRules: [undoneRule, otherRule],
+            isUndoLearningEnabled: true
+        ),
+        .replacement(UndoRuntimeReplacement(
+            record: autoCorrectionRecord,
+            undoReplacement: UndoReplacement(
+                capturedText: CapturedText(text: "the ", replacementMethod: .keyboardBackspacePaste, source: "undo"),
+                replacementText: "teh ",
+                keepSelection: false,
+                nextReplacementMethod: .keyboardBackspacePaste,
+                trackedTailAfterUndo: nil
+            ),
+            shouldSwitchLayoutAfterUndo: false,
+            redoOrigin: .autoCorrectionRedo(rule: undoneRule),
+            learnedAutoCorrectionRules: [otherRule]
+        )),
+        "undo runtime plans auto-correction undo learning and redo origin"
+    )
+
+    if case .replacement(let disabledLearningPlan) = UndoRuntimePolicy.plan(
+        record: autoCorrectionRecord,
+        autoCorrectionRules: [undoneRule, otherRule],
+        isUndoLearningEnabled: false
+    ) {
+        try expectNil(
+            disabledLearningPlan.learnedAutoCorrectionRules,
+            "undo runtime keeps rules when undo learning is disabled"
+        )
+    } else {
+        throw TestFailure(description: "undo runtime keeps rules when undo learning is disabled: expected replacement plan")
+    }
+}
+
 private func runConversionOriginPolicyTests() throws {
     let rule = AutoCorrectionRule(trigger: "teh", replacement: "the")
 
@@ -9534,6 +9675,7 @@ do {
     try runManualLayoutConversionPolicyTests()
     try runConversionSessionTests()
     try runUndoReplacementPolicyTests()
+    try runUndoRuntimePolicyTests()
     try runConversionOriginPolicyTests()
     try runApplicationLayoutMemoryTests()
     try runApplicationBundleIDPolicyTests()

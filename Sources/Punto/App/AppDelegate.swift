@@ -731,68 +731,73 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @discardableResult
     private func performUndoIfAvailable(contextID: String?) -> Bool {
-        guard let last = conversionSession.undoCandidate(contextID: contextID) else {
+        let plan = UndoRuntimePolicy.plan(
+            record: conversionSession.undoCandidate(contextID: contextID),
+            autoCorrectionRules: settingsManager?.autoCorrectionRules ?? [],
+            isUndoLearningEnabled: settingsManager?.autoCorrectionUndoLearningEnabled
+                ?? SettingsPersistencePolicy.defaultAutoCorrectionUndoLearningEnabled
+        )
+
+        switch plan {
+        case .noCandidate:
             return false
-        }
 
-        PuntoLog.info("Undo: reverting '\(last.convertedText)' back to '\(last.originalText)'")
-
-        guard let undoReplacement = UndoReplacementPolicy.replacement(for: last) else {
+        case .planFailure:
             PuntoLog.info("Undo aborted: replacement plan could not be derived")
             conversionSession.clear(reason: "undo plan derivation failed")
             return true
-        }
 
-        let undoApplied = textAccessor?.replaceCapturedText(
-            undoReplacement.capturedText,
-            with: undoReplacement.replacementText,
-            keepSelection: undoReplacement.keepSelection
-        ) ?? false
-        guard undoApplied else {
-            PuntoLog.info("Undo aborted: replacement was not applied")
-            clearStateAfterFailedUndoReplacement(method: undoReplacement.capturedText.replacementMethod)
+        case .replacement(let plan):
+            let last = plan.record
+            let undoReplacement = plan.undoReplacement
+            PuntoLog.info("Undo: reverting '\(last.convertedText)' back to '\(last.originalText)'")
+
+            let undoApplied = textAccessor?.replaceCapturedText(
+                undoReplacement.capturedText,
+                with: undoReplacement.replacementText,
+                keepSelection: undoReplacement.keepSelection
+            ) ?? false
+            guard undoApplied else {
+                PuntoLog.info("Undo aborted: replacement was not applied")
+                clearStateAfterFailedUndoReplacement(method: undoReplacement.capturedText.replacementMethod)
+                return true
+            }
+
+            if plan.shouldSwitchLayoutAfterUndo {
+                let originalLayout = layoutConverter!.detectLayout(last.originalText)
+                switchLayoutIfEnabled(originalLayout, surface: .undo)
+            } else {
+                PuntoLog.info("Undo: skipped layout switch for origin \(last.origin)")
+            }
+
+            statusBarController?.flashIcon()
+            soundFeedbackController?.play(.undo)
+            settingsManager?.recordProductStatisticsEvent(.revert)
+            if let undoneTail = undoReplacement.trackedTailAfterUndo {
+                wordTracker?.replaceTrackedTail(
+                    with: undoneTail,
+                    reason: "undo completed",
+                    russianLayoutType: settingsManager?.russianKeyboardLayoutType
+                        ?? KeyboardLayoutTypePolicy.defaultRussianLayoutType
+                )
+            }
+
+            if let learnedRules = plan.learnedAutoCorrectionRules {
+                settingsManager?.autoCorrectionRules = learnedRules
+                reloadAutoCorrectionRules()
+                PuntoLog.info("Auto-correction undo learned exception for '\(last.originalText.trimmingCharacters(in: .whitespacesAndNewlines))'")
+            }
+
+            conversionSession.record(
+                originalText: last.convertedText,
+                convertedText: last.originalText,
+                replacementMethod: undoReplacement.nextReplacementMethod,
+                contextID: contextID,
+                origin: plan.redoOrigin
+            )
+
             return true
         }
-
-        if UndoLayoutSwitchPolicy.shouldSwitchLayoutAfterUndo(origin: last.origin) {
-            let originalLayout = layoutConverter!.detectLayout(last.originalText)
-            switchLayoutIfEnabled(originalLayout, surface: .undo)
-        } else {
-            PuntoLog.info("Undo: skipped layout switch for origin \(last.origin)")
-        }
-
-        statusBarController?.flashIcon()
-        soundFeedbackController?.play(.undo)
-        settingsManager?.recordProductStatisticsEvent(.revert)
-        if let undoneTail = undoReplacement.trackedTailAfterUndo {
-            wordTracker?.replaceTrackedTail(
-                with: undoneTail,
-                reason: "undo completed",
-                russianLayoutType: settingsManager?.russianKeyboardLayoutType
-                    ?? KeyboardLayoutTypePolicy.defaultRussianLayoutType
-            )
-        }
-
-        if let learnedRules = AutoCorrectionUndoLearningPolicy.learnedRulesAfterUndo(
-            rules: settingsManager?.autoCorrectionRules ?? [],
-            record: last,
-            isUndoLearningEnabled: settingsManager?.autoCorrectionUndoLearningEnabled
-                ?? SettingsPersistencePolicy.defaultAutoCorrectionUndoLearningEnabled
-        ) {
-            settingsManager?.autoCorrectionRules = learnedRules
-            reloadAutoCorrectionRules()
-            PuntoLog.info("Auto-correction undo learned exception for '\(last.originalText.trimmingCharacters(in: .whitespacesAndNewlines))'")
-        }
-
-        conversionSession.record(
-            originalText: last.convertedText,
-            convertedText: last.originalText,
-            replacementMethod: undoReplacement.nextReplacementMethod,
-            contextID: contextID,
-            origin: ConversionOriginPolicy.originAfterUndo(record: last)
-        )
-
-        return true
     }
 
     private func switchLayoutIfEnabled(
