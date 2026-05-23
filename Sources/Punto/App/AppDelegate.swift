@@ -518,25 +518,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         let capturedText = textAccessor?.captureSelectedText(lastTrackedWord: nil, lastTrackedTail: nil)
-        guard let capturedText, !capturedText.text.isEmpty else {
-            PuntoLog.info("Selected text search skipped: no selected text")
-            return
-        }
 
-        if TextCapturePolicy.shouldStopAfterBlockedCapture(capturedText) {
+        switch SelectedTextSearchPolicy.plan(capturedText: capturedText, destination: destination) {
+        case .blockedCapture(let capturedText):
             PuntoLog.info("Selected text search blocked unsafe selection fallback: \(capturedText.source)")
             clearStateAfterBlockedCapture(capturedText)
-            return
-        }
 
-        guard let url = SearchShortcutPolicy.url(for: capturedText.text, destination: destination) else {
+        case .open(let url):
+            PuntoLog.info("Opening selected text search URL: \(url.absoluteString)")
+            NSWorkspace.shared.open(url)
+            statusBarController?.flashIcon()
+
+        case .skipped:
             PuntoLog.info("Selected text search skipped: empty normalized query")
-            return
-        }
 
-        PuntoLog.info("Opening selected text search URL: \(url.absoluteString)")
-        NSWorkspace.shared.open(url)
-        statusBarController?.flashIcon()
+        case .noText:
+            PuntoLog.info("Selected text search skipped: no selected text")
+        }
     }
 
     private func playTextInputSound(characters: String?) {
@@ -1072,38 +1070,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
-        let routeAction = TextActionPreflightPolicy.action(
+        let routeAction = TextActionRuntimePreflightPolicy.routeAction(
             kind: kind,
             isEnabled: settingsManager?.isEnabled == true,
             isManualConversionDisabled: settingsManager?.manualConversionDisabled == true,
             isConversionInProgress: isConversionInProgress,
-            isCurrentApplicationDisabled: isCurrentApplicationCompletelyDisabled(),
-            isSecureInputEnabled: false,
-            isPasswordField: false
+            isCurrentApplicationDisabled: isCurrentApplicationCompletelyDisabled()
         )
         guard handle(routeAction) else {
             return false
         }
 
         if textAccessor?.isSecureInputEnabled() == true {
-            return handle(TextActionPreflightPolicy.action(
+            return handle(TextActionRuntimePreflightPolicy.securityAction(
                 kind: kind,
-                isEnabled: true,
-                isManualConversionDisabled: false,
-                isConversionInProgress: false,
-                isCurrentApplicationDisabled: false,
                 isSecureInputEnabled: true,
                 isPasswordField: false
             ))
         }
 
         if textAccessor?.isPasswordField() == true {
-            return handle(TextActionPreflightPolicy.action(
+            return handle(TextActionRuntimePreflightPolicy.securityAction(
                 kind: kind,
-                isEnabled: true,
-                isManualConversionDisabled: false,
-                isConversionInProgress: false,
-                isCurrentApplicationDisabled: false,
                 isSecureInputEnabled: false,
                 isPasswordField: true
             ))

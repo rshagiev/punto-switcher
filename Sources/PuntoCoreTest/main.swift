@@ -5419,6 +5419,59 @@ private func runTextActionPreflightPolicyTests() throws {
     )
 }
 
+private func runTextActionRuntimePreflightPolicyTests() throws {
+    try expect(
+        TextActionRuntimePreflightPolicy.routeAction(
+            kind: .layoutConversion,
+            isEnabled: true,
+            isManualConversionDisabled: false,
+            isConversionInProgress: false,
+            isCurrentApplicationDisabled: false
+        ),
+        .proceed,
+        "text action runtime preflight route allows normal conversion"
+    )
+    try expect(
+        TextActionRuntimePreflightPolicy.routeAction(
+            kind: .layoutConversion,
+            isEnabled: true,
+            isManualConversionDisabled: true,
+            isConversionInProgress: false,
+            isCurrentApplicationDisabled: false
+        ),
+        .skip(reason: "manual conversion disabled"),
+        "text action runtime preflight route keeps manual-conversion setting in route phase"
+    )
+    try expect(
+        TextActionRuntimePreflightPolicy.routeAction(
+            kind: .selectedTextSearch,
+            isEnabled: true,
+            isConversionInProgress: true,
+            isCurrentApplicationDisabled: false
+        ),
+        .skip(reason: "selected text search already in progress"),
+        "text action runtime preflight route blocks nested selected-text search"
+    )
+    try expect(
+        TextActionRuntimePreflightPolicy.securityAction(
+            kind: .selectedTextSearch,
+            isSecureInputEnabled: true,
+            isPasswordField: true
+        ),
+        .blockAndClear(reason: "secure input"),
+        "text action runtime preflight security gives secure input priority"
+    )
+    try expect(
+        TextActionRuntimePreflightPolicy.securityAction(
+            kind: .toggleCase,
+            isSecureInputEnabled: false,
+            isPasswordField: true
+        ),
+        .blockAndClear(reason: "password field"),
+        "text action runtime preflight security blocks password fields"
+    )
+}
+
 private func runPointerEventPolicyTests() throws {
     try expect(
         PointerEventPolicy.action(eventTypeRawValue: PointerEventPolicy.leftMouseDownRawValue),
@@ -7674,6 +7727,63 @@ private func runSearchShortcutPolicyTests() throws {
     )
 }
 
+private func runSelectedTextSearchPolicyTests() throws {
+    let editableCapture = CapturedText(
+        text: " привет мир ",
+        replacementMethod: .accessibilitySelection,
+        source: "AX editable selection"
+    )
+    try expect(
+        SelectedTextSearchPolicy.plan(capturedText: editableCapture, destination: .yandexSearch),
+        .open(URL(string: "http://yandex.ru/yandsearch?text=%D0%BF%D1%80%D0%B8%D0%B2%D0%B5%D1%82%20%D0%BC%D0%B8%D1%80&clid=141986&yasoft=puntomac")!),
+        "selected-text search policy opens normalized Yandex search URL"
+    )
+
+    let terminalTailCapture = CapturedText(
+        text: "hello",
+        replacementMethod: .keyboardRewriteTail(originalTail: "echo hello"),
+        source: "terminal command-tail selection"
+    )
+    try expect(
+        SelectedTextSearchPolicy.plan(capturedText: terminalTailCapture, destination: .yandexTranslate),
+        .open(URL(string: "http://translate.yandex.ru/?text=hello&clid=141986")!),
+        "selected-text search policy allows safe terminal-tail selected text"
+    )
+
+    let blockedCapture = CapturedText(
+        text: "stale",
+        replacementMethod: .blocked,
+        source: "unsafe stale clipboard fallback"
+    )
+    try expect(
+        SelectedTextSearchPolicy.plan(capturedText: blockedCapture, destination: .yandexSearch),
+        .blockedCapture(blockedCapture),
+        "selected-text search policy blocks unsafe capture"
+    )
+
+    try expect(
+        SelectedTextSearchPolicy.plan(capturedText: nil, destination: .yandexSearch),
+        .noText,
+        "selected-text search policy reports nil capture as no text"
+    )
+    try expect(
+        SelectedTextSearchPolicy.plan(
+            capturedText: CapturedText(text: "", replacementMethod: .accessibilitySelection, source: "empty"),
+            destination: .yandexSearch
+        ),
+        .noText,
+        "selected-text search policy reports empty selected text as no text"
+    )
+    try expect(
+        SelectedTextSearchPolicy.plan(
+            capturedText: CapturedText(text: " \n\t ", replacementMethod: .accessibilitySelection, source: "blank"),
+            destination: .yandexSearch
+        ),
+        .skipped(reason: "empty normalized query"),
+        "selected-text search policy skips blank normalized query"
+    )
+}
+
 private func runSearchClickPolicyTests() throws {
     try expect(
         PuntoSwitcherObservedSurface.SearchClick.canDoSearchClickSelector,
@@ -9444,6 +9554,7 @@ do {
     try runApplicationContextPolicyTests()
     try runHotkeyRoutingPolicyTests()
     try runTextActionPreflightPolicyTests()
+    try runTextActionRuntimePreflightPolicyTests()
     try runPointerEventPolicyTests()
     try runEventTapLifecyclePolicyTests()
     try runAccessibilityNotificationPolicyTests()
@@ -9456,6 +9567,7 @@ do {
     try runHotkeyPolicyTests()
     try runKeyDownEventPolicyTests()
     try runSearchShortcutPolicyTests()
+    try runSelectedTextSearchPolicyTests()
     try runSearchClickPolicyTests()
     try runSearchbarSettingsPolicyTests()
     try runCaseConverterTests()
