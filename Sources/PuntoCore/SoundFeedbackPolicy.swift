@@ -18,6 +18,8 @@ public enum InputSourceSwitchSoundContext: Equatable {
 public enum SoundFeedbackPolicy {
     public static let observedSkipNextLanguageChangeSoundSelector = "shouldSkipNextLanguageChangeSound"
 
+    public static let observedIsSoundOnKey = "isSoundOn"
+    public static let observedSetSoundStateSelector = "setSoundState:isSoundOn:"
     public static let legacyEnabledSoundsKey = "enabledSounds"
     public static let legacyUseSoundLayoutSwitchToRussianKey = "useSoundLayoutSwitchToRussian"
     public static let legacyUseSoundLayoutSwitchToEnglishKey = "useSoundLayoutSwitchToEnglish"

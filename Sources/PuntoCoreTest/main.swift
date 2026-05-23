@@ -2653,9 +2653,29 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings defaults hide advanced settings like observed Punto Switcher plist"
     )
     try expect(
+        SettingsPersistencePolicy.observedShowAdvancedSettingsKey,
+        "showAdvancedSettings",
+        "settings persistence preserves observed advanced-settings key"
+    )
+    try expect(
+        SettingsPersistencePolicy.observedSetShowAdvancedSettingsSelector,
+        "setShowAdvancedSettings:",
+        "settings persistence preserves observed advanced-settings setter"
+    )
+    try expect(
         SettingsPersistencePolicy.defaultLaunchAtLogin,
         false,
         "settings defaults do not launch at login"
+    )
+    try expect(
+        SettingsPersistencePolicy.observedLaunchesOnStartupKey,
+        "launchesOnStartup",
+        "settings persistence preserves observed launch-at-login alias key"
+    )
+    try expect(
+        SettingsPersistencePolicy.observedSetLaunchesOnStartupSelector,
+        "setLaunchesOnStartup:",
+        "settings persistence preserves observed launch-at-login setter"
     )
     try expect(
         SettingsPersistencePolicy.defaultSwitchLayoutAfterConversion,
@@ -2871,6 +2891,16 @@ private func runSettingsPersistencePolicyTests() throws {
         SettingsPersistencePolicy.defaultSoundEffectsEnabled,
         false,
         "settings defaults keep sound effects off"
+    )
+    try expect(
+        SoundFeedbackPolicy.observedIsSoundOnKey,
+        "isSoundOn",
+        "sound feedback preserves observed global sound key"
+    )
+    try expect(
+        SoundFeedbackPolicy.observedSetSoundStateSelector,
+        "setSoundState:isSoundOn:",
+        "sound feedback preserves observed sound-state setter"
     )
     try expect(
         SettingsPersistencePolicy.defaultRestorePasteboardAfterConversion,
@@ -8900,6 +8930,21 @@ private func runSoundFeedbackPolicyTests() throws {
         SoundFeedbackPolicy.observedSkipNextLanguageChangeSoundSelector,
         "shouldSkipNextLanguageChangeSound",
         "sound feedback pins observed Punto Switcher skip-next-language-change-sound selector"
+    )
+    try expect(
+        SoundFeedbackPolicy.observedIsSoundOnKey,
+        "isSoundOn",
+        "sound feedback pins observed Punto Switcher global sound key"
+    )
+    try expect(
+        SoundFeedbackPolicy.observedSetSoundStateSelector,
+        "setSoundState:isSoundOn:",
+        "sound feedback pins observed Punto Switcher sound-state setter"
+    )
+    try expect(
+        SoundFeedbackPolicy.legacyEnabledSoundsKey,
+        "enabledSounds",
+        "sound feedback pins observed Punto Switcher enabled-sounds bitmask key"
     )
     try expect(
         SoundFeedbackPolicy.normalizedEnabledResourceNames(["replace", "unknown", "ru"]),

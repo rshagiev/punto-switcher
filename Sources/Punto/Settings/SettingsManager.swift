@@ -17,9 +17,9 @@ final class SettingsManager {
         static let isFirstLaunch = "isFirstLaunch"
         static let isFirstInstallation = "isFirstInstallation"
         static let showInMenuBar = "showInMenuBar"
-        static let showAdvancedSettings = "showAdvancedSettings"
+        static let showAdvancedSettings = SettingsPersistencePolicy.observedShowAdvancedSettingsKey
         static let launchAtLogin = "launchAtLogin"
-        static let launchesOnStartup = "launchesOnStartup"
+        static let launchesOnStartup = SettingsPersistencePolicy.observedLaunchesOnStartupKey
         static let convertLayoutHotkey = "convertLayoutHotkey"
         static let toggleCaseHotkey = "toggleCaseHotkey"
         static let toggleAutoCorrectionHotkey = "toggleAutoCorrectionHotkey"
@@ -69,7 +69,7 @@ final class SettingsManager {
         static let autoCorrectionRules = "autoCorrectionRules"
         static let userRulesDictionary = LegacyUserRulePolicy.userRulesDictionaryKey
         static let soundEffectsEnabled = "soundEffectsEnabled"
-        static let isSoundOn = "isSoundOn"
+        static let isSoundOn = SoundFeedbackPolicy.observedIsSoundOnKey
         static let enabledSoundResourceNames = "enabledSoundResourceNames"
         static let enabledSounds = SoundFeedbackPolicy.legacyEnabledSoundsKey
         static let useSoundLayoutSwitchToRussian = SoundFeedbackPolicy.legacyUseSoundLayoutSwitchToRussianKey

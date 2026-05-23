@@ -4,7 +4,11 @@ public enum SettingsPersistencePolicy {
     public static let defaultIsEnabled = true
     public static let defaultShowInMenuBar = true
     public static let defaultShowAdvancedSettings = false
+    public static let observedShowAdvancedSettingsKey = "showAdvancedSettings"
+    public static let observedSetShowAdvancedSettingsSelector = "setShowAdvancedSettings:"
     public static let defaultLaunchAtLogin = false
+    public static let observedLaunchesOnStartupKey = "launchesOnStartup"
+    public static let observedSetLaunchesOnStartupSelector = "setLaunchesOnStartup:"
     public static let defaultSwitchLayoutAfterConversion = false
     public static let defaultSwitchLayoutAfterSelectedTextConversion = true
     public static let observedSwitchLayoutOnSelectedTextSwitchKey = "switchLayoutOnSelectedTextSwitch"
