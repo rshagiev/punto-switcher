@@ -41,6 +41,12 @@ for symbol in "${debug_inline_core_symbols[@]}"; do
     echo "PASS debug inline duplicate absent: $symbol"
 done
 
+if rg --fixed-strings --quiet "Placeholder - actual tests" Tests 2>/dev/null; then
+    echo "legacy boundary failed: placeholder SwiftPM test target returned" >&2
+    exit 1
+fi
+echo "PASS placeholder SwiftPM tests absent"
+
 /usr/bin/python3 - "$ROOT_DIR/Sources/Punto/Settings/SettingsManager.swift" <<'PY'
 import re
 import sys

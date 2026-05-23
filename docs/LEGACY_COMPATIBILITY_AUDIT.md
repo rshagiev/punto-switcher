@@ -80,6 +80,11 @@ the production module instead of carrying inline copies of `LayoutConverter` and
 `WordTracker`; the boundary script fails if those duplicate classes or their old
 mapping/boundary tables reappear.
 
+The repository also no longer carries a placeholder SwiftPM `Tests/` file that
+claims tests live elsewhere. This toolchain cannot import XCTest, so placeholder
+test targets create a false green surface; the boundary script now fails if that
+placeholder comes back.
+
 ## Next Candidates
 
 - Continue splitting only the remaining constants where the policy currently
