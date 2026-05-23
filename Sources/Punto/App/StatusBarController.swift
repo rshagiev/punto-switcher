@@ -1,20 +1,51 @@
 import AppKit
+import PuntoCore
 
 /// Controller for the menu bar icon and dropdown menu
-final class StatusBarController {
+final class StatusBarController: NSObject {
 
     private var statusItem: NSStatusItem?
     private let settingsManager: SettingsManager
     private let onSettingsClick: () -> Void
     private let onQuitClick: () -> Void
+    private let onEnabledChanged: (Bool, Bool) -> Void
+    private let onToggleCurrentAppDisabled: () -> Void
+    private let isCurrentAppDisabled: () -> Bool
+    private let currentAppBundleID: () -> String?
+    private let currentAppName: () -> String?
 
     private var enabledMenuItem: NSMenuItem?
+    private var soundEffectsMenuItem: NSMenuItem?
+    private var disableCurrentAppMenuItem: NSMenuItem?
+    private var convertHotkeyMenuItem: NSMenuItem?
+    private var toggleCaseHotkeyMenuItem: NSMenuItem?
+    private var toggleAutoCorrectionHotkeyMenuItem: NSMenuItem?
+    private var cancelLayoutChangeHotkeyMenuItem: NSMenuItem?
+    private var findInYandexHotkeyMenuItem: NSMenuItem?
+    private var findInSlovariHotkeyMenuItem: NSMenuItem?
     private var isFlashing = false
+    private var currentIconState: StatusIconState?
 
-    init(settingsManager: SettingsManager, onSettingsClick: @escaping () -> Void, onQuitClick: @escaping () -> Void) {
+    init(
+        settingsManager: SettingsManager,
+        onSettingsClick: @escaping () -> Void,
+        onQuitClick: @escaping () -> Void,
+        onEnabledChanged: @escaping (Bool, Bool) -> Void,
+        onToggleCurrentAppDisabled: @escaping () -> Void,
+        isCurrentAppDisabled: @escaping () -> Bool,
+        currentAppBundleID: @escaping () -> String?,
+        currentAppName: @escaping () -> String?
+    ) {
         self.settingsManager = settingsManager
         self.onSettingsClick = onSettingsClick
         self.onQuitClick = onQuitClick
+        self.onEnabledChanged = onEnabledChanged
+        self.onToggleCurrentAppDisabled = onToggleCurrentAppDisabled
+        self.isCurrentAppDisabled = isCurrentAppDisabled
+        self.currentAppBundleID = currentAppBundleID
+        self.currentAppName = currentAppName
+
+        super.init()
 
         setupStatusItem()
     }
@@ -25,8 +56,7 @@ final class StatusBarController {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
         if let button = statusItem?.button {
-            button.image = loadMenuBarIcon()
-            button.image?.isTemplate = true
+            applyIconState(to: button)
         }
 
         setupMenu()
@@ -36,8 +66,41 @@ final class StatusBarController {
         return NSImage(named: "MenuBarIcon")
     }
 
+    private func desiredIconState() -> StatusIconState {
+        StatusIconPolicy.state(
+            isEnabled: settingsManager.isEnabled,
+            isCurrentApplicationDisabled: isCurrentAppDisabled()
+        )
+    }
+
+    private func applyIconState(to button: NSStatusBarButton) {
+        let state = desiredIconState()
+        currentIconState = state
+
+        button.image = loadMenuBarIcon()
+        button.image?.isTemplate = true
+        button.toolTip = StatusIconPolicy.accessibilityDescription(for: state)
+
+        switch state {
+        case .active:
+            button.contentTintColor = nil
+        case .inactive:
+            button.contentTintColor = .secondaryLabelColor
+        case .disabled:
+            button.contentTintColor = .tertiaryLabelColor
+        }
+    }
+
+    private func updateIconState() {
+        guard !isFlashing, let button = statusItem?.button else { return }
+        let state = desiredIconState()
+        guard currentIconState != state else { return }
+        applyIconState(to: button)
+    }
+
     private func setupMenu() {
         let menu = NSMenu()
+        menu.delegate = self
 
         // Title
         let titleItem = NSMenuItem(title: "Punto", action: nil, keyEquivalent: "")
@@ -52,18 +115,42 @@ final class StatusBarController {
         enabledMenuItem?.state = settingsManager.isEnabled ? .on : .off
         menu.addItem(enabledMenuItem!)
 
+        soundEffectsMenuItem = NSMenuItem(title: "Sound Effects", action: #selector(toggleSoundEffects), keyEquivalent: "")
+        soundEffectsMenuItem?.target = self
+        soundEffectsMenuItem?.state = settingsManager.soundEffectsEnabled ? .on : .off
+        menu.addItem(soundEffectsMenuItem!)
+
+        disableCurrentAppMenuItem = NSMenuItem(title: "Disable in Current App", action: #selector(toggleCurrentAppDisabled), keyEquivalent: "")
+        disableCurrentAppMenuItem?.target = self
+        menu.addItem(disableCurrentAppMenuItem!)
+
         menu.addItem(NSMenuItem.separator())
 
         // Hotkey info (non-clickable) - show actual hotkeys from settings
-        let convertHotkey = settingsManager.convertLayoutHotkey
-        let convertItem = NSMenuItem(title: "Convert Layout\t\(convertHotkey.displayString)", action: nil, keyEquivalent: "")
-        convertItem.isEnabled = false
-        menu.addItem(convertItem)
+        convertHotkeyMenuItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+        convertHotkeyMenuItem?.isEnabled = false
+        menu.addItem(convertHotkeyMenuItem!)
 
-        let caseHotkey = settingsManager.toggleCaseHotkey
-        let caseItem = NSMenuItem(title: "Toggle Case\t\(caseHotkey.displayString)", action: nil, keyEquivalent: "")
-        caseItem.isEnabled = false
-        menu.addItem(caseItem)
+        toggleCaseHotkeyMenuItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+        toggleCaseHotkeyMenuItem?.isEnabled = false
+        menu.addItem(toggleCaseHotkeyMenuItem!)
+
+        toggleAutoCorrectionHotkeyMenuItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+        toggleAutoCorrectionHotkeyMenuItem?.isEnabled = false
+        menu.addItem(toggleAutoCorrectionHotkeyMenuItem!)
+
+        cancelLayoutChangeHotkeyMenuItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+        cancelLayoutChangeHotkeyMenuItem?.isEnabled = false
+        menu.addItem(cancelLayoutChangeHotkeyMenuItem!)
+
+        findInYandexHotkeyMenuItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+        findInYandexHotkeyMenuItem?.isEnabled = false
+        menu.addItem(findInYandexHotkeyMenuItem!)
+
+        findInSlovariHotkeyMenuItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+        findInSlovariHotkeyMenuItem?.isEnabled = false
+        menu.addItem(findInSlovariHotkeyMenuItem!)
+        updateHotkeyDisplay()
 
         menu.addItem(NSMenuItem.separator())
 
@@ -85,8 +172,23 @@ final class StatusBarController {
     // MARK: - Actions
 
     @objc private func toggleEnabled() {
+        let wasEnabled = settingsManager.isEnabled
         settingsManager.isEnabled.toggle()
-        enabledMenuItem?.state = settingsManager.isEnabled ? .on : .off
+        let isEnabled = settingsManager.isEnabled
+        enabledMenuItem?.state = isEnabled ? .on : .off
+        onEnabledChanged(wasEnabled, isEnabled)
+        updateIconState()
+    }
+
+    @objc private func toggleSoundEffects() {
+        settingsManager.soundEffectsEnabled.toggle()
+        soundEffectsMenuItem?.state = settingsManager.soundEffectsEnabled ? .on : .off
+    }
+
+    @objc private func toggleCurrentAppDisabled() {
+        onToggleCurrentAppDisabled()
+        updateCurrentAppMenuItem()
+        updateIconState()
     }
 
     @objc private func openSettings() {
@@ -121,6 +223,7 @@ final class StatusBarController {
             button?.image = originalImage
             button?.contentTintColor = originalTint
             self?.isFlashing = false
+            self?.updateIconState()
         }
     }
 
@@ -140,7 +243,39 @@ final class StatusBarController {
     }
 
     func updateHotkeyDisplay() {
-        // Update the menu to reflect new hotkeys
-        setupMenu()
+        convertHotkeyMenuItem?.title = "Convert Layout\t\(settingsManager.convertLayoutHotkey.displayString)"
+        toggleCaseHotkeyMenuItem?.title = "Toggle Case\t\(settingsManager.toggleCaseHotkey.displayString)"
+        toggleAutoCorrectionHotkeyMenuItem?.title = "Toggle Auto-correction\t\(settingsManager.toggleAutoCorrectionHotkey.displayString)"
+        cancelLayoutChangeHotkeyMenuItem?.title = "Cancel Last Conversion\t\(settingsManager.cancelLayoutChangeHotkey.displayString)"
+        findInYandexHotkeyMenuItem?.title = "Find in Yandex\t\(settingsManager.findInYandexHotkey.displayString)"
+        findInSlovariHotkeyMenuItem?.title = "Find in Translate\t\(settingsManager.findInSlovariHotkey.displayString)"
+    }
+
+    func refreshCurrentApplicationState() {
+        updateCurrentAppMenuItem()
+        updateIconState()
+    }
+
+    private func updateCurrentAppMenuItem() {
+        guard let item = disableCurrentAppMenuItem else { return }
+        let state = ApplicationDisablePolicy.menuStateForCurrentApplication(
+            bundleID: currentAppBundleID(),
+            ownBundleID: Bundle.main.bundleIdentifier,
+            displayName: currentAppName(),
+            isCurrentlyDisabled: isCurrentAppDisabled()
+        )
+        item.title = state.title
+        item.state = state.isChecked ? .on : .off
+        item.isEnabled = state.isEnabled
+    }
+}
+
+extension StatusBarController: NSMenuDelegate {
+    func menuWillOpen(_ menu: NSMenu) {
+        enabledMenuItem?.state = settingsManager.isEnabled ? .on : .off
+        soundEffectsMenuItem?.state = settingsManager.soundEffectsEnabled ? .on : .off
+        updateHotkeyDisplay()
+        updateCurrentAppMenuItem()
+        updateIconState()
     }
 }

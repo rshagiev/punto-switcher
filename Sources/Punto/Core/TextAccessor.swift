@@ -1,29 +1,20 @@
 import AppKit
 import ApplicationServices
 import Carbon.HIToolbox
+import PuntoCore
 
 /// Handles getting and setting selected text using Accessibility API
 /// Falls back to clipboard-based approach for apps that don't support Accessibility
 final class TextAccessor {
 
-    /// Tracks if the last getSelectedText used clipboard fallback
-    /// If true, setSelectedText should also use clipboard (Cmd+V) since AX won't work
-    private var lastGetUsedClipboard = false
+    typealias ReplacementMethod = TextReplacementMethod
+    typealias CapturedText = PuntoCore.CapturedText
 
-    // MARK: - Terminal Detection
-    
-    private static let terminalBundleIDs: Set<String> = [
-        "com.apple.Terminal",
-        "com.googlecode.iterm2",
-        "com.mitchellh.ghostty",
-        "io.alacritty",
-        "net.kovidgoyal.kitty"
-    ]
-    
-    func isTerminalApp() -> Bool {
-        guard let frontApp = NSWorkspace.shared.frontmostApplication,
-              let bundleID = frontApp.bundleIdentifier else { return false }
-        return Self.terminalBundleIDs.contains(bundleID)
+    private let shouldRestorePasteboard: () -> Bool
+    private var lastEditableSelectionElement: AXUIElement?
+
+    init(shouldRestorePasteboard: @escaping () -> Bool = { true }) {
+        self.shouldRestorePasteboard = shouldRestorePasteboard
     }
 
     // MARK: - Security Detection
@@ -37,55 +28,162 @@ final class TextAccessor {
     /// Checks if focused element is a secure/password text field
     /// Used to skip conversion in browser password fields
     func isPasswordField() -> Bool {
-        guard let element = getFocusedElement() else {
-            return false
+        if let focusedElement = getFocusedElement(),
+           elementOrDescendantIsPasswordField(focusedElement, depth: 0) {
+            PuntoLog.info("isPasswordField: secure field detected from focused element tree")
+            return true
         }
 
-        // Check subrole for AXSecureTextField
-        var subrole: AnyObject?
-        if AXUIElementCopyAttributeValue(element, kAXSubroleAttribute as CFString, &subrole) == .success,
-           let sr = subrole as? String,
-           sr == "AXSecureTextField" {
+        if let appFocusedElement = getAppFocusedElement(),
+           elementOrDescendantIsPasswordField(appFocusedElement, depth: 0) {
+            PuntoLog.info("isPasswordField: secure field detected from app focusedUIElement tree")
             return true
         }
 
         return false
     }
 
+    func canDoSearchClick(bundleID: String?) -> Bool {
+        guard let focusedElement = getFocusedElement() else {
+            PuntoLog.info("canDoSearchClick: no focused element")
+            return false
+        }
+
+        let role = accessibilityRole(of: focusedElement)
+        let canSearch = SearchClickPolicy.canDoSearchClick(role: role, bundleID: bundleID)
+        PuntoLog.info("canDoSearchClick: role='\(role ?? "?")' bundle='\(bundleID ?? "?")' result=\(canSearch)")
+        return canSearch
+    }
+
+    private func elementOrDescendantIsPasswordField(_ element: AXUIElement, depth: Int) -> Bool {
+        guard AccessibilityTraversalPolicy.shouldInspectDescendant(depth: depth) else {
+            return false
+        }
+
+        if elementIsPasswordField(element) {
+            return true
+        }
+
+        guard let childArray = AccessibilityValueBridge.elementArrayAttribute(kAXChildrenAttribute as CFString, from: element) else {
+            return false
+        }
+
+        for child in childArray {
+            if elementOrDescendantIsPasswordField(child, depth: depth + 1) {
+                return true
+            }
+        }
+
+        return false
+    }
+
+    private func elementIsPasswordField(_ element: AXUIElement) -> Bool {
+        return TextTrackingSecurityPolicy.isPasswordLikeAccessibilityElement(
+            role: AccessibilityValueBridge.stringAttribute(kAXRoleAttribute as CFString, from: element),
+            subrole: AccessibilityValueBridge.stringAttribute(kAXSubroleAttribute as CFString, from: element)
+        )
+    }
+
     // MARK: - Get Selected Text
 
     /// Result of trying to get selected text via Accessibility API
     private enum AXGetResult {
-        case text(String)       // Got non-empty selected text
+        case text(String, AXUIElement)  // Got non-empty selected text and source element
         case empty              // AX worked, but nothing is selected
         case noFocus            // Couldn't get focused element (skip clipboard, use WordTracker)
         case failed             // AX API failed on element (should try clipboard fallback)
+
+        var searchOutcome: AccessibilitySelectionProbeOutcome {
+            switch self {
+            case .text:
+                return .text
+            case .empty:
+                return .empty
+            case .noFocus:
+                return .noFocus
+            case .failed:
+                return .failed
+            }
+        }
     }
 
-    /// Attempts to get the currently selected text using Accessibility API
-    /// Falls back to Cmd+C clipboard method for browsers/apps that don't expose selectedText
-    func getSelectedText() -> String? {
-        // 1. Try Accessibility API (direct access)
-        switch getSelectedTextViaAccessibility() {
-        case .text(let text):
-            lastGetUsedClipboard = false
-            return text
+    /// Captures a usable text selection and the safest way to replace it.
+    ///
+    /// The decision is capability based:
+    /// - AX selections are used only when the focused element appears editable and
+    ///   can set selected text.
+    /// - Non-editable text surfaces are treated as terminal-like. We only accept
+    ///   passive clipboard selection when it ends with the tracked input tail.
+    /// - Apps without useful AX selection still get the active Cmd+C fallback.
+    func captureSelectedText(lastTrackedWord: String?, lastTrackedTail: String?) -> CapturedText? {
+        let axResult = getSelectedTextViaAccessibility()
+        let observation: TextCapturePolicy.AccessibilityObservation
+        var activeClipboardText: String?
+        var passiveClipboardText: String?
+        var overrideCapturedText: CapturedText?
+
+        switch axResult {
+        case .text(let text, let element):
+            let supportsReplacement = elementSupportsSelectedTextReplacement(element)
+            observation = .selectedText(text, replacementSupported: supportsReplacement)
+            if supportsReplacement {
+                lastEditableSelectionElement = element
+                PuntoLog.info("captureSelectedText: AX editable selection accepted")
+            } else {
+                lastEditableSelectionElement = nil
+                PuntoLog.info("captureSelectedText: AX selection rejected because focused surface is not settable")
+                if TextCapturePolicy.shouldAttemptActiveClipboardFallbackForNonSettableSelection(
+                    selectedText: text,
+                    lastTrackedTail: lastTrackedTail
+                ) {
+                    PuntoLog.info("captureSelectedText: trying active clipboard copy for non-settable AX selection")
+                    activeClipboardText = getSelectedTextViaClipboard()
+                    passiveClipboardText = currentClipboardText()
+                    overrideCapturedText = TextCapturePolicy.activeClipboardFallbackForNonSettableContentSelection(
+                        selectedText: text,
+                        activeClipboardText: activeClipboardText,
+                        accessibilityRoles: accessibilityRoles(
+                            from: element,
+                            maxDepth: AccessibilityTraversalPolicy.maxAncestorRoleDepth
+                        )
+                    )
+                }
+            }
+
         case .empty:
-            // AX worked, nothing selected - no need for clipboard fallback
-            lastGetUsedClipboard = false
-            return nil
+            lastEditableSelectionElement = nil
+            observation = .emptySelection
+
         case .noFocus:
-            // Couldn't get focused element - still try clipboard fallback
-            // Some apps (like VS Code extension host) don't expose AX elements
-            // but still support Cmd+C for selected text
-            lastGetUsedClipboard = true
-            PuntoLog.info("getSelectedText: noFocus, trying clipboard fallback")
-            return getSelectedTextViaClipboard()
+            lastEditableSelectionElement = nil
+            observation = .noFocusedElement
+            PuntoLog.info("captureSelectedText: noFocus, trying active clipboard fallback")
+            activeClipboardText = getSelectedTextViaClipboard()
+
         case .failed:
-            // AX failed on specific element - try clipboard fallback for browsers
-            lastGetUsedClipboard = true
-            return getSelectedTextViaClipboard()
+            lastEditableSelectionElement = nil
+            observation = .failed
+            passiveClipboardText = currentClipboardText()
+            activeClipboardText = getSelectedTextViaClipboard()
         }
+
+        let captured = overrideCapturedText ?? TextCapturePolicy.captureDecision(
+            observation: observation,
+            activeClipboardText: activeClipboardText,
+            passiveClipboardText: passiveClipboardText,
+            lastTrackedWord: lastTrackedWord,
+            lastTrackedTail: lastTrackedTail
+        )
+
+        if captured?.replacementMethod == .blocked {
+            lastEditableSelectionElement = nil
+            PuntoLog.info("captureSelectedText: blocking fallback because non-settable selection is not current command tail")
+        }
+        if captured?.replacementMethod != .accessibilitySelection {
+            lastEditableSelectionElement = nil
+        }
+
+        return captured
     }
 
     private func getSelectedTextViaAccessibility() -> AXGetResult {
@@ -93,50 +191,80 @@ final class TextAccessor {
             PuntoLog.info("getSelectedTextViaAccessibility: no focused element")
             return .noFocus
         }
+        var sawEmptySelection = false
 
         // Direct attempt on focused element
-        switch tryGetSelectedText(focusedElement) {
-        case .text(let text):
+        let focusedResult = tryGetSelectedText(focusedElement)
+        switch focusedResult {
+        case .text(let text, let element):
             PuntoLog.info("getSelectedTextViaAccessibility: direct succeeded")
-            return .text(text)
+            return .text(text, element)
         case .empty:
             PuntoLog.info("getSelectedTextViaAccessibility: direct returned empty (nothing selected)")
-            return .empty
         case .noFocus, .failed:
-            break  // Continue to other methods
+            break
+        }
+        sawEmptySelection = AccessibilitySelectionSearchPolicy.sawEmptySelection(
+            sawEmptySelection,
+            after: focusedResult.searchOutcome
+        )
+        guard AccessibilitySelectionSearchPolicy.shouldTryAlternativeSelectionSource(after: focusedResult.searchOutcome) else {
+            return focusedResult
         }
 
         // For Safari/Electron: try via app's focusedUIElement
         if let appFocusedElement = getAppFocusedElement() {
-            switch tryGetSelectedText(appFocusedElement) {
-            case .text(let text):
+            let appFocusedResult = tryGetSelectedText(appFocusedElement)
+            switch appFocusedResult {
+            case .text(let text, let element):
                 PuntoLog.info("getSelectedTextViaAccessibility: appFocusedElement succeeded")
-                return .text(text)
+                return .text(text, element)
             case .empty:
-                return .empty
+                break
             case .noFocus, .failed:
                 break
             }
+            sawEmptySelection = AccessibilitySelectionSearchPolicy.sawEmptySelection(
+                sawEmptySelection,
+                after: appFocusedResult.searchOutcome
+            )
+            guard AccessibilitySelectionSearchPolicy.shouldTryAlternativeSelectionSource(after: appFocusedResult.searchOutcome) else {
+                return appFocusedResult
+            }
         }
 
-        // Recursive search in children (maxDepth=5)
-        if let text = searchForSelectedText(focusedElement, depth: 0) {
+        // Recursive search in children with the shared AX traversal bound.
+        let recursiveResult = searchForSelectedText(focusedElement, depth: 0)
+        switch recursiveResult {
+        case .text(let text, let element):
             PuntoLog.info("getSelectedTextViaAccessibility: recursive search found text")
-            return .text(text)
+            return .text(text, element)
+        case .empty:
+            break
+        case .noFocus, .failed:
+            break
         }
+        sawEmptySelection = AccessibilitySelectionSearchPolicy.sawEmptySelection(
+            sawEmptySelection,
+            after: recursiveResult.searchOutcome
+        )
 
-        // All methods failed - might be a browser that needs clipboard fallback
-        PuntoLog.info("getSelectedTextViaAccessibility: all methods failed")
-        return .failed
+        switch AccessibilitySelectionSearchPolicy.finalOutcomeAfterSearch(sawEmptySelection: sawEmptySelection) {
+        case .empty:
+            PuntoLog.info("getSelectedTextViaAccessibility: no selected text found after empty AX selection")
+            return .empty
+        case .failed:
+            // All methods failed - might be a browser that needs clipboard fallback.
+            PuntoLog.info("getSelectedTextViaAccessibility: all methods failed")
+            return .failed
+        }
     }
 
     /// Attempts to get selectedText from an element
     private func tryGetSelectedText(_ element: AXUIElement) -> AXGetResult {
-        var selectedText: AnyObject?
-        let result = AXUIElementCopyAttributeValue(
-            element,
+        let (result, selectedText) = AccessibilityValueBridge.stringAttributeResult(
             kAXSelectedTextAttribute as CFString,
-            &selectedText
+            from: element
         )
 
         // AX API failed - element doesn't support selectedText
@@ -145,9 +273,9 @@ final class TextAccessor {
         }
 
         // AX API succeeded - check if there's actual text
-        if let text = selectedText as? String, !text.isEmpty {
+        if let text = selectedText, !text.isEmpty {
             PuntoLog.info("tryGetSelectedText: got '\(text.prefix(30))'")
-            return .text(text)
+            return .text(text, element)
         }
 
         // AX succeeded but returned empty string = nothing selected
@@ -158,62 +286,158 @@ final class TextAccessor {
     private func getAppFocusedElement() -> AXUIElement? {
         let systemWide = AXUIElementCreateSystemWide()
 
-        var focusedApp: AnyObject?
-        let appResult = AXUIElementCopyAttributeValue(
-            systemWide,
+        let (appResult, appElement) = AccessibilityValueBridge.elementAttributeResult(
             kAXFocusedApplicationAttribute as CFString,
-            &focusedApp
+            from: systemWide,
+            context: "getAppFocusedElement: focused app"
         )
         guard appResult == .success else {
             PuntoLog.info("getAppFocusedElement: failed to get app, error=\(appResult.rawValue)")
             return nil
         }
 
-        let appElement = focusedApp as! AXUIElement
+        guard let appElement else {
+            return nil
+        }
+        enableEnhancedUserInterfaceIfNeeded(on: appElement)
 
-        var focusedElement: AnyObject?
-        let elemResult = AXUIElementCopyAttributeValue(
-            appElement,
+        let (elemResult, element) = AccessibilityValueBridge.elementAttributeResult(
             kAXFocusedUIElementAttribute as CFString,
-            &focusedElement
+            from: appElement,
+            context: "getAppFocusedElement: focusedUIElement"
         )
         guard elemResult == .success else {
             PuntoLog.info("getAppFocusedElement: failed to get focusedUIElement, error=\(elemResult.rawValue)")
             return nil
         }
 
+        guard let element else {
+            return nil
+        }
+
         PuntoLog.info("getAppFocusedElement: got focusedUIElement")
-        return (focusedElement as! AXUIElement)
+        return element
     }
 
     /// Recursive search for selectedText in child elements
-    private func searchForSelectedText(_ element: AXUIElement, depth: Int) -> String? {
-        guard depth < 5 else {
-            return nil
+    private func searchForSelectedText(_ element: AXUIElement, depth: Int) -> AXGetResult {
+        guard AccessibilityTraversalPolicy.shouldInspectDescendant(depth: depth) else {
+            return .failed
         }
 
-        var children: AnyObject?
-        let childResult = AXUIElementCopyAttributeValue(
-            element,
-            kAXChildrenAttribute as CFString,
-            &children
-        )
-        guard childResult == .success, let childArray = children as? [AXUIElement] else {
-            return nil
+        guard let childArray = AccessibilityValueBridge.elementArrayAttribute(kAXChildrenAttribute as CFString, from: element) else {
+            return .failed
         }
 
+        var sawEmptySelection = false
         for child in childArray {
             // First check the element itself
-            if case .text(let text) = tryGetSelectedText(child) {
+            let childResult = tryGetSelectedText(child)
+            switch childResult {
+            case .text(let text, let element):
                 PuntoLog.info("searchForSelectedText: found text at depth \(depth)")
-                return text
+                return .text(text, element)
+            case .empty:
+                break
+            case .noFocus, .failed:
+                break
             }
+            sawEmptySelection = AccessibilitySelectionSearchPolicy.sawEmptySelection(
+                sawEmptySelection,
+                after: childResult.searchOutcome
+            )
+            guard AccessibilitySelectionSearchPolicy.shouldTryAlternativeSelectionSource(after: childResult.searchOutcome) else {
+                return childResult
+            }
+
             // Then recursively search in its children
-            if let text = searchForSelectedText(child, depth: depth + 1) {
-                return text
+            let descendantResult = searchForSelectedText(child, depth: depth + 1)
+            switch descendantResult {
+            case .text:
+                return descendantResult
+            case .empty:
+                break
+            case .noFocus, .failed:
+                break
             }
+            sawEmptySelection = AccessibilitySelectionSearchPolicy.sawEmptySelection(
+                sawEmptySelection,
+                after: descendantResult.searchOutcome
+            )
         }
-        return nil
+
+        switch AccessibilitySelectionSearchPolicy.finalOutcomeAfterSearch(sawEmptySelection: sawEmptySelection) {
+        case .empty:
+            return .empty
+        case .failed:
+            return .failed
+        }
+    }
+
+    private func elementSupportsSelectedTextReplacement(_ element: AXUIElement) -> Bool {
+        let capability = selectedTextReplacementCapability(of: element)
+        if let editable = capability.axEditable {
+            PuntoLog.info("elementSupportsSelectedTextReplacement: AXEditable=\(editable)")
+        }
+        if capability.selectedTextSettable {
+            PuntoLog.info("elementSupportsSelectedTextReplacement: AXSelectedText settable")
+        }
+
+        if capability.supportsDirectSelectedTextReplacement {
+            return true
+        }
+
+        PuntoLog.info("elementSupportsSelectedTextReplacement: no editable/settable replacement capability (\(capability.logDescription))")
+        return false
+    }
+
+    private func selectedTextReplacementCapability(of element: AXUIElement) -> AccessibilityReplacementCapability {
+        let role = accessibilityRole(of: element)
+        let editable = AccessibilityValueBridge.boolAttribute("AXEditable" as CFString, from: element)
+
+        var isSettable: DarwinBoolean = false
+        let settableResult = AXUIElementIsAttributeSettable(
+            element,
+            kAXSelectedTextAttribute as CFString,
+            &isSettable
+        )
+        let selectedTextSettable = settableResult == .success && isSettable.boolValue
+        return AccessibilityReplacementCapability(
+            role: role,
+            axEditable: editable,
+            selectedTextSettable: selectedTextSettable,
+            selectedTextSettableErrorCode: Int(settableResult.rawValue)
+        )
+    }
+
+    private func accessibilityRole(of element: AXUIElement) -> String? {
+        AccessibilityValueBridge.stringAttribute(kAXRoleAttribute as CFString, from: element)
+    }
+
+    private func accessibilityRoles(from element: AXUIElement, maxDepth: Int) -> [String] {
+        var roles: [String] = []
+        var current = element
+
+        for depth in 0...maxDepth {
+            guard AccessibilityTraversalPolicy.shouldCollectAncestorRole(atDepth: depth) else {
+                break
+            }
+
+            if let role = accessibilityRole(of: current) {
+                roles.append(role)
+            }
+
+            guard let parentElement = AccessibilityValueBridge.elementAttribute(
+                kAXParentAttribute as CFString,
+                from: current,
+                context: "accessibilityRoles: parent"
+            ) else {
+                break
+            }
+            current = parentElement
+        }
+
+        return roles
     }
 
     // MARK: - Clipboard Fallback
@@ -222,67 +446,72 @@ final class TextAccessor {
         PuntoLog.info("getSelectedTextViaClipboard: using Cmd+C fallback")
 
         let pasteboard = NSPasteboard.general
-        let previousContent = pasteboard.string(forType: .string)
-        let initialChangeCount = pasteboard.changeCount
+        let snapshot = PasteboardSnapshot(pasteboard)
+        let previousClipboardText = pasteboard.string(forType: .string)
 
         pasteboard.clearContents()
+        let copyBaselineChangeCount = pasteboard.changeCount
 
         // Send Cmd+C via CGEvent (fastest method)
         let source = CGEventSource(stateID: .combinedSessionState)
-        if let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 8, keyDown: true) {
+        if let keyDown = CGEvent(keyboardEventSource: source, virtualKey: ClipboardCapturePolicy.copyKeyCode, keyDown: true) {
             keyDown.flags = .maskCommand
             keyDown.post(tap: .cgAnnotatedSessionEventTap)
         }
-        Thread.sleep(forTimeInterval: 0.01)
-        if let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 8, keyDown: false) {
+        Thread.sleep(forTimeInterval: ClipboardCapturePolicy.keyUpDelay)
+        if let keyUp = CGEvent(keyboardEventSource: source, virtualKey: ClipboardCapturePolicy.copyKeyCode, keyDown: false) {
             keyUp.flags = .maskCommand
             keyUp.post(tap: .cgAnnotatedSessionEventTap)
         }
 
         // Poll clipboard with short intervals instead of one long wait
         // This makes fast apps respond quickly while still supporting slow ones
-        for i in 1...10 {
-            Thread.sleep(forTimeInterval: 0.02)  // 20ms per iteration, max 200ms total
-            if pasteboard.changeCount != initialChangeCount {
+        for i in 1...ClipboardCapturePolicy.maxPollAttempts {
+            Thread.sleep(forTimeInterval: ClipboardCapturePolicy.pollInterval)
+            let pasteboardChanged = pasteboard.changeCount != copyBaselineChangeCount
+            if ClipboardCapturePolicy.shouldStopPolling(pasteboardChanged: pasteboardChanged) {
                 break
             }
             // After 60ms, try HID fallback
-            if i == 3 {
+            if ClipboardCapturePolicy.shouldAttemptHIDFallback(pollAttempt: i, pasteboardChanged: pasteboardChanged) {
                 let sourceHID = CGEventSource(stateID: .hidSystemState)
-                if let keyDown = CGEvent(keyboardEventSource: sourceHID, virtualKey: 8, keyDown: true) {
+                if let keyDown = CGEvent(keyboardEventSource: sourceHID, virtualKey: ClipboardCapturePolicy.copyKeyCode, keyDown: true) {
                     keyDown.flags = .maskCommand
                     keyDown.post(tap: .cghidEventTap)
                 }
-                Thread.sleep(forTimeInterval: 0.01)
-                if let keyUp = CGEvent(keyboardEventSource: sourceHID, virtualKey: 8, keyDown: false) {
+                Thread.sleep(forTimeInterval: ClipboardCapturePolicy.keyUpDelay)
+                if let keyUp = CGEvent(keyboardEventSource: sourceHID, virtualKey: ClipboardCapturePolicy.copyKeyCode, keyDown: false) {
                     keyUp.flags = .maskCommand
                     keyUp.post(tap: .cghidEventTap)
                 }
             }
         }
 
-        let selected = pasteboard.string(forType: .string)
-
-        guard let text = selected, !text.isEmpty else {
+        let copyChangedPasteboard = pasteboard.changeCount != copyBaselineChangeCount
+        guard let text = ClipboardCapturePolicy.capturedTextAfterCopy(
+            pasteboardText: pasteboard.string(forType: .string),
+            pasteboardChanged: copyChangedPasteboard,
+            previousClipboardText: previousClipboardText
+        ) else {
             PuntoLog.info("getSelectedTextViaClipboard: no text in clipboard")
+            restorePasteboardIfEnabled(snapshot, to: pasteboard, reason: "clipboard capture failed")
             return nil
         }
 
-        // If clipboard content is same as before, nothing was selected
-        if text == previousContent {
-            PuntoLog.info("getSelectedTextViaClipboard: clipboard unchanged (nothing selected)")
-            return nil
-        }
-
-        // Trim trailing whitespace - some apps (like Cursor) add newlines when copying
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else {
-            PuntoLog.info("getSelectedTextViaClipboard: got only whitespace, treating as empty")
+        PuntoLog.info("getSelectedTextViaClipboard: got '\(trimmed.prefix(30))' (raw \(text.count) chars, trimmed \(trimmed.count) chars)")
+        restorePasteboardIfEnabled(snapshot, to: pasteboard, reason: "clipboard capture completed")
+        return text
+    }
+
+    private func currentClipboardText() -> String? {
+        let pasteboard = NSPasteboard.general
+        guard let text = pasteboard.string(forType: .string), !text.isEmpty else {
+            PuntoLog.info("currentClipboardText: clipboard empty")
             return nil
         }
 
-        PuntoLog.info("getSelectedTextViaClipboard: got '\(trimmed.prefix(30))' (trimmed from \(text.count) to \(trimmed.count) chars)")
-        return trimmed
+        return text
     }
 
     // MARK: - Set Selected Text
@@ -291,49 +520,63 @@ final class TextAccessor {
     /// - Parameters:
     ///   - text: The text to insert
     ///   - keepSelection: If true, the inserted text will be selected after insertion (for undo support)
-    func setSelectedText(_ text: String, keepSelection: Bool = false) {
-        PuntoLog.info("setSelectedText called with \(text.count) chars, keepSelection=\(keepSelection), lastGetUsedClipboard=\(lastGetUsedClipboard)")
-
-        // If getSelectedText used clipboard, we must use clipboard for set too
-        // because AX API returns "success" but doesn't actually work for web content
-        if lastGetUsedClipboard {
-            PuntoLog.info("setSelectedText: using clipboard (matched get method)")
-            setSelectedTextViaClipboard(text, selectAfterPaste: keepSelection)
-            return
-        }
+    @discardableResult
+    func setSelectedText(_ text: String, keepSelection: Bool = false) -> Bool {
+        PuntoLog.info("setSelectedText called with \(text.count) chars, keepSelection=\(keepSelection)")
 
         // Try Accessibility API first
         if setSelectedTextViaAccessibility(text, keepSelection: keepSelection) {
             PuntoLog.info("setSelectedText: Accessibility API succeeded")
-            return
+            return true
         }
 
         PuntoLog.info("setSelectedText: Accessibility API failed, using clipboard")
         // Fall back to clipboard method
-        setSelectedTextViaClipboard(text, selectAfterPaste: keepSelection)
+        return setSelectedTextViaClipboard(text, selectAfterPaste: keepSelection)
+    }
+
+    @discardableResult
+    func replaceCapturedText(_ capturedText: CapturedText, with replacement: String, keepSelection: Bool = false) -> Bool {
+        PuntoLog.info("replaceCapturedText: method=\(capturedText.replacementMethod), source=\(capturedText.source)")
+        switch TextReplacementPolicy.plan(
+            for: capturedText,
+            replacement: replacement,
+            keepSelection: keepSelection
+        ) {
+        case .accessibilitySelection(let text, let keepSelection):
+            return setSelectedText(text, keepSelection: keepSelection)
+        case .clipboardSelection(let text, let selectAfterPaste):
+            return setSelectedTextViaClipboard(text, selectAfterPaste: selectAfterPaste)
+        case .keyboardBackspacePaste(let deleteLength, let text):
+            return replaceLastWord(wordLength: deleteLength, with: text)
+        case .blocked:
+            PuntoLog.info("replaceCapturedText: blocked capture or unrewritable tail, no replacement")
+            return false
+        }
     }
 
     private func setSelectedTextViaAccessibility(_ text: String, keepSelection: Bool = false) -> Bool {
-        guard let focusedElement = getFocusedElement() else {
+        guard let focusedElement = lastEditableSelectionElement ?? getFocusedElement() else {
             PuntoLog.info("setSelectedTextViaAccessibility: no focused element")
             return false
         }
 
         // Get current selected text to verify change later
-        var currentSelectedText: AnyObject?
-        AXUIElementCopyAttributeValue(focusedElement, kAXSelectedTextAttribute as CFString, &currentSelectedText)
-        let originalText = currentSelectedText as? String
+        let originalText = AccessibilityValueBridge.stringAttribute(kAXSelectedTextAttribute as CFString, from: focusedElement)
 
         // Get current selection range before replacing
-        var selectionRange: AnyObject?
-        var startIndex: Int = 0
-        if keepSelection {
-            if AXUIElementCopyAttributeValue(focusedElement, kAXSelectedTextRangeAttribute as CFString, &selectionRange) == .success,
-               let range = selectionRange {
-                var cfRange = CFRange(location: 0, length: 0)
-                // selectionRange is an AXValue containing CFRange
-                AXValueGetValue(range as! AXValue, .cfRange, &cfRange)
-                startIndex = cfRange.location
+        var originalSelectionLocation: Int?
+        if AccessibilityReplacementPolicy.shouldReadOriginalSelectionRange(keepSelection: keepSelection) {
+            let (_, cfRange) = AccessibilityValueBridge.cfRangeAttribute(
+                kAXSelectedTextRangeAttribute as CFString,
+                from: focusedElement,
+                context: "setSelectedTextViaAccessibility: selected text range"
+            )
+            if let cfRange {
+                originalSelectionLocation = AccessibilityReplacementPolicy.originalSelectionLocation(
+                    location: cfRange.location,
+                    length: cfRange.length
+                )
             }
         }
 
@@ -343,28 +586,37 @@ final class TextAccessor {
             text as CFTypeRef
         )
 
-        if result != .success {
+        let setSucceeded = result == .success
+        if !setSucceeded {
             PuntoLog.info("setSelectedTextViaAccessibility: AXUIElementSetAttributeValue failed with \(result.rawValue)")
+            lastEditableSelectionElement = nil
             return false
         }
 
         // Verify the text actually changed (Safari returns success but doesn't change text)
-        Thread.sleep(forTimeInterval: 0.05)
-        var newSelectedText: AnyObject?
-        AXUIElementCopyAttributeValue(focusedElement, kAXSelectedTextAttribute as CFString, &newSelectedText)
-        let actualText = newSelectedText as? String
+        Thread.sleep(forTimeInterval: AccessibilityReplacementPolicy.selectedTextVerificationDelay)
+        let actualText = AccessibilityValueBridge.stringAttribute(kAXSelectedTextAttribute as CFString, from: focusedElement)
 
-        // If text didn't change or still equals original, AX set failed silently
-        if actualText == originalText && originalText != text {
+        if !AccessibilityReplacementPolicy.shouldAcceptSelectedTextSet(
+            setSucceeded: setSucceeded,
+            originalSelectedText: originalText,
+            observedSelectedText: actualText,
+            replacement: text
+        ) {
             PuntoLog.info("setSelectedTextViaAccessibility: AX returned success but text unchanged (Safari bug), original='\(originalText ?? "nil")', expected='\(text)'")
+            lastEditableSelectionElement = nil
             return false
         }
 
         PuntoLog.info("setSelectedTextViaAccessibility: verified text changed to '\(actualText?.prefix(20) ?? "nil")'")
 
         // If keepSelection is true, select the inserted text
-        if keepSelection {
-            var newRange = CFRange(location: startIndex, length: text.utf16.count)
+        if let replacementRange = AccessibilityReplacementPolicy.replacementSelectionRange(
+            originalSelectionLocation: originalSelectionLocation,
+            replacement: text,
+            keepSelection: keepSelection
+        ) {
+            var newRange = CFRange(location: replacementRange.location, length: replacementRange.length)
             if let rangeValue = AXValueCreate(.cfRange, &newRange) {
                 let selectResult = AXUIElementSetAttributeValue(
                     focusedElement,
@@ -377,44 +629,54 @@ final class TextAccessor {
                     PuntoLog.info("setSelectedTextViaAccessibility: failed to re-select, error=\(selectResult.rawValue)")
                 }
             }
+        } else if keepSelection {
+            PuntoLog.info("setSelectedTextViaAccessibility: skipped re-select because original selection range was unavailable")
         }
 
         return true
     }
 
-    private func setSelectedTextViaClipboard(_ text: String, selectAfterPaste: Bool = false) {
+    private func setSelectedTextViaClipboard(_ text: String, selectAfterPaste: Bool = false) -> Bool {
+        lastEditableSelectionElement = nil
         let pasteboard = NSPasteboard.general
 
-        // Save current clipboard to restore later
-        let savedClipboard = pasteboard.string(forType: .string)
+        let snapshot = PasteboardSnapshot(pasteboard)
 
         // Set new text to clipboard
         pasteboard.clearContents()
         pasteboard.setString(text, forType: .string)
+        let replacementChangeCount = pasteboard.changeCount
 
         PuntoLog.info("setSelectedTextViaClipboard: pasting \(text.count) chars")
 
         // Simulate Cmd+V
-        simulatePaste()
-        Thread.sleep(forTimeInterval: 0.03)
+        guard simulatePaste() else {
+            PuntoLog.info("setSelectedTextViaClipboard: failed to send Cmd+V")
+            restorePasteboardIfEnabled(snapshot, to: pasteboard, reason: "selected-text clipboard paste failed")
+            return false
+        }
+        Thread.sleep(forTimeInterval: SelectedTextClipboardReplacementPolicy.postPasteDelay)
 
         PuntoLog.info("setSelectedTextViaClipboard: paste completed")
 
         // Select the pasted text using Shift+Cmd+Left (select to beginning of line/word)
         // Much faster than character-by-character selection
-        if selectAfterPaste {
-            Thread.sleep(forTimeInterval: 0.02)
+        if SelectedTextClipboardReplacementPolicy.shouldSelectAfterPaste(selectAfterPaste, replacementText: text) {
+            Thread.sleep(forTimeInterval: SelectedTextClipboardReplacementPolicy.selectAfterPasteDelay)
             selectBackwardsFast(characterCount: text.count)
             PuntoLog.info("setSelectedTextViaClipboard: selected backwards")
         }
 
         // Restore original clipboard asynchronously
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            if let old = savedClipboard {
-                pasteboard.clearContents()
-                pasteboard.setString(old, forType: .string)
+        DispatchQueue.main.asyncAfter(deadline: .now() + SelectedTextClipboardReplacementPolicy.clipboardRestoreDelay) {
+            if SelectedTextClipboardReplacementPolicy.shouldRestoreClipboardAfterPaste(
+                currentChangeCount: pasteboard.changeCount,
+                replacementChangeCount: replacementChangeCount
+            ) {
+                self.restorePasteboardIfEnabled(snapshot, to: pasteboard, reason: "selected-text clipboard replacement")
             }
         }
+        return true
     }
 
     /// Fast backward selection using Shift+Arrow with batching
@@ -424,45 +686,50 @@ final class TextAccessor {
         // Always use character-by-character selection for precision
         // Word-based selection (Opt+Shift+Left) can overshoot and select extra content
         for _ in 0..<characterCount {
-            if let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 123, keyDown: true) {
+            if let keyDown = CGEvent(keyboardEventSource: source, virtualKey: KeyboardEventKeyCodePolicy.leftArrowKeyCode, keyDown: true) {
                 keyDown.flags = .maskShift
                 keyDown.post(tap: .cghidEventTap)
             }
-            if let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 123, keyDown: false) {
+            if let keyUp = CGEvent(keyboardEventSource: source, virtualKey: KeyboardEventKeyCodePolicy.leftArrowKeyCode, keyDown: false) {
                 keyUp.flags = .maskShift
                 keyUp.post(tap: .cghidEventTap)
             }
         }
-        Thread.sleep(forTimeInterval: 0.02)
+        Thread.sleep(forTimeInterval: KeyboardEventTimingPolicy.selectionSettleDelay)
     }
 
     /// Simulates Cmd+V keystroke for paste operation
-    private func simulatePaste() {
+    private func simulatePaste() -> Bool {
         // Use .cghidEventTap for better Safari compatibility
         let source = CGEventSource(stateID: .hidSystemState)
 
         // Create key down event for V with Command modifier
-        if let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 9, keyDown: true) {
-            keyDown.flags = .maskCommand
-            keyDown.post(tap: .cghidEventTap)
+        guard let keyDown = CGEvent(keyboardEventSource: source, virtualKey: KeyboardEventKeyCodePolicy.pasteKeyCode, keyDown: true),
+              let keyUp = CGEvent(keyboardEventSource: source, virtualKey: KeyboardEventKeyCodePolicy.pasteKeyCode, keyDown: false) else {
+            PuntoLog.info("simulatePaste: failed to create Cmd+V events")
+            return false
         }
 
-        Thread.sleep(forTimeInterval: 0.02)
-
-        // Create key up event for V with Command modifier
-        if let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 9, keyDown: false) {
-            keyUp.flags = .maskCommand
-            keyUp.post(tap: .cghidEventTap)
-        }
-
+        keyDown.flags = .maskCommand
+        keyDown.post(tap: .cghidEventTap)
+        Thread.sleep(forTimeInterval: KeyboardEventTimingPolicy.commandKeyUpDelay)
+        keyUp.flags = .maskCommand
+        keyUp.post(tap: .cghidEventTap)
         PuntoLog.info("simulatePaste: sent Cmd+V via CGEvent (HID)")
+        return true
     }
 
     // MARK: - Replace Last Word
 
     /// Deletes the last word and pastes the replacement via clipboard
-    func replaceLastWord(wordLength: Int, with replacement: String) {
+    @discardableResult
+    func replaceLastWord(wordLength: Int, with replacement: String) -> Bool {
         let startTime = Date()
+
+        guard KeyboardReplacementPolicy.shouldAttemptKeyboardReplacement(deleteLength: wordLength) else {
+            PuntoLog.info("replaceLastWord: aborting keyboard replacement because delete length is \(wordLength)")
+            return false
+        }
 
         // Log active app state before sending events
         if let frontApp = NSWorkspace.shared.frontmostApplication {
@@ -472,8 +739,12 @@ final class TextAccessor {
         }
 
         // Check keyboard focus via AX before sending events
-        let axFocusCheck = checkKeyboardFocus()
-        PuntoLog.info("replaceLastWord: AX focus check: \(axFocusCheck)")
+        let axFocusEvidence = checkKeyboardFocusEvidence()
+        PuntoLog.info("replaceLastWord: AX focus check: \(axFocusEvidence.logDescription)")
+        if !KeyboardFocusPolicy.shouldAttemptKeyboardReplacement(focusEvidence: axFocusEvidence) {
+            PuntoLog.info("replaceLastWord: aborting keyboard replacement because focused editable target is not verifiable")
+            return false
+        }
 
         PuntoLog.info("replaceLastWord: deleting \(wordLength) chars, replacing with '\(replacement)'")
 
@@ -481,14 +752,18 @@ final class TextAccessor {
         let modifiersBefore = CGEventSource.flagsState(.hidSystemState)
         let modDescBefore = describeModifiers(modifiersBefore)
         PuntoLog.info("replaceLastWord: modifiers BEFORE delay: \(modDescBefore)")
+        releaseLatchedKeyboardModifiers(modifiersBefore)
 
-        // Small delay before starting to let the app stabilize after modifier release
-        Thread.sleep(forTimeInterval: 0.05)
-
-        // Check modifier state AFTER delay
-        let modifiersAfter = CGEventSource.flagsState(.hidSystemState)
+        // Wait until the hotkey modifiers are fully released before sending destructive keys.
+        let modifiersAfter = waitForModifierRelease()
         let modDescAfter = describeModifiers(modifiersAfter)
-        PuntoLog.info("replaceLastWord: modifiers AFTER 50ms delay: \(modDescAfter)")
+        PuntoLog.info("replaceLastWord: modifiers AFTER release wait: \(modDescAfter)")
+        if !KeyboardReplacementPolicy.shouldStartKeyboardEventsAfterModifierWait(
+            modifiersArePressed: hasKeyboardModifiers(modifiersAfter)
+        ) {
+            PuntoLog.info("replaceLastWord: aborting keyboard replacement because modifiers are still pressed after release wait")
+            return false
+        }
 
         let source = CGEventSource(stateID: .hidSystemState)
 
@@ -499,51 +774,47 @@ final class TextAccessor {
 
         // Delete characters one by one using Backspace (keyCode 51)
         // Using .cghidEventTap which works for most apps
-        PuntoLog.info("replaceLastWord: sending \(wordLength) backspaces via cghidEventTap (after 50ms delay)")
+        // Do not use line-kill shortcuts here: this path must delete exactly the captured tail.
+        PuntoLog.info("replaceLastWord: sending \(wordLength) backspaces via cghidEventTap (after \(Int(KeyboardReplacementPolicy.modifierReleaseSettleDelay * 1000))ms delay)")
         var backspacesSent = 0
-        // For terminals: use Ctrl+U to clear line instead of backspaces
-        if isTerminalApp() {
-            PuntoLog.info("replaceLastWord: terminal detected, using Ctrl+U")
-            if let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 32, keyDown: true),
-               let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 32, keyDown: false) {
-                keyDown.flags = .maskControl
-                keyUp.flags = .maskControl
-                keyDown.post(tap: .cghidEventTap)
-                keyUp.post(tap: .cghidEventTap)
-                backspacesSent = wordLength
-            }
-            Thread.sleep(forTimeInterval: 0.05)
-        } else {
-            for i in 0..<wordLength {
-                let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 51, keyDown: true)
-                let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 51, keyDown: false)
+        for i in 0..<wordLength {
+            let keyDown = CGEvent(keyboardEventSource: source, virtualKey: KeyboardEventKeyCodePolicy.backspaceKeyCode, keyDown: true)
+            let keyUp = CGEvent(keyboardEventSource: source, virtualKey: KeyboardEventKeyCodePolicy.backspaceKeyCode, keyDown: false)
 
-                if keyDown == nil || keyUp == nil {
-                    PuntoLog.error("replaceLastWord: FAILED to create backspace event #\(i+1)")
-                    continue
-                }
-
-                keyDown!.post(tap: .cghidEventTap)
-                keyUp!.post(tap: .cghidEventTap)
-                Thread.sleep(forTimeInterval: 0.02)
-                backspacesSent += 1
+            if keyDown == nil || keyUp == nil {
+                PuntoLog.error("replaceLastWord: FAILED to create backspace event #\(i+1)")
+                continue
             }
+
+            keyDown!.post(tap: .cghidEventTap)
+            keyUp!.post(tap: .cghidEventTap)
+            Thread.sleep(forTimeInterval: KeyboardReplacementPolicy.backspaceInterval)
+            backspacesSent += 1
         }
         let backspaceTime = Date().timeIntervalSince(startTime) * 1000
-        PuntoLog.info("replaceLastWord: \(backspacesSent)/\(wordLength) backspaces sent in \(String(format: "%.1f", backspaceTime))ms, waiting 20ms")
-        Thread.sleep(forTimeInterval: 0.02)
+        PuntoLog.info("replaceLastWord: \(backspacesSent)/\(wordLength) backspaces sent in \(String(format: "%.1f", backspaceTime))ms, waiting \(Int(KeyboardReplacementPolicy.prePasteDelay * 1000))ms")
+        guard KeyboardReplacementPolicy.shouldPasteReplacementAfterBackspaces(expectedCount: wordLength, sentCount: backspacesSent) else {
+            PuntoLog.info("replaceLastWord: aborting paste because not all backspaces were sent")
+            return false
+        }
+        Thread.sleep(forTimeInterval: KeyboardReplacementPolicy.prePasteDelay)
 
         // Paste replacement via clipboard (much faster than typing)
         let pasteboard = NSPasteboard.general
-        let savedClipboard = pasteboard.string(forType: .string)
+        let snapshot = PasteboardSnapshot(pasteboard)
 
         pasteboard.clearContents()
         pasteboard.setString(replacement, forType: .string)
+        let replacementChangeCount = pasteboard.changeCount
 
         // Simulate Cmd+V
         let pasteStartTime = Date()
-        simulatePaste()
-        Thread.sleep(forTimeInterval: 0.03)
+        guard simulatePaste() else {
+            PuntoLog.info("replaceLastWord: aborting because Cmd+V events could not be created")
+            restorePasteboardIfEnabled(snapshot, to: pasteboard, reason: "keyboard replacement paste failed")
+            return false
+        }
+        Thread.sleep(forTimeInterval: KeyboardReplacementPolicy.postPasteDelay)
         let pasteTime = Date().timeIntervalSince(pasteStartTime) * 1000
         PuntoLog.info("replaceLastWord: paste took \(String(format: "%.1f", pasteTime))ms")
 
@@ -559,16 +830,24 @@ final class TextAccessor {
         // Instead rely on AX focus check and clipboard state for diagnostics
 
         // Restore clipboard asynchronously
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            if let old = savedClipboard {
-                pasteboard.clearContents()
-                pasteboard.setString(old, forType: .string)
+        DispatchQueue.main.asyncAfter(deadline: .now() + KeyboardReplacementPolicy.clipboardRestoreDelay) {
+            if KeyboardReplacementPolicy.shouldRestoreClipboardAfterPaste(
+                currentChangeCount: pasteboard.changeCount,
+                replacementChangeCount: replacementChangeCount
+            ) {
+                self.restorePasteboardIfEnabled(snapshot, to: pasteboard, reason: "keyboard replacement")
                 PuntoLog.debug("replaceLastWord: clipboard restored to original")
             }
         }
 
         let totalTime = Date().timeIntervalSince(startTime) * 1000
         PuntoLog.info("replaceLastWord: completed in \(String(format: "%.1f", totalTime))ms (sent \(backspacesSent) backspaces + Cmd+V with '\(replacement)')")
+        return true
+    }
+
+    @discardableResult
+    func replaceRecentText(length: Int, with replacement: String) -> Bool {
+        replaceLastWord(wordLength: length, with: replacement)
     }
 
     // MARK: - Helpers
@@ -578,24 +857,24 @@ final class TextAccessor {
 
         // Try to get focused application with retry
         // Sometimes AX API returns -25212 temporarily
-        var focusedApp: AnyObject?
+        var focusedAppElement: AXUIElement?
         var appResult: AXError = .failure
 
-        for attempt in 1...3 {
-            appResult = AXUIElementCopyAttributeValue(
-                systemWide,
+        for attempt in 1...AccessibilityReplacementPolicy.focusedApplicationRetryAttempts {
+            (appResult, focusedAppElement) = AccessibilityValueBridge.elementAttributeResult(
                 kAXFocusedApplicationAttribute as CFString,
-                &focusedApp
+                from: systemWide,
+                context: "getFocusedElement: focused app"
             )
             if appResult == .success {
                 break
             }
-            if attempt < 3 {
-                Thread.sleep(forTimeInterval: 0.05)
+            if AccessibilityReplacementPolicy.shouldRetryFocusedApplicationLookup(attempt: attempt) {
+                Thread.sleep(forTimeInterval: AccessibilityReplacementPolicy.focusedApplicationRetryDelay)
             }
         }
 
-        guard appResult == .success, let app = focusedApp else {
+        guard appResult == .success, focusedAppElement != nil else {
             // Log which app is frontmost via NSWorkspace (works even when AX fails)
             if let frontApp = NSWorkspace.shared.frontmostApplication {
                 PuntoLog.info("getFocusedElement: AX failed (error=\(appResult.rawValue)) for app '\(frontApp.localizedName ?? "?")' bundle=\(frontApp.bundleIdentifier ?? "?")")
@@ -605,55 +884,67 @@ final class TextAccessor {
             return nil
         }
 
-        let appElement = app as! AXUIElement
+        guard let appElement = focusedAppElement else {
+            return nil
+        }
+        enableEnhancedUserInterfaceIfNeeded(on: appElement)
 
         // Log which app is focused
-        var appTitle: AnyObject?
-        if AXUIElementCopyAttributeValue(appElement, kAXTitleAttribute as CFString, &appTitle) == .success {
-            PuntoLog.info("getFocusedElement: focused app is '\(appTitle as? String ?? "unknown")'")
+        if let appTitle = AccessibilityValueBridge.stringAttribute(kAXTitleAttribute as CFString, from: appElement) {
+            PuntoLog.info("getFocusedElement: focused app is '\(appTitle)'")
         }
 
-        var focusedElement: AnyObject?
-        let elemResult = AXUIElementCopyAttributeValue(
-            appElement,
+        let (elemResult, element) = AccessibilityValueBridge.elementAttributeResult(
             kAXFocusedUIElementAttribute as CFString,
-            &focusedElement
+            from: appElement,
+            context: "getFocusedElement: focusedUIElement"
         )
         guard elemResult == .success else {
             PuntoLog.info("getFocusedElement: failed to get focused element, error=\(elemResult.rawValue)")
             return nil
         }
 
-        // Log element role
-        var role: AnyObject?
-        if AXUIElementCopyAttributeValue(focusedElement as! AXUIElement, kAXRoleAttribute as CFString, &role) == .success {
-            PuntoLog.info("getFocusedElement: focused element role='\(role as? String ?? "unknown")'")
+        guard let element else {
+            return nil
         }
 
-        return (focusedElement as! AXUIElement)
+        // Log element role
+        if let role = accessibilityRole(of: element) {
+            PuntoLog.info("getFocusedElement: focused element role='\(role)'")
+        }
+
+        return element
     }
 
-    private func simulateKeyPress(keyCode: CGKeyCode, flags: CGEventFlags) {
-        // Use privateState for better isolation
-        let source = CGEventSource(stateID: .privateState)
-
-        // Key down
-        if let keyDown = CGEvent(keyboardEventSource: source, virtualKey: keyCode, keyDown: true) {
-            keyDown.flags = flags
-            keyDown.post(tap: .cghidEventTap)
+    private func enableEnhancedUserInterfaceIfNeeded(on appElement: AXUIElement) {
+        let bundleID = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
+        guard AccessibilityApplicationPolicy.shouldEnableEnhancedUserInterface(bundleID: bundleID) else {
+            return
         }
 
-        // Small delay between key down and key up
-        Thread.sleep(forTimeInterval: 0.01)
+        let result = AXUIElementSetAttributeValue(
+            appElement,
+            AccessibilityApplicationPolicy.enhancedUserInterfaceAttribute as CFString,
+            kCFBooleanTrue
+        )
 
-        // Key up
-        if let keyUp = CGEvent(keyboardEventSource: source, virtualKey: keyCode, keyDown: false) {
-            keyUp.flags = flags
-            keyUp.post(tap: .cghidEventTap)
+        if result == .success {
+            PuntoLog.debug("AXEnhancedUserInterface enabled for bundle=\(bundleID ?? "?")")
+        } else {
+            PuntoLog.info("AXEnhancedUserInterface failed for bundle=\(bundleID ?? "?"), error=\(result.rawValue)")
         }
     }
 
     // MARK: - Debugging Helpers
+
+    private func restorePasteboardIfEnabled(_ snapshot: PasteboardSnapshot, to pasteboard: NSPasteboard, reason: String) {
+        guard shouldRestorePasteboard() else {
+            PuntoLog.info("Pasteboard restore skipped by setting (reason: \(reason))")
+            return
+        }
+
+        snapshot.restore(to: pasteboard)
+    }
 
     /// Describes current modifier key state
     private func describeModifiers(_ flags: CGEventFlags) -> String {
@@ -665,127 +956,90 @@ final class TextAccessor {
         return parts.isEmpty ? "none" : parts.joined()
     }
 
-    /// Checks keyboard focus state via AX API
-    /// Returns a string describing the current focus state
-    private func checkKeyboardFocus() -> String {
+    private func waitForModifierRelease() -> CGEventFlags {
+        Thread.sleep(forTimeInterval: KeyboardReplacementPolicy.modifierReleaseSettleDelay)
+
+        let deadline = Date().addingTimeInterval(KeyboardReplacementPolicy.modifierReleaseMaxWait)
+        var flags = CGEventSource.flagsState(.hidSystemState)
+        while hasKeyboardModifiers(flags), Date() < deadline {
+            Thread.sleep(forTimeInterval: KeyboardReplacementPolicy.modifierReleasePollInterval)
+            flags = CGEventSource.flagsState(.hidSystemState)
+        }
+
+        return flags
+    }
+
+    private func releaseLatchedKeyboardModifiers(_ flags: CGEventFlags) {
+        let snapshot = ModifierFlagsSnapshot(
+            command: flags.contains(.maskCommand),
+            option: flags.contains(.maskAlternate),
+            shift: flags.contains(.maskShift),
+            control: flags.contains(.maskControl)
+        )
+        guard KeyboardModifierCleanupPolicy.shouldPostCleanup(for: snapshot) else {
+            return
+        }
+
+        let source = CGEventSource(stateID: .hidSystemState)
+        for keyCode in KeyboardModifierCleanupPolicy.keyUpCodes(for: snapshot) {
+            let keyUp = CGEvent(keyboardEventSource: source, virtualKey: keyCode, keyDown: false)
+            keyUp?.flags = []
+            keyUp?.post(tap: .cghidEventTap)
+        }
+        PuntoLog.info("replaceLastWord: sent modifier key-up cleanup for \(describeModifiers(flags))")
+    }
+
+    private func hasKeyboardModifiers(_ flags: CGEventFlags) -> Bool {
+        flags.contains(.maskCommand)
+            || flags.contains(.maskAlternate)
+            || flags.contains(.maskShift)
+            || flags.contains(.maskControl)
+    }
+
+    /// Checks keyboard focus state via AX API.
+    private func checkKeyboardFocusEvidence() -> KeyboardFocusEvidence {
         let systemWide = AXUIElementCreateSystemWide()
 
         // Get focused app
-        var focusedApp: AnyObject?
-        let appResult = AXUIElementCopyAttributeValue(
-            systemWide,
+        let (appResult, appElement) = AccessibilityValueBridge.elementAttributeResult(
             kAXFocusedApplicationAttribute as CFString,
-            &focusedApp
+            from: systemWide,
+            context: "checkKeyboardFocusEvidence: focused app"
         )
 
-        guard appResult == .success, let app = focusedApp else {
-            return "NO_FOCUSED_APP (error=\(appResult.rawValue))"
+        guard appResult == .success, let appElement else {
+            return .noFocusedApplication(errorCode: appResult.rawValue)
         }
-
-        let appElement = app as! AXUIElement
 
         // Get app title
-        var appTitle: AnyObject?
-        AXUIElementCopyAttributeValue(appElement, kAXTitleAttribute as CFString, &appTitle)
-        let appName = appTitle as? String ?? "?"
+        let appName = AccessibilityValueBridge.stringAttribute(kAXTitleAttribute as CFString, from: appElement) ?? "?"
 
         // Get focused UI element
-        var focusedElement: AnyObject?
-        let elemResult = AXUIElementCopyAttributeValue(
-            appElement,
+        let (elemResult, axElement) = AccessibilityValueBridge.elementAttributeResult(
             kAXFocusedUIElementAttribute as CFString,
-            &focusedElement
+            from: appElement,
+            context: "checkKeyboardFocusEvidence: focusedUIElement"
         )
 
-        guard elemResult == .success, let element = focusedElement else {
-            return "app='\(appName)' NO_FOCUSED_ELEMENT (error=\(elemResult.rawValue))"
+        guard elemResult == .success, let axElement else {
+            return .noFocusedElement(appName: appName, errorCode: elemResult.rawValue)
         }
-
-        let axElement = element as! AXUIElement
 
         // Get element role
-        var role: AnyObject?
-        AXUIElementCopyAttributeValue(axElement, kAXRoleAttribute as CFString, &role)
-        let roleName = role as? String ?? "?"
+        let roleName = accessibilityRole(of: axElement) ?? "?"
 
         // Check if element is enabled
-        var enabled: AnyObject?
-        AXUIElementCopyAttributeValue(axElement, kAXEnabledAttribute as CFString, &enabled)
-        let isEnabled = enabled as? Bool ?? true
+        let isEnabled = AccessibilityValueBridge.boolAttribute(kAXEnabledAttribute as CFString, from: axElement) ?? true
 
         // Check if element has keyboard focus
-        var focused: AnyObject?
-        AXUIElementCopyAttributeValue(axElement, kAXFocusedAttribute as CFString, &focused)
-        let hasFocus = focused as? Bool ?? false
+        let hasFocus = AccessibilityValueBridge.boolAttribute(kAXFocusedAttribute as CFString, from: axElement) ?? false
 
-        return "app='\(appName)' role='\(roleName)' enabled=\(isEnabled) focused=\(hasFocus)"
+        return .focusedElement(
+            appName: appName,
+            role: roleName,
+            isEnabled: isEnabled,
+            isFocused: hasFocus
+        )
     }
 
-    /// Verifies that replacement was actually applied by selecting and copying the text
-    /// Returns description of what was found
-    private func verifyReplacementApplied(expectedText: String, charCount: Int) -> String {
-        let pasteboard = NSPasteboard.general
-        let beforeVerify = pasteboard.changeCount
-
-        // Clear clipboard
-        pasteboard.clearContents()
-
-        // Select backwards (Shift+Left Arrow) to select the just-pasted text
-        let source = CGEventSource(stateID: .hidSystemState)
-        for _ in 0..<charCount {
-            if let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 123, keyDown: true) {
-                keyDown.flags = .maskShift
-                keyDown.post(tap: .cghidEventTap)
-            }
-            if let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 123, keyDown: false) {
-                keyUp.flags = .maskShift
-                keyUp.post(tap: .cghidEventTap)
-            }
-        }
-        Thread.sleep(forTimeInterval: 0.03)
-
-        // Copy selected text (Cmd+C)
-        if let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 8, keyDown: true) {
-            keyDown.flags = .maskCommand
-            keyDown.post(tap: .cghidEventTap)
-        }
-        Thread.sleep(forTimeInterval: 0.01)
-        if let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 8, keyDown: false) {
-            keyUp.flags = .maskCommand
-            keyUp.post(tap: .cghidEventTap)
-        }
-        Thread.sleep(forTimeInterval: 0.05)
-
-        // Check what we got
-        let afterVerify = pasteboard.changeCount
-        if afterVerify == beforeVerify {
-            // Clipboard didn't change - selection/copy failed
-            // Deselect by pressing Right arrow
-            if let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 124, keyDown: true) {
-                keyDown.post(tap: .cghidEventTap)
-            }
-            if let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 124, keyDown: false) {
-                keyUp.post(tap: .cghidEventTap)
-            }
-            return "CLIPBOARD_UNCHANGED (copy failed?)"
-        }
-
-        let copiedText = pasteboard.string(forType: .string) ?? ""
-
-        // Deselect by pressing Right arrow to move cursor to end
-        if let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 124, keyDown: true) {
-            keyDown.post(tap: .cghidEventTap)
-        }
-        if let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 124, keyDown: false) {
-            keyUp.post(tap: .cghidEventTap)
-        }
-
-        if copiedText == expectedText {
-            return "OK (verified '\(expectedText)')"
-        } else if copiedText.isEmpty {
-            return "EMPTY (expected '\(expectedText)')"
-        } else {
-            return "MISMATCH got='\(copiedText)' expected='\(expectedText)'"
-        }
-    }
 }

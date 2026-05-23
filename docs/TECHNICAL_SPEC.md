@@ -1,372 +1,232 @@
-# Punto — Technical Specification
+# Punto — Техническая Спецификация
 
-## Overview
+Полная техническая документация macOS-приложения для конвертации раскладки клавиатуры.
 
-Punto is a native macOS menu bar application for keyboard layout conversion between Russian (ЙЦУКЕН) and English (QWERTY) layouts. It runs as a background process with a menu bar icon.
-
+**Версия:** 1.0
+**Дата:** Январь 2026
 **Bundle ID:** `com.rshagiev.Punto`
-**Minimum macOS:** 12.0 (Monterey)
-**Architecture:** Universal Binary (arm64 + x86_64)
+**Минимальная macOS:** 12.0 (Monterey)
+**Архитектура:** Universal Binary (arm64 + x86_64)
 
 ---
 
-## Core Functionality
+## Содержание
 
-### 1. Layout Conversion (Cmd+Opt+Shift)
-- Triggered by pressing all three modifier keys simultaneously (no additional key required)
-- **With selected text:** Converts the selection in place
-- **Without selection:** Converts the last typed word (tracked in a ring buffer)
-
-### 2. Case Toggle (Cmd+Opt+Z)
-- Converts selected text between UPPERCASE and lowercase
-- If majority is uppercase → converts to lowercase
-- If majority is lowercase → converts to uppercase
-
----
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        AppDelegate                               │
-│  - Application lifecycle                                         │
-│  - Permission checking                                           │
-│  - Component orchestration                                       │
-└─────────────────────────────────────────────────────────────────┘
-          │
-          ├──────────────────┬──────────────────┬─────────────────┐
-          ▼                  ▼                  ▼                 ▼
-┌─────────────────┐  ┌─────────────────┐  ┌──────────────┐  ┌──────────────┐
-│  HotkeyManager  │  │  TextAccessor   │  │LayoutConverter│  │ WordTracker  │
-│                 │  │                 │  │              │  │              │
-│ - CGEvent Tap   │  │ - Get selected  │  │ - EN↔RU map  │  │ - Ring buffer│
-│ - Modifier-only │  │ - Set selected  │  │ - Auto-detect│  │ - 50 chars   │
-│   hotkey detect │  │ - Replace word  │  │   layout     │  │ - Key codes  │
-└─────────────────┘  └─────────────────┘  └──────────────┘  └──────────────┘
-          │
-          ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                    StatusBarController                           │
-│  - Menu bar icon (keyboard symbol)                               │
-│  - Dropdown menu (Enable/Disable, Settings, Quit)                │
-│  - Visual feedback (icon flash on conversion)                    │
-└─────────────────────────────────────────────────────────────────┘
-```
+1. [Обзор](#1-обзор)
+2. [Архитектура](#2-архитектура)
+3. [Компоненты](#3-компоненты)
+4. [Потоки данных](#4-потоки-данных)
+5. [Защитные механизмы](#5-защитные-механизмы)
+6. [Тайминги и константы](#6-тайминги-и-константы)
+7. [API Reference](#7-api-reference)
+8. [Отладка](#8-отладка)
+9. [Структура проекта](#9-структура-проекта)
 
 ---
 
-## Component Details
+## 1. Обзор
 
-### 1. HotkeyManager (`Sources/Punto/Core/HotkeyManager.swift`)
+### Что делает Punto
 
-**Purpose:** Captures global keyboard events using CGEvent Tap.
+Punto — это menu bar приложение для macOS, которое конвертирует текст между русской (ЙЦУКЕН) и английской (QWERTY) раскладками клавиатуры.
 
-**Event Mask:**
-```swift
-let eventMask: CGEventMask = (1 << CGEventType.keyDown.rawValue) |
-                              (1 << CGEventType.flagsChanged.rawValue)
+### Основные функции
+
+| Функция | Горячая клавиша | Описание |
+|---------|-----------------|----------|
+| Конвертация раскладки | `Cmd+Opt+Shift` | Конвертирует выделенный текст или последнее слово |
+| Переключение регистра | `Cmd+Opt+Z` | Посимвольная инверсия регистра: `Hello` ↔ `hELLO`, `UPPER` ↔ `upper` |
+| Undo | Повторное `Cmd+Opt+Shift` | Отмена последней конвертации (в течение 3 сек) |
+
+### Режимы работы
+
 ```
-
-**Key Features:**
-- **Modifier-only hotkey detection:** Detects when Cmd+Opt+Shift are all pressed via `flagsChanged` events
-- **Debouncing:** 0.5 second minimum between modifier-only conversions (Cmd+Opt+Shift). Note: Key-based hotkeys like Cmd+Opt+Z have no debounce
-- **ignoreEvents flag:** Temporarily disables event capture during text replacement to prevent re-capture of simulated keystrokes
-
-**Critical Code Flow:**
+┌─────────────────────────────────────────────────────────────┐
+│                   РЕЖИМЫ КОНВЕРТАЦИИ                        │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  1. ВЫДЕЛЕННЫЙ ТЕКСТ                                        │
+│     ┌─────────┐    Cmd+Opt+Shift    ┌─────────┐            │
+│     │ "ghbdtn"│ ─────────────────── │"привет" │            │
+│     └─────────┘                     └─────────┘            │
+│                                                             │
+│  2. ПОСЛЕДНЕЕ СЛОВО (WordTracker)                           │
+│     Пользователь печатает → буфер накапливает               │
+│     ┌───────────────────┐                                   │
+│     │ g│h│b│d│t│n│      │ ← Ring buffer (50 chars)         │
+│     └───────────────────┘                                   │
+│     Cmd+Opt+Shift → backspaces + вставка "привет"           │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
 ```
-CGEvent Tap callback
-    │
-    ├─► If ignoreEvents == true → pass through
-    │
-    ├─► If tapDisabledByTimeout → re-enable tap
-    │
-    ├─► If flagsChanged:
-    │       └─► If Cmd+Opt+Shift all pressed AND not recently triggered
-    │               └─► Call onConvertLayout()
-    │
-    └─► If keyDown:
-            ├─► Check for Cmd+Opt+Z → Call onToggleCase()
-            └─► Track character in WordTracker
-```
-
-**State Variables:**
-- `modifiersWerePressed: Bool` — Tracks if all modifiers were pressed for modifier-only hotkey
-- `lastConvertTime: Date` — For debouncing (0.5s minimum interval)
-- `ignoreEvents: Bool` — Set by AppDelegate during text replacement
 
 ---
 
-### 2. TextAccessor (`Sources/Punto/Core/TextAccessor.swift`)
+## 2. Архитектура
 
-**Purpose:** Gets and sets text in the focused application.
+### Диаграмма компонентов
 
-**Strategy 1: Accessibility API (preferred)**
-```swift
-AXUIElementCopyAttributeValue(focusedElement, kAXSelectedTextAttribute, &selectedText)
-AXUIElementSetAttributeValue(focusedElement, kAXSelectedTextAttribute, newText)
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                           AppDelegate                                │
+│  ┌───────────────────────────────────────────────────────────────┐  │
+│  │ Lifecycle │ Флаги состояния │ Оркестрация │ Undo State        │  │
+│  │                                                               │  │
+│  │ • isConversionInProgress     - блокирует race condition      │  │
+│  │ • ignoreInputSourceChangesUntil - окно для своих переключений│  │
+│  │ • lastConversion             - данные для undo               │  │
+│  └───────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────┘
+         │              │               │               │
+         │              │               │               │
+    ┌────▼────┐    ┌───▼─────┐    ┌───▼─────┐    ┌───▼─────┐
+    │ Hotkey  │    │  Text   │    │ Layout  │    │  Word   │
+    │ Manager │    │ Accessor│    │Converter│    │ Tracker │
+    ├─────────┤    ├─────────┤    ├─────────┤    ├─────────┤
+    │CGEvent  │    │AX API   │    │EN↔RU    │    │Ring     │
+    │Tap      │    │Clipboard│    │mappings │    │buffer   │
+    │         │    │fallback │    │         │    │50 chars │
+    └─────────┘    └─────────┘    └─────────┘    └─────────┘
+         │
+         │
+    ┌────▼────────────────────────────────────────────────────────────┐
+    │                     StatusBarController                          │
+    │  ┌────────────────────────────────────────────────────────────┐ │
+    │  │ Menu bar icon │ Dropdown menu │ Flash feedback (0.15s)     │ │
+    │  └────────────────────────────────────────────────────────────┘ │
+    └─────────────────────────────────────────────────────────────────┘
 ```
 
-**Strategy 2: Clipboard Fallback (for Electron apps, Chrome, etc.)**
-```swift
-// Get: Simulate Cmd+C, read clipboard
-// Set: Write to clipboard, simulate Cmd+V
+### Вспомогательные компоненты
+
+```
+┌────────────────────┐  ┌────────────────────┐  ┌────────────────────┐
+│  InputSource       │  │  Settings          │  │  Logger            │
+│  Manager           │  │  Manager           │  │                    │
+├────────────────────┤  ├────────────────────┤  ├────────────────────┤
+│ TIS API            │  │ UserDefaults       │  │ /tmp/punto.log     │
+│ EN/RU источники    │  │ Hotkeys (Codable)  │  │ INFO/DEBUG/ERROR   │
+│ switchTo(language) │  │ Launch at login    │  │                    │
+└────────────────────┘  └────────────────────┘  └────────────────────┘
 ```
 
-**Replace Last Word Algorithm:**
+---
+
+## 3. Компоненты
+
+### 3.1 AppDelegate
+
+**Файл:** `Sources/Punto/App/AppDelegate.swift`
+
+Главный оркестратор приложения. Управляет жизненным циклом, правами доступа и координирует все компоненты.
+
+#### Флаги состояния
+
+| Флаг | Тип | Назначение |
+|------|-----|------------|
+| `isConversionInProgress` | Bool | Блокирует очистку undo во время конвертации |
+| `ignoreInputSourceChangesUntil` | Date? | Игнорирует пачку уведомлений о смене раскладки в коротком окне после программного переключения |
+| `lastConversion` | LastConversion? | Данные для undo (оригинал, результат, timestamp, replacementMethod) |
+| `lastKeyPressTime` | Date? | Время последнего нажатия (для диагностики) |
+
+#### Структура LastConversion
+
 ```swift
-func replaceLastWord(wordLength: Int, with replacement: String) {
-    // 1. Send `wordLength` backspace key events (no delay between)
-    // 2. Wait 0.02s for backspaces to take effect
-    // 3. Paste replacement via clipboard + Cmd+V
-    // 4. Restore original clipboard after 0.3s
+private struct LastConversion {
+    let originalText: String      // Исходный текст
+    let convertedText: String     // Результат конвертации
+    let timestamp: Date           // Время конвертации
+    let wasSelection: Bool        // true = выделение, false = последнее слово
 }
 ```
 
-**Timing:**
-- No delay between backspaces (sent immediately)
-- 0.02s delay after backspaces before paste
-- 0.03s delay after Cmd+V paste
-- 0.3s delay before restoring original clipboard
+#### Жизненный цикл
+
+```
+applicationDidFinishLaunching()
+├── PuntoLog.clear() — очистка логов
+├── SettingsManager() — инициализация настроек
+├── Core компоненты:
+│   ├── LayoutConverter
+│   ├── WordTracker
+│   ├── TextAccessor
+│   └── InputSourceManager
+├── StatusBarController — menu bar UI
+├── Проверка первого запуска → OnboardingAlert
+├── AXIsProcessTrusted() — проверка прав
+├── startHotkeyManager() — запуск перехвата
+├── Подписка на kTISNotifySelectedKeyboardInputSourceChanged
+└── Если нет прав → showPermissionAlert() + timer каждые 2 сек
+```
 
 ---
 
-### 3. LayoutConverter (`Sources/Punto/Core/LayoutConverter.swift`)
+### 3.2 HotkeyManager
 
-**Purpose:** Converts text between EN↔RU keyboard layouts.
+**Файл:** `Sources/Punto/Core/HotkeyManager.swift`
 
-**Character Mapping (QWERTY → ЙЦУКЕН):**
+Перехватывает глобальные клавиатурные события через CGEvent Tap.
+
+#### Modifier-Only Hotkey Detection
+
+Ключевая особенность — детектирование горячей клавиши без дополнительной буквы (только модификаторы Cmd+Opt+Shift):
+
 ```
-q→й  w→ц  e→у  r→к  t→е  y→н  u→г  i→ш  o→щ  p→з  [→х  ]→ъ
-a→ф  s→ы  d→в  f→а  g→п  h→р  j→о  k→л  l→д  ;→ж  '→э
-z→я  x→ч  c→с  v→м  b→и  n→т  m→ь  ,→б  .→ю  /→.
-`→ё  (uppercase variants exist)
+                    flagsChanged events
+                           │
+                           ▼
+                ┌─────────────────────┐
+                │ Все Cmd+Opt+Shift   │──Yes──▶ modifiersWerePressed = true
+                │    нажаты?          │
+                └─────────────────────┘
+                           │ No
+                           ▼
+                ┌─────────────────────┐
+                │ modifiersWerePressed│──No──▶ (игнорировать)
+                │    == true?         │
+                └─────────────────────┘
+                           │ Yes
+                           ▼
+                ┌─────────────────────┐
+                │ ВСЕ модификаторы    │──No──▶ (ждать отпускания)
+                │   отпущены?         │
+                └─────────────────────┘
+                           │ Yes
+                           ▼
+                ┌─────────────────────┐
+                │ Debounce check      │──<0.5s──▶ (игнорировать)
+                │   (0.5 сек)         │
+                └─────────────────────┘
+                           │ ≥0.5s
+                           ▼
+                   onConvertLayout()
 ```
 
-**Layout Detection Algorithm:**
+#### Состояния
+
+| Переменная | Тип | Назначение |
+|------------|-----|------------|
+| `modifiersWerePressed` | Bool | Были ли нажаты все модификаторы |
+| `lastTriggerTime` | Date | Время последнего срабатывания (debounce) |
+| `_ignoreEvents` | Bool | Игнорировать события (thread-safe через stateQueue) |
+| `isRunning` | Bool | Запущен ли event tap |
+
+#### Thread Safety
+
 ```swift
-func detectLayout(_ text: String) -> DetectedLayout {
-    // Count English letters (a-z, A-Z)
-    // Count Russian letters (а-я, А-Я, ё, Ё)
-    // If >80% English → .english
-    // If >80% Russian → .russian
-    // Else → .mixed (convert based on majority of mappable chars)
+private let stateQueue = DispatchQueue(label: "com.punto.hotkeymanager.state")
+private var _ignoreEvents = false
+
+var ignoreEvents: Bool {
+    get { stateQueue.sync { _ignoreEvents } }
+    set { stateQueue.sync { _ignoreEvents = newValue } }
 }
 ```
 
-**Conversion Rules:**
-- Characters in mapping → converted
-- Characters not in mapping → passed through unchanged
-- Numbers, punctuation not in mapping → unchanged
+#### Event Tap Recovery
 
----
+Система может отключить event tap при высокой нагрузке:
 
-### 4. WordTracker (`Sources/Punto/Core/WordTracker.swift`)
-
-**Purpose:** Tracks the last typed word in a ring buffer for "convert last word" feature.
-
-**Ring Buffer Implementation:**
-```swift
-private let maxSize: Int = 50
-private var buffer: [Character]
-private var head: Int = 0
-private var count: Int = 0
-```
-
-**Word Boundaries (clear buffer):**
-- Space, Tab, Newline
-- Separators: `!` `?` `(` `)` `/` `\` `|` `@` `#` `$` `%` `^` `&` `*` `+` `=` `-` `_`
-- Navigation keys: Arrow keys, Home, End, Page Up/Down, Forward Delete
-
-**Note:** Punctuation that maps to Russian letters is NOT a boundary: `;` `'` `[` `]` `` ` `` `,` `.`
-
-**Key Code Handling:**
-- Delete (keyCode 51): Remove last character from buffer
-- Return (36), Enter (76): Clear buffer
-- Arrow keys (123-126): Clear buffer (cursor moved)
-
-**trackKeyPress Flow:**
-```
-trackKeyPress(keyCode, characters)
-    │
-    ├─► If Delete → removeLastCharacter()
-    ├─► If Navigation key → clear()
-    ├─► If Return/Enter → clear()
-    ├─► If Space or punctuation → clear()
-    └─► Else → addCharacter(firstChar)
-```
-
----
-
-### 5. SettingsManager (`Sources/Punto/Settings/SettingsManager.swift`)
-
-**Stored in:** `UserDefaults.standard` with Bundle ID prefix
-
-**Settings:**
-| Key | Type | Default |
-|-----|------|---------|
-| `isEnabled` | Bool | true |
-| `isFirstLaunch` | Bool | true |
-| `launchAtLogin` | Bool | false |
-| `convertLayoutHotkey` | Hotkey (Codable) | Cmd+Opt+Shift+Space* |
-| `toggleCaseHotkey` | Hotkey (Codable) | Cmd+Opt+Z |
-
-*Note: The stored hotkey includes Space key, but actual detection uses modifier-only
-
-**Hotkey Structure:**
-```swift
-struct Hotkey: Codable, Equatable {
-    var keyCode: UInt16
-    var command: Bool
-    var option: Bool
-    var shift: Bool
-    var control: Bool
-}
-```
-
----
-
-### 6. StatusBarController (`Sources/Punto/App/StatusBarController.swift`)
-
-**Menu Structure:**
-```
-┌─────────────────────────────┐
-│  ✓ Enabled                  │  ← Toggle on/off
-│  ─────────────────────────  │
-│  Settings...                │  ← Opens settings window
-│  ─────────────────────────  │
-│  Quit Punto                 │
-└─────────────────────────────┘
-```
-
-**Icon:** SF Symbol `keyboard` or Unicode `⌨`
-
-**Flash Animation:** Brief icon highlight on successful conversion (0.15s accent color tint)
-
----
-
-### 7. InputSourceManager (`Sources/Punto/Core/InputSourceManager.swift`)
-
-**Purpose:** Manages system keyboard layout switching via TIS API.
-
-**Layout Detection:**
-- Finds English layout by: `languages.contains("en")` OR sourceId contains "US"/"ABC"
-- Finds Russian layout by: `languages.contains("ru")` OR sourceId contains "Russian"
-
-**API:**
-```swift
-class InputSourceManager {
-    func switchTo(_ language: KeyboardLanguage) -> Bool
-    func refreshInputSources()
-}
-```
-
-**Usage:** Called by AppDelegate when `switchLayoutAfterConversion` setting is enabled. The switch happens after successful text conversion.
-
-**Note:** When Punto programmatically switches layout, it sets `ignoreNextInputSourceChange` flag in AppDelegate to prevent the system notification from clearing WordTracker buffer.
-
----
-
-## Data Flow
-
-### Conversion Flow (Last Word)
-
-```
-1. User types "ghbdtn"
-   │
-   ▼
-2. HotkeyManager captures keyDown events
-   │
-   ▼
-3. WordTracker.trackKeyPress() adds each character to ring buffer
-   Buffer: ['g', 'h', 'b', 'd', 't', 'n']
-   │
-   ▼
-4. User presses Cmd+Opt+Shift (all together)
-   │
-   ▼
-5. HotkeyManager detects flagsChanged with all 3 modifiers
-   │
-   ▼
-6. AppDelegate.handleConvertLayout() called
-   │
-   ├─► hotkeyManager.ignoreEvents = true (prevent re-capture)
-   │
-   ▼
-7. TextAccessor.getSelectedText() returns nil (nothing selected)
-   │
-   ▼
-8. WordTracker.getLastWord() returns "ghbdtn"
-   │
-   ▼
-9. LayoutConverter.convert("ghbdtn") returns "привет"
-   │
-   ▼
-10. TextAccessor.replaceLastWord(6, "привет")
-    │
-    ├─► Send 6 backspace events (no delay between)
-    ├─► Wait 0.02s
-    ├─► Paste "привет" via clipboard + Cmd+V
-    └─► Restore original clipboard after 0.3s
-   │
-   ▼
-11. WordTracker.clear()
-    │
-    ▼
-12. After 0.3s delay: hotkeyManager.ignoreEvents = false
-```
-
-### Conversion Flow (Selected Text)
-
-```
-1. User selects text "hello" in any app
-   │
-   ▼
-2. User presses Cmd+Opt+Shift
-   │
-   ▼
-3. AppDelegate.handleConvertLayout() called
-   │
-   ▼
-4. TextAccessor.getSelectedText() returns "hello"
-   (via Accessibility API or Clipboard fallback)
-   │
-   ▼
-5. LayoutConverter.convert("hello") returns "руддщ"
-   │
-   ▼
-6. TextAccessor.setSelectedText("руддщ")
-   (via Accessibility API or Cmd+V)
-```
-
----
-
-## Known Issues & Solutions
-
-### Issue 1: Converted text gets re-captured
-**Problem:** After converting "hello" → "руддщ", the simulated typing generates CGEvents that get captured by WordTracker, causing the next conversion to convert "руддщ" back to "hello".
-
-**Solution:** `ignoreEvents` flag in HotkeyManager, set true during replacement, re-enabled after 0.3s delay.
-
-### Issue 2: Multiple rapid triggers
-**Problem:** Modifier-only hotkey fires multiple times while modifiers are held.
-
-**Solution:**
-1. `convertHotkeyTriggered` flag prevents re-trigger while modifiers held
-2. 0.5s debounce via `lastConvertTime`
-3. Reset only when ALL modifiers released
-
-### Issue 3: Accessibility permissions not detected after rebuild
-**Problem:** macOS caches permissions by code signature. After rebuild, permissions may not be recognized.
-
-**Solution:**
-1. Run binary directly: `Release/Punto.app/Contents/MacOS/Punto`
-2. Or toggle permission off/on in System Settings
-3. Or remove and re-add app to Accessibility list
-
-### Issue 4: Event tap disabled by system
-**Problem:** macOS can disable event tap under heavy load or for security.
-
-**Solution:** Check for `tapDisabledByTimeout` and `tapDisabledByUserInput` events, re-enable tap:
 ```swift
 if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
     CGEvent.tapEnable(tap: tap, enable: true)
@@ -375,199 +235,583 @@ if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
 
 ---
 
-## File Structure
+### 3.3 TextAccessor
+
+**Файл:** `Sources/Punto/Core/TextAccessor.swift`
+
+Получает и устанавливает текст в активном приложении через Accessibility API с fallback на clipboard.
+
+#### Стратегия получения текста
 
 ```
-Punto/
-├── Package.swift                 # SPM manifest
-├── Sources/
-│   ├── Punto/
-│   │   ├── main.swift            # Entry point (NSApplicationMain)
-│   │   ├── App/
-│   │   │   ├── AppDelegate.swift           # Lifecycle, permissions, orchestration
-│   │   │   └── StatusBarController.swift   # Menu bar UI
-│   │   ├── Core/
-│   │   │   ├── HotkeyManager.swift         # CGEvent tap, hotkey detection
-│   │   │   ├── TextAccessor.swift          # Get/set text via Accessibility
-│   │   │   ├── LayoutConverter.swift       # EN↔RU character mapping
-│   │   │   ├── WordTracker.swift           # Ring buffer for last word
-│   │   │   └── Logger.swift                # File-based logging (/tmp/punto.log)
-│   │   ├── UI/
-│   │   │   ├── SettingsWindowController.swift
-│   │   │   ├── HotkeyRecorderView.swift
-│   │   │   ├── OnboardingAlert.swift
-│   │   │   └── Styles.swift
-│   │   └── Settings/
-│   │       └── SettingsManager.swift       # UserDefaults persistence
-│   ├── PuntoDiag/
-│   │   └── main.swift            # Diagnostic tool
-│   └── PuntoTest/
-│       └── main.swift            # Test suite
-├── Resources/
-│   ├── Info.plist
-│   ├── Punto.entitlements
-│   └── Assets.xcassets/
-├── Scripts/
-│   ├── build.sh                  # Build universal binary + app bundle
-│   └── debug.sh                  # Debug utilities
-└── Release/
-    └── Punto.app/                # Built application
+getSelectedText()
+       │
+       ▼
+┌─────────────────────┐
+│ 1. AX API direct    │───Success───▶ return text
+│    (focused elem)   │              lastGetUsedClipboard = false
+└─────────────────────┘
+       │ Fail/Empty
+       ▼
+┌─────────────────────┐
+│ 2. AX API via app   │───Success───▶ return text
+│    (focusedUIElem)  │              (для Safari/Electron)
+└─────────────────────┘
+       │ Fail
+       ▼
+┌─────────────────────┐
+│ 3. Recursive search │───Success───▶ return text
+│    (children, d≤5)  │
+└─────────────────────┘
+       │ Fail
+       ▼
+┌─────────────────────┐
+│ 4. Clipboard        │───Success───▶ return text
+│    (Cmd+C)          │              lastGetUsedClipboard = true
+└─────────────────────┘
+       │ Fail
+       ▼
+   return nil
 ```
 
----
+#### Clipboard Fallback (Cmd+C)
 
-## Build Process
+1. Сохранить полный snapshot текущего clipboard (`pasteboardItems` + все types/data), не только plain string
+2. Очистить clipboard
+3. Зафиксировать baseline `changeCount` после очистки
+4. Отправить Cmd+C через CGEvent (cgAnnotatedSessionEventTap)
+5. Polling: проверять clipboard каждые 20ms, до 10 раз (200ms max), ожидая change после baseline
+6. После 60ms попробовать HID fallback (cghidEventTap)
+7. Проверить, что clipboard изменился после baseline; совпадение текста с прежним clipboard не считается ошибкой
+8. Trim whitespace
+9. Восстановить исходный clipboard snapshot, включая пустой clipboard и rich/file contents
 
-```bash
-# Build for both architectures
-swift build -c release --arch arm64
-swift build -c release --arch x86_64
+#### Стратегия установки текста
 
-# Create universal binary
-lipo -create \
-    .build/arm64-apple-macosx/release/Punto \
-    .build/x86_64-apple-macosx/release/Punto \
-    -output .build/universal/Punto
-
-# Create app bundle
-mkdir -p Release/Punto.app/Contents/{MacOS,Resources}
-cp .build/universal/Punto Release/Punto.app/Contents/MacOS/
-cp Resources/Info.plist Release/Punto.app/Contents/
-
-# Sign (ad-hoc for local use)
-codesign --force --deep --sign - Release/Punto.app
+```
+setSelectedText(text, keepSelection)
+       │
+       ▼
+┌─────────────────────────────┐
+│ lastGetUsedClipboard=true?  │──Yes──▶ Clipboard method (Cmd+V)
+└─────────────────────────────┘
+       │ No
+       ▼
+┌─────────────────────────────┐
+│ Try AX API set              │───Success───▶ Done
+│ + верификация изменения     │    (проверяем, что текст
+└─────────────────────────────┘     действительно изменился)
+       │ Fail/Safari bug
+       ▼
+   Clipboard method (Cmd+V)
 ```
 
----
+#### Terminal-Like Surface Support
 
-## Required Permissions
+Punto больше не выбирает терминальный путь по списку bundle ID. `TextAccessor` выбирает стратегию по runtime capability:
 
-### Accessibility (mandatory)
-- Required for: CGEvent Tap, reading/writing text in other apps
-- Location: System Settings → Privacy & Security → Accessibility
-- API: `AXIsProcessTrusted()`
+- если AX selection существует и focused element позволяет settable `AXSelectedText`, используется обычная replacement strategy с сохранением выделения;
+- если AX selection выглядит как non-settable text surface, она не считается безопасной;
+- для terminal-like/non-settable surfaces AX selection не заменяется напрямую; если non-settable selection есть, конвертируется только tracked typed tail текущей команды или его суффикс, а prefix/middle selection блокируется как небезопасный; passive clipboard допускается только когда trimmed clipboard точно совпадает с tracked typed tail из `WordTracker` и заканчивается последним словом;
+- replacement для keyboard-tail strategy выполняется через `replaceLastWord()` (backspaces + Cmd+V).
 
-### Input Monitoring (may be required)
-- Required for: Some apps block CGEvent Tap without this
-- Location: System Settings → Privacy & Security → Input Monitoring
-
----
-
-## Logging
-
-**Log File:** `/tmp/punto.log`
-
-**Log Format:**
-```
-[HH:mm:ss.SSS] [FileName:Line] LEVEL: Message
-```
-
-**Log Levels:**
-- `INFO` — Important events (startup, hotkey triggers, conversions)
-- `DEBUG` — Detailed events (key presses, event types)
-- `ERROR` — Failures (permissions, event tap creation)
-
-**View Logs:**
-```bash
-tail -f /tmp/punto.log
-```
-
----
-
-## Testing
-
-### Run Test Suite
-```bash
-swift run PuntoTest all
-```
-
-### Test Commands
-- `convert` — Test layout conversion logic
-- `track` — Test word tracking
-- `sim` — Simulate typing and conversion
-- `stress` — Rapid conversion stress test
-- `bugs` — Edge case bug hunting
-
-### Manual Testing Checklist
-1. [ ] Type "ghbdtn" → Cmd+Opt+Shift → should become "привет"
-2. [ ] Type "привет" → Cmd+Opt+Shift → should become "ghbdtn"
-3. [ ] Select "hello" → Cmd+Opt+Shift → should become "руддщ"
-4. [ ] Select "HELLO" → Cmd+Opt+Z → should become "hello"
-5. [ ] Rapid hotkey presses should not cause back-and-forth conversion
-6. [ ] Works in: TextEdit, Notes, VS Code, Chrome, Terminal
-
----
-
-## Key Constants
+#### Security Protection
 
 ```swift
-// Key Codes
-let spaceKeyCode: UInt16 = 49
-let deleteKeyCode: UInt16 = 51
-let returnKeyCode: UInt16 = 36
-let zKeyCode: UInt16 = 6
+func isSecureInputEnabled() -> Bool {
+    return IsSecureEventInputEnabled()  // Terminal password prompts
+}
 
-// Timing
-let debounceInterval: TimeInterval = 0.5      // Between modifier-only hotkey triggers
-let ignoreEventsDelay: TimeInterval = 0.3     // After text replacement
-let postBackspaceDelay: TimeInterval = 0.02   // After all backspaces, before paste
-let postPasteDelay: TimeInterval = 0.03       // After Cmd+V paste
-let clipboardRestoreDelay: TimeInterval = 0.3 // Before restoring original clipboard
-
-// Buffer
-let maxWordLength: Int = 50                 // Ring buffer size
+func isPasswordField() -> Bool {
+    // Проверяет AXSecureTextField subrole
+}
 ```
 
 ---
 
-## Troubleshooting
+### 3.4 WordTracker
 
-### App doesn't start
-1. Check Console.app for crash logs
-2. Run directly: `./Release/Punto.app/Contents/MacOS/Punto`
-3. Check logs: `cat /tmp/punto.log`
+**Файл:** `Sources/Punto/Core/WordTracker.swift`
 
-### Hotkeys don't work
-1. Verify Accessibility permission granted
-2. Check logs for "Event tap created successfully"
-3. Run `swift run PuntoDiag permissions`
+Отслеживает последнее напечатанное слово в кольцевом буфере. Отдельный typed-tail буфер хранит контекст текущей terminal-like команды для безопасной проверки selection/clipboard fallback.
 
-### Conversion doesn't appear in app
-1. Check if Accessibility API works: look for "Converting selected text" in logs
-2. If using clipboard fallback: check if Cmd+V is blocked by app
-3. Try different app (TextEdit is most reliable)
+#### Ring Buffer
 
-### Text converts back immediately
-1. Should be fixed with `ignoreEvents` flag
-2. Check logs for rapid successive conversions
-3. Increase `ignoreEventsDelay` if needed
+```
+maxSize = 50 символов для last word
+maxTailSize = 512 символов в production для terminal command tail
+
+Пример добавления "hello":
+  head=0: [_____]  → h → [h____] head=1, count=1
+                   → e → [he___] head=2, count=2
+                   → l → [hel__] head=3, count=3
+                   → l → [hell_] head=4, count=4
+                   → o → [hello] head=0, count=5 (циклический)
+
+getLastWord() читает от (head - count) до head по модулю maxSize
+getTypedTail() читает отдельный tail buffer; в тестах без явного maxTailSize он совпадает с maxSize
+```
+
+#### Word Boundaries
+
+Очищают буфер (новое слово):
+
+| Символы | Описание |
+|---------|----------|
+| Space, Tab, Newline | Пробельные |
+| `! ? ( ) / \ \| @ # $ % ^ & * + = - _` | Разделители |
+| Arrow keys, Home, End, Page Up/Down | Навигация |
+| Return, Enter, Tab, Escape | Управляющие |
+
+**НЕ очищают** (маппятся на русские буквы):
+`;` `'` `[` `]` `` ` `` `,` `.`
+
+#### Mixed Layout Detection
+
+Защита от corrupted данных при задержке уведомления о смене раскладки:
+
+```swift
+func getLastWord() -> String? {
+    // ...
+    if isMixedLayout(word) {  // e.g., "heпо" = EN + RU
+        clear(reason: "mixed layout")
+        return nil
+    }
+    return word
+}
+```
+
+`WordTracker` не имеет terminal-specific режимов. Пробел всегда считается границей слова; terminal-like поведение выбирается позже в `TextAccessor`.
 
 ---
 
-## API Reference
+### 3.5 LayoutConverter
+
+**Файл:** `Sources/Punto/Core/LayoutConverter.swift`
+
+Конвертирует текст между EN и RU раскладками.
+
+#### Таблица маппинга (QWERTY → ЙЦУКЕН)
+
+```
+Lowercase:
+q→й  w→ц  e→у  r→к  t→е  y→н  u→г  i→ш  o→щ  p→з
+a→ф  s→ы  d→в  f→а  g→п  h→р  j→о  k→л  l→д
+z→я  x→ч  c→с  v→м  b→и  n→т  m→ь
+
+Punctuation:
+[→х  ]→ъ  ;→ж  '→э  `→ё  ,→б  .→ю  /→.
+
+Shift+Numbers (EN→RU):
+@ → "   # → №   $ → ;   ^ → :   & → ?
+```
+
+#### Layout Detection
+
+```swift
+func detectLayout(_ text: String) -> DetectedLayout {
+    // Считаем EN и RU буквы
+    let englishRatio = englishCount / total
+
+    if englishRatio > 0.8 { return .english }
+    if englishRatio < 0.2 { return .russian }
+    return .mixed
+}
+```
+
+#### ConversionResult
+
+```swift
+struct ConversionResult {
+    let text: String            // Конвертированный текст
+    let targetLayout: DetectedLayout  // Целевая раскладка
+}
+```
+
+---
+
+### 3.6 InputSourceManager
+
+**Файл:** `Sources/Punto/Core/InputSourceManager.swift`
+
+Управляет системными раскладками клавиатуры через TIS API.
+
+#### Поиск раскладок
+
+```swift
+// English: primary language "en" (including en-US/en_US) or known source id tokens: ABC, US, USInternational
+// Russian: primary language "ru" (including ru-RU/ru_RU) or known source id token: Russian
+```
+
+#### Переключение
+
+```swift
+@discardableResult
+func switchTo(_ language: KeyboardLanguage) -> Bool {
+    let status = TISSelectInputSource(source)
+    return status == noErr
+}
+```
+
+---
+
+### 3.7 SettingsManager
+
+**Файл:** `Sources/Punto/Settings/SettingsManager.swift`
+
+Хранение настроек в UserDefaults.
+
+#### Настройки
+
+| Ключ | Тип | Default | Описание |
+|------|-----|---------|----------|
+| `isEnabled` | Bool | true | Функция включена |
+| `isFirstLaunch` | Bool | true | Показать onboarding |
+| `showInMenuBar` | Bool | true | Показывать иконку |
+| `launchAtLogin` | Bool | false | Запуск при входе |
+| `switchLayoutAfterConversion` | Bool | false | Переключать раскладку |
+| `convertLayoutHotkey` | Hotkey | Cmd+Opt+Shift | Горячая клавиша конвертации |
+| `toggleCaseHotkey` | Hotkey | Cmd+Opt+Z | Горячая клавиша регистра |
+
+#### Hotkey Structure
+
+```swift
+struct Hotkey: Codable, Equatable {
+    var keyCode: UInt16       // UInt16.max = modifier-only
+    var command: Bool
+    var option: Bool
+    var shift: Bool
+    var control: Bool
+
+    var isModifierOnly: Bool  // keyCode == UInt16.max
+    var displayString: String // "⌘⌥⇧" или "⌘⌥Z"
+}
+```
+
+---
+
+### 3.8 StatusBarController
+
+**Файл:** `Sources/Punto/App/StatusBarController.swift`
+
+UI в строке меню.
+
+#### Структура меню
+
+```
+┌─────────────────────────────┐
+│  Punto                      │  (disabled title)
+├─────────────────────────────┤
+│  ✓ Enabled                  │  Toggle on/off
+├─────────────────────────────┤
+│  Convert Layout    ⌘⌥⇧      │  (info)
+│  Toggle Case       ⌘⌥Z      │  (info)
+├─────────────────────────────┤
+│  Settings...       ⌘,       │
+├─────────────────────────────┤
+│  Quit Punto        ⌘Q       │
+└─────────────────────────────┘
+```
+
+#### Flash Feedback
+
+```swift
+func flashIcon() {
+    // Тинирует иконку controlAccentColor на 0.15 сек
+}
+```
+
+---
+
+## 4. Потоки данных
+
+### 4.1 Основной flow конвертации
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  1. Пользователь нажимает Cmd+Opt+Shift (держит и отпускает)        │
+└─────────────────────────────────────────────────────────────────────┘
+                                  │
+                                  ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  2. HotkeyManager.handleEvent() — flagsChanged                      │
+│     • modifiersWerePressed = true (все модификаторы нажаты)         │
+│     • Ждём отпускания всех модификаторов                            │
+│     • Debounce check (0.5s)                                         │
+│     • DispatchQueue.main.async { onConvertLayout() }                │
+└─────────────────────────────────────────────────────────────────────┘
+                                  │
+                                  ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│  3. AppDelegate.handleConvertLayout()                               │
+│     ┌──────────────────────────────────────────────────────────┐   │
+│     │ isConversionInProgress = true                             │   │
+│     │ hotkeyManager.ignoreEvents = true                         │   │
+│     └──────────────────────────────────────────────────────────┘   │
+│                                                                     │
+│     ┌──────────────────────────────────────────────────────────┐   │
+│     │ Проверки безопасности:                                    │   │
+│     │ • isSecureInputEnabled() → блок                           │   │
+│     │ • isPasswordField() → блок                                │   │
+│     └──────────────────────────────────────────────────────────┘   │
+│                                                                     │
+│     ┌──────────────────────────────────────────────────────────┐   │
+│     │ Проверка UNDO (последние 3 сек):                          │   │
+│     │ • Если есть lastConversion → восстановить оригинал        │   │
+│     │ • Переключить раскладку обратно                           │   │
+│     │ • return                                                  │   │
+│     └──────────────────────────────────────────────────────────┘   │
+│                                                                     │
+│     ┌──────────────────────────────────────────────────────────┐   │
+│     │ Нормальная конвертация:                                   │   │
+│     │ • WordTracker.getLastWord()                               │   │
+│     │ • captureSelectedText(lastTrackedWord:)                   │   │
+│     │ • Если есть CapturedText → replaceCapturedText()          │   │
+│     │ • Иначе → lastTrackedWord → replaceLastWord()             │   │
+│     └──────────────────────────────────────────────────────────┘   │
+│                                                                     │
+│     ┌──────────────────────────────────────────────────────────┐   │
+│     │ Финализация:                                              │   │
+│     │ • flashIcon()                                             │   │
+│     │ • switchLayoutIfEnabled(targetLayout)                     │   │
+│     │ • Сохранить lastConversion для undo                       │   │
+│     │ • После 0.3s: ignoreEvents = false                        │   │
+│     └──────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### 4.2 Flow для terminal-like surfaces
+
+```
+┌────────────────────────────────────────────────────────────┐
+│  captureSelectedText(lastTrackedWord:)                     │
+└────────────────────────────────────────────────────────────┘
+                         │
+                         ▼
+┌────────────────────────────────────────────────────────────┐
+│  AX selectedText найден?                                   │
+│  focused element supports settable AXSelectedText?         │
+└────────────────────────────────────────────────────────────┘
+                         │
+            ┌────────────┴────────────┐
+            ▼                         ▼
+┌─────────────────────┐    ┌─────────────────────┐
+│ Да: CapturedText    │    │ Нет: проверить      │
+│ accessibility       │    │ passive clipboard   │
+│ selection           │    │ tail selection      │
+└─────────────────────┘    └─────────────────────┘
+            │                         │
+            ▼                         ▼
+┌─────────────────────┐    ┌─────────────────────┐
+│ replaceCapturedText │    │ accepted tail?      │
+│ via AX/clipboard    │    │ → backspace+paste   │
+│ paste fallback      │    │ else use lastWord   │
+└─────────────────────┘    └─────────────────────┘
+                         │
+                         ▼
+┌────────────────────────────────────────────────────────────┐
+│  replaceLastWord(wordLength, replacement)                  │
+│  • backspaces × wordLength                                 │
+│  • Cmd+V (paste)                                           │
+└────────────────────────────────────────────────────────────┘
+```
+
+### 4.3 Undo Flow
+
+```
+┌──────────────────────────────────────┐
+│ 1-я конвертация: "hello" → "руддщ"   │
+│ lastConversion = {                   │
+│   originalText: "hello"              │
+│   convertedText: "руддщ"             │
+│   timestamp: now                     │
+│   wasSelection: true                 │
+│ }                                    │
+└──────────────────────────────────────┘
+                    │
+                    ▼ (повторное Cmd+Opt+Shift < 3 сек)
+┌──────────────────────────────────────┐
+│ handleConvertLayout()                │
+│ • lastConversion существует          │
+│ • time < 3 сек                       │
+│ ↓                                    │
+│ UNDO MODE:                           │
+│ • setSelectedText("hello")           │
+│ • switchTo(english)                  │
+│ • lastConversion = nil               │
+└──────────────────────────────────────┘
+```
+
+---
+
+## 5. Защитные механизмы
+
+### 5.1 Re-capture Prevention
+
+**Проблема:** При вставке текста через Cmd+V генерируются CGEvents, которые могут быть перехвачены HotkeyManager и снова вызвать конвертацию.
+
+**Решение:**
+```swift
+hotkeyManager.ignoreEvents = true
+// ... конвертация ...
+DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+    hotkeyManager.ignoreEvents = false
+}
+```
+
+### 5.2 Input Source Change Protection
+
+**Проблема:** Когда Punto программно переключает раскладку, система отправляет `kTISNotifySelectedKeyboardInputSourceChanged`, что очищает WordTracker.
+
+**Решение:**
+```swift
+// В switchLayoutIfEnabled():
+ignoreInputSourceChangesUntil = Date().addingTimeInterval(0.75)
+inputSourceManager?.switchTo(.russian)
+
+// В inputSourceChanged():
+if let ignoreUntil = ignoreInputSourceChangesUntil, Date() < ignoreUntil {
+    return  // Не очищать WordTracker
+}
+ignoreInputSourceChangesUntil = nil
+wordTracker?.clear()
+```
+
+### 5.3 Mixed Layout Detection
+
+**Проблема:** Уведомление о смене раскладки может прийти с задержкой, и WordTracker накопит символы из обеих раскладок.
+
+**Решение:**
+```swift
+func getLastWord() -> String? {
+    if isMixedLayout(word) {  // e.g., "heпо"
+        clear(reason: "mixed layout")
+        return nil
+    }
+    return word
+}
+```
+
+### 5.4 Race Condition Prevention
+
+**Проблема:** Асинхронное нажатие клавиши может очистить lastConversion во время конвертации.
+
+**Решение:**
+```swift
+isConversionInProgress = true
+defer { isConversionInProgress = false }
+
+// В onKeyPress callback:
+if self?.isConversionInProgress == false {
+    self?.lastConversion = nil
+}
+```
+
+### 5.5 Safari Text Verification
+
+**Проблема:** Safari возвращает success из AX API, но текст не меняется.
+
+**Решение:**
+```swift
+// После установки текста — проверяем, что он изменился
+Thread.sleep(forTimeInterval: 0.05)
+let actualText = // read again
+if actualText == originalText && originalText != text {
+    return false  // Fallback на clipboard
+}
+```
+
+### 5.6 Cmd+V/Cmd+Z Detection
+
+**Проблема:** Вставленный или отменённый текст не должен попадать в WordTracker.
+
+**Решение:**
+```swift
+// В HotkeyManager:
+if hasCmd && keyCode == 9 {  // V
+    onKeyPress(keyCode, nil)  // nil = сигнал очистить
+}
+if hasCmd && keyCode == 6 {  // Z
+    onKeyPress(keyCode, nil)
+}
+```
+
+---
+
+## 6. Тайминги и константы
+
+### Тайминги
+
+| Константа | Значение | Назначение |
+|-----------|----------|------------|
+| Debounce modifier-only | 0.5 сек | Минимум между срабатываниями |
+| ignoreEvents delay | 0.3 сек | После конвертации |
+| Undo window | 3.0 сек | Время для повторного нажатия |
+| Backspace delay | 0.02 сек | Между backspaces |
+| Post-paste delay | 0.03 сек | После Cmd+V |
+| Clipboard restore | 0.3 сек | Перед восстановлением |
+| Flash icon duration | 0.15 сек | Визуальный feedback |
+| Clipboard poll | 0.02 сек × 10 | Ожидание Cmd+C |
+| AX retry delay | 0.05 сек | Между попытками AX API |
+
+### Key Codes
+
+| Код | Клавиша |
+|-----|---------|
+| 6 | Z |
+| 8 | C |
+| 9 | V |
+| 36 | Return |
+| 48 | Tab |
+| 49 | Space |
+| 51 | Delete (Backspace) |
+| 53 | Escape |
+| 76 | Enter (numpad) |
+| 117 | Forward Delete |
+| 123-126 | Arrow keys |
+
+### Buffer Sizes
+
+| Константа | Значение |
+|-----------|----------|
+| WordTracker maxSize | 50 символов |
+| WordTracker production maxTailSize | 512 символов |
+| Recursive search depth | 5 уровней |
+
+---
+
+## 7. API Reference
 
 ### HotkeyManager
+
 ```swift
 class HotkeyManager {
-    var ignoreEvents: Bool
-    func start()
-    func stop()
+    var ignoreEvents: Bool      // Thread-safe
+    func start()                // Запустить event tap
+    func stop()                 // Остановить event tap
 }
 ```
 
 ### TextAccessor
+
 ```swift
 class TextAccessor {
+    func captureSelectedText(lastTrackedWord: String?) -> CapturedText?
+    func replaceCapturedText(_ capturedText: CapturedText, with replacement: String, keepSelection: Bool = false) -> Bool
     func getSelectedText() -> String?
-    func setSelectedText(_ text: String)
-    func replaceLastWord(wordLength: Int, with replacement: String)
+    func setSelectedText(_ text: String, keepSelection: Bool = false) -> Bool
+    func replaceLastWord(wordLength: Int, with replacement: String) -> Bool
+    func isSecureInputEnabled() -> Bool
+    func isPasswordField() -> Bool
 }
 ```
 
 ### LayoutConverter
+
 ```swift
 class LayoutConverter {
     func convert(_ text: String) -> String
+    func convertWithResult(_ text: String) -> ConversionResult
     func convertToRussian(_ text: String) -> String
     func convertToEnglish(_ text: String) -> String
     func detectLayout(_ text: String) -> DetectedLayout
@@ -575,21 +819,150 @@ class LayoutConverter {
 ```
 
 ### WordTracker
+
 ```swift
 class WordTracker {
     func trackKeyPress(keyCode: UInt16, characters: String?)
     func getLastWord() -> String?
-    func clear()
+    func clear(reason: String = "unknown")
+}
+```
+
+### InputSourceManager
+
+```swift
+class InputSourceManager {
+    func refreshInputSources()
+    func switchTo(_ language: KeyboardLanguage) -> Bool
 }
 ```
 
 ### SettingsManager
+
 ```swift
 class SettingsManager {
     var isEnabled: Bool
     var isFirstLaunch: Bool
+    var showInMenuBar: Bool
     var launchAtLogin: Bool
+    var switchLayoutAfterConversion: Bool
     var convertLayoutHotkey: Hotkey
     var toggleCaseHotkey: Hotkey
+
+    func resetConvertLayoutHotkey()
+    func resetToggleCaseHotkey()
 }
 ```
+
+---
+
+## 8. Отладка
+
+### Логи
+
+```bash
+# Просмотр логов в реальном времени
+tail -f /tmp/punto.log
+
+# Формат логов
+[HH:mm:ss.SSS] [FileName:Line] LEVEL: Message
+```
+
+### Тестирование
+
+```bash
+# Запуск тестов
+swift run PuntoTest all
+
+# Отдельные тесты
+swift run PuntoTest convert   # Тест конвертации
+swift run PuntoTest track     # Тест WordTracker
+swift run PuntoTest sim       # Симуляция ввода
+```
+
+### Диагностика
+
+```bash
+# Проверка прав и состояния
+swift run PuntoDiag all
+swift run PuntoDiag permissions
+```
+
+### Частые проблемы
+
+| Проблема | Решение |
+|----------|---------|
+| Права не работают | Запустить бинарник напрямую, не через `open` |
+| Hotkey срабатывает многократно | Проверить debounce и флаги |
+| Текст конвертируется обратно | Проверить ignoreEvents |
+| Event tap отключён | Автоматически переактивируется |
+| WordTracker пустой после конвертации | Проверить `ignoreInputSourceChangesUntil` grace window |
+
+---
+
+## 9. Структура проекта
+
+```
+Punto/
+├── Package.swift
+├── CLAUDE.md                    # Инструкции для AI
+├── Sources/
+│   ├── Punto/
+│   │   ├── main.swift           # Точка входа
+│   │   ├── App/
+│   │   │   ├── AppDelegate.swift
+│   │   │   └── StatusBarController.swift
+│   │   ├── Core/
+│   │   │   ├── HotkeyManager.swift
+│   │   │   ├── TextAccessor.swift
+│   │   │   ├── LayoutConverter.swift
+│   │   │   ├── WordTracker.swift
+│   │   │   ├── InputSourceManager.swift
+│   │   │   └── Logger.swift
+│   │   ├── Settings/
+│   │   │   └── SettingsManager.swift
+│   │   └── UI/
+│   │       ├── SettingsWindowController.swift
+│   │       ├── HotkeyRecorderView.swift
+│   │       ├── OnboardingAlert.swift
+│   │       └── Styles.swift
+│   ├── PuntoDiag/
+│   │   └── main.swift
+│   └── PuntoTest/
+│       └── main.swift
+├── Resources/
+│   ├── Info.plist
+│   ├── Punto.entitlements
+│   └── Assets.xcassets/
+├── Scripts/
+│   ├── build.sh
+│   └── debug.sh
+├── docs/
+│   ├── TECHNICAL_SPEC.md        # Этот документ
+│   ├── FLOWS.md                 # Диаграммы потоков
+│   └── PROTECTION_MECHANISMS.md # Защитные механизмы
+└── Release/
+    └── Punto.app/
+```
+
+---
+
+## Сборка и запуск
+
+```bash
+# Quick build (arm64 only), sign, deploy и restart
+./Scripts/deploy.sh
+
+# Full build (universal)
+./Scripts/build.sh
+open Release/Punto.app
+```
+
+---
+
+## Требуемые права
+
+| Право | Где настраивается | API проверки |
+|-------|-------------------|--------------|
+| Accessibility | System Settings → Privacy → Accessibility | `AXIsProcessTrusted()` |
+| Input Monitoring | System Settings → Privacy → Input Monitoring | (может требоваться для некоторых приложений) |

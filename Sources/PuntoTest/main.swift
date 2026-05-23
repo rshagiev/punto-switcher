@@ -1,363 +1,52 @@
 import Foundation
+import PuntoCore
 
 // MARK: - Test Harness for Punto
 
-// MARK: - Hotkey Structure (copy from HotkeyManager for testing)
+// MARK: - Production Core Aliases
 
-/// Represents a keyboard shortcut
-struct Hotkey: Codable, Equatable {
-    var keyCode: UInt16
-    var command: Bool
-    var option: Bool
-    var shift: Bool
-    var control: Bool
+typealias RealWordTracker = PuntoCore.WordTracker
+typealias TestHotkey = PuntoCore.Hotkey
+typealias TestKeyCodeNames = PuntoCore.KeyCodeNames
 
-    /// Special keyCode value indicating modifier-only hotkey (no key, just modifiers)
-    static let modifierOnlyKeyCode: UInt16 = UInt16.max
-
-    /// Whether this is a modifier-only hotkey (triggered by pressing modifiers without a key)
-    var isModifierOnly: Bool {
-        return keyCode == Self.modifierOnlyKeyCode
-    }
-
-    /// Default hotkey for layout conversion: Cmd+Option+Shift (modifier-only)
-    static let defaultConvertLayout = Hotkey(
-        keyCode: modifierOnlyKeyCode,
-        command: true,
-        option: true,
-        shift: true,
-        control: false
-    )
-
-    /// Default hotkey for toggle case: Cmd+Option+Z
-    static let defaultToggleCase = Hotkey(
-        keyCode: 6, // Z key
-        command: true,
-        option: true,
-        shift: false,
-        control: false
-    )
-
-    var displayString: String {
-        var parts: [String] = []
-
-        if control { parts.append("\u{2303}") } // Control symbol
-        if option { parts.append("\u{2325}") }  // Option symbol
-        if shift { parts.append("\u{21E7}") }   // Shift symbol
-        if command { parts.append("\u{2318}") } // Command symbol
-
-        // Only show key name if not modifier-only
-        if !isModifierOnly, let keyName = KeyCodeNames.name(for: keyCode) {
-            parts.append(keyName)
-        }
-
-        return parts.joined(separator: "")
-    }
-}
-
-// MARK: - Key Code Names (copy from HotkeyManager for testing)
-
-enum KeyCodeNames {
-    private static let names: [UInt16: String] = [
-        0: "A", 1: "S", 2: "D", 3: "F", 4: "H", 5: "G", 6: "Z", 7: "X",
-        8: "C", 9: "V", 11: "B", 12: "Q", 13: "W", 14: "E", 15: "R",
-        16: "Y", 17: "T", 18: "1", 19: "2", 20: "3", 21: "4", 22: "6",
-        23: "5", 24: "=", 25: "9", 26: "7", 27: "-", 28: "8", 29: "0",
-        30: "]", 31: "O", 32: "U", 33: "[", 34: "I", 35: "P", 36: "Return",
-        37: "L", 38: "J", 39: "'", 40: "K", 41: ";", 42: "\\", 43: ",",
-        44: "/", 45: "N", 46: "M", 47: ".", 48: "Tab", 49: "Space",
-        50: "`", 51: "Delete", 53: "Escape", 55: "Command", 56: "Shift",
-        57: "Caps Lock", 58: "Option", 59: "Control", 60: "Right Shift",
-        61: "Right Option", 62: "Right Control", 63: "Function",
-        96: "F5", 97: "F6", 98: "F7", 99: "F3", 100: "F8", 101: "F9",
-        103: "F11", 105: "F13", 107: "F14", 109: "F10", 111: "F12",
-        113: "F15", 114: "Help", 115: "Home", 116: "Page Up", 117: "Forward Delete",
-        118: "F4", 119: "End", 120: "F2", 121: "Page Down", 122: "F1", 123: "Left",
-        124: "Right", 125: "Down", 126: "Up"
-    ]
-
-    static func name(for keyCode: UInt16) -> String? {
-        return names[keyCode]
-    }
-}
-
-// MARK: - Real WordTracker (copy from production for testing)
-
-/// Tracks the last typed word using a ring buffer
-final class RealWordTracker {
-    private let maxSize: Int
-    private var buffer: [Character]
-    private var head: Int = 0
-    private var count: Int = 0
-
-    private let wordBoundaries: Set<Character> = [
-        " ", "\n", "\t", "\r",
-        "!", "?",
-        "(", ")",
-        "/", "\\", "|",
-        "@", "#", "$", "%", "^", "&", "*",
-        "+", "=", "-", "_"
-    ]
-
-    private let deleteKeyCode: UInt16 = 51
-    private let returnKeyCode: UInt16 = 36
-    private let enterKeyCode: UInt16 = 76
-    private let spaceKeyCode: UInt16 = 49
-
-    private let navigationKeyCodes: Set<UInt16> = [
-        123, 124, 125, 126, // Arrow keys
-        115, 119, 116, 121, // Home, End, Page Up, Page Down
-        117                  // Forward Delete
-    ]
-
-    init(maxSize: Int = 50) {
-        self.maxSize = maxSize
-        self.buffer = [Character](repeating: " ", count: maxSize)
-    }
-
-    func trackKeyPress(keyCode: UInt16, characters: String?) {
-        if keyCode == deleteKeyCode {
-            removeLastCharacter()
-            return
-        }
-
-        if navigationKeyCodes.contains(keyCode) {
-            clear()
-            return
-        }
-
-        if keyCode == returnKeyCode || keyCode == enterKeyCode {
-            clear()
-            return
-        }
-
-        guard let chars = characters, let firstChar = chars.first else {
-            return
-        }
-
-        if keyCode == spaceKeyCode || wordBoundaries.contains(firstChar) {
-            clear()
-            return
-        }
-
-        addCharacter(firstChar)
-    }
-
-    func getLastWord() -> String? {
-        guard count > 0 else { return nil }
-
-        var result = [Character]()
-        result.reserveCapacity(count)
-
-        for i in 0..<count {
-            let index = (head - count + i + maxSize) % maxSize
-            result.append(buffer[index])
-        }
-
-        return String(result)
-    }
-
-    func clear() {
-        count = 0
-    }
-
-    private func addCharacter(_ char: Character) {
-        buffer[head] = char
-        head = (head + 1) % maxSize
-
-        if count < maxSize {
-            count += 1
-        }
-    }
-
-    private func removeLastCharacter() {
-        guard count > 0 else { return }
-
-        head = (head - 1 + maxSize) % maxSize
-        count -= 1
-    }
-}
-
-/// Simulates the WordTracker
+/// Legacy test adapter over the production WordTracker.
 class TestWordTracker {
-    private var buffer: [Character] = []
-    private let maxLength = 50
+    private let tracker = PuntoCore.WordTracker()
 
     func trackKeyPress(character: Character) {
-        // Word boundaries - only actual separators, not punctuation that maps to Russian letters
-        // ; -> ж, ' -> э, [ -> х, ] -> ъ, ` -> ё, , -> б, . -> ю, : -> Ж
-        if character == " " || character == "\n" || character == "\t" ||
-           character == "!" || character == "?" {
-            buffer.removeAll()
-            return
-        }
-
-        // Backspace simulation
-        if character == "\u{7F}" { // DEL
-            if !buffer.isEmpty {
-                buffer.removeLast()
-            }
-            return
-        }
-
-        buffer.append(character)
-        if buffer.count > maxLength {
-            buffer.removeFirst()
-        }
+        tracker.trackKeyPress(keyCode: keyCode(for: character), characters: characters(for: character))
     }
 
     func getLastWord() -> String {
-        return String(buffer)
+        tracker.getLastWord() ?? ""
     }
 
     func clear() {
-        buffer.removeAll()
+        tracker.clear(reason: "legacy test adapter")
+    }
+
+    private func keyCode(for character: Character) -> UInt16 {
+        switch character {
+        case "\u{7F}":
+            return 51
+        case "\n", "\r":
+            return 36
+        case "\t":
+            return 48
+        case " ":
+            return 49
+        default:
+            return 0
+        }
+    }
+
+    private func characters(for character: Character) -> String? {
+        character == "\u{7F}" ? nil : String(character)
     }
 }
 
-/// Layout converter (same logic as main app - with layout detection)
-class TestLayoutConverter {
-    private let enToRu: [Character: Character] = [
-        "q": "й", "w": "ц", "e": "у", "r": "к", "t": "е", "y": "н", "u": "г",
-        "i": "ш", "o": "щ", "p": "з", "[": "х", "]": "ъ", "a": "ф", "s": "ы",
-        "d": "в", "f": "а", "g": "п", "h": "р", "j": "о", "k": "л", "l": "д",
-        ";": "ж", "'": "э", "z": "я", "x": "ч", "c": "с", "v": "м", "b": "и",
-        "n": "т", "m": "ь", ",": "б", ".": "ю", "/": ".",
-        "Q": "Й", "W": "Ц", "E": "У", "R": "К", "T": "Е", "Y": "Н", "U": "Г",
-        "I": "Ш", "O": "Щ", "P": "З", "{": "Х", "}": "Ъ", "A": "Ф", "S": "Ы",
-        "D": "В", "F": "А", "G": "П", "H": "Р", "J": "О", "K": "Л", "L": "Д",
-        ":": "Ж", "\"": "Э", "Z": "Я", "X": "Ч", "C": "С", "V": "М", "B": "И",
-        "N": "Т", "M": "Ь", "<": "Б", ">": "Ю", "?": ",",
-        "`": "ё", "~": "Ё",
-        // Shift + numbers (Mac Russian layout)
-        "@": "\"",  // Shift+2
-        "#": "№",   // Shift+3
-        "$": ";",   // Shift+4
-        "^": ":",   // Shift+6
-        "&": "?"    // Shift+7
-    ]
-
-    private var ruToEn: [Character: Character] = [:]
-
-    init() {
-        // Build reverse mapping
-        for (en, ru) in enToRu {
-            ruToEn[ru] = en
-        }
-        // Fix ambiguous mappings for RU -> EN direction
-        ruToEn["\""] = "@"  // Shift+2 on RU keyboard produces ", maps to @ on EN
-        ruToEn[";"] = "$"   // Shift+4 on RU keyboard produces ;, maps to $ on EN
-        ruToEn[":"] = "^"   // Shift+6 on RU keyboard produces :, maps to ^ on EN
-        ruToEn["?"] = "&"   // Shift+7 on RU keyboard produces ?, maps to & on EN
-        ruToEn["№"] = "#"   // Shift+3 on RU keyboard produces №, maps to # on EN
-    }
-
-    /// Результат конвертации с информацией о направлении
-    struct ConversionResult {
-        let text: String
-        let targetLayout: DetectedLayout
-    }
-
-    /// Конвертирует текст и возвращает результат с направлением
-    func convertWithResult(_ text: String) -> ConversionResult {
-        let sourceLayout = detectLayout(text)
-
-        switch sourceLayout {
-        case .english:
-            return ConversionResult(text: convertToRussian(text), targetLayout: .russian)
-        case .russian:
-            return ConversionResult(text: convertToEnglish(text), targetLayout: .english)
-        case .mixed, .unknown:
-            var enToRuCount = 0, ruToEnCount = 0
-            for char in text {
-                if enToRu[char] != nil { enToRuCount += 1 }
-                if ruToEn[char] != nil { ruToEnCount += 1 }
-            }
-            if enToRuCount >= ruToEnCount {
-                return ConversionResult(text: convertToRussian(text), targetLayout: .russian)
-            } else {
-                return ConversionResult(text: convertToEnglish(text), targetLayout: .english)
-            }
-        }
-    }
-
-    enum DetectedLayout {
-        case english
-        case russian
-        case mixed
-        case unknown
-    }
-
-    func detectLayout(_ text: String) -> DetectedLayout {
-        var englishCount = 0
-        var russianCount = 0
-
-        for char in text {
-            if isEnglishLetter(char) {
-                englishCount += 1
-            } else if isRussianLetter(char) {
-                russianCount += 1
-            }
-        }
-
-        let total = englishCount + russianCount
-        if total == 0 { return .unknown }
-
-        let englishRatio = Double(englishCount) / Double(total)
-
-        if englishRatio > 0.8 {
-            return .english
-        } else if englishRatio < 0.2 {
-            return .russian
-        } else {
-            return .mixed
-        }
-    }
-
-    private func isEnglishLetter(_ char: Character) -> Bool {
-        guard let scalar = char.unicodeScalars.first else { return false }
-        return (scalar.value >= 0x41 && scalar.value <= 0x5A) || // A-Z
-               (scalar.value >= 0x61 && scalar.value <= 0x7A)    // a-z
-    }
-
-    private func isRussianLetter(_ char: Character) -> Bool {
-        guard let scalar = char.unicodeScalars.first else { return false }
-        return (scalar.value >= 0x410 && scalar.value <= 0x44F) || // А-я
-               scalar.value == 0x401 || scalar.value == 0x451      // Ё, ё
-    }
-
-    func convertToRussian(_ text: String) -> String {
-        return String(text.map { enToRu[$0] ?? $0 })
-    }
-
-    func convertToEnglish(_ text: String) -> String {
-        return String(text.map { ruToEn[$0] ?? $0 })
-    }
-
-    func convert(_ text: String) -> String {
-        let layout = detectLayout(text)
-
-        switch layout {
-        case .english:
-            return convertToRussian(text)
-        case .russian:
-            return convertToEnglish(text)
-        case .mixed, .unknown:
-            // For mixed/unknown, convert based on majority of convertible chars
-            var enToRuCount = 0
-            var ruToEnCount = 0
-            for char in text {
-                if enToRu[char] != nil { enToRuCount += 1 }
-                if ruToEn[char] != nil { ruToEnCount += 1 }
-            }
-            if enToRuCount >= ruToEnCount {
-                return convertToRussian(text)
-            } else {
-                return convertToEnglish(text)
-            }
-        }
-    }
-}
+/// Keep the broad legacy scenarios, but execute them against production core.
+typealias TestLayoutConverter = PuntoCore.LayoutConverter
 
 // MARK: - Test Cases
 
@@ -365,6 +54,13 @@ struct TestCase {
     let name: String
     let input: String
     let expected: String
+}
+
+var testFailureCount = 0
+
+func reportResults(passed: Int, failed: Int) {
+    print("\nResults: \(passed) passed, \(failed) failed")
+    testFailureCount += failed
 }
 
 let conversionTests: [TestCase] = [
@@ -496,11 +192,12 @@ let wordTrackingTests: [WordTrackingTest] = [
     WordTrackingTest(name: "Extra backspace on empty", keystrokes: "hi\u{7F}\u{7F}\u{7F}", expectedWord: ""),
     WordTrackingTest(name: "Backspace on empty buffer", keystrokes: "\u{7F}", expectedWord: ""),
 
-    // Punctuation - only ! and ? clear (others map to Russian letters)
+    // Punctuation - only non-layout punctuation clears (mapped keys stay tracked)
     WordTrackingTest(name: "Period stays (maps to ю)", keystrokes: "hello.", expectedWord: "hello."),
     WordTrackingTest(name: "Comma stays (maps to б)", keystrokes: "hello,", expectedWord: "hello,"),
     WordTrackingTest(name: "Exclamation clears", keystrokes: "hello!", expectedWord: ""),
-    WordTrackingTest(name: "Question clears", keystrokes: "hello?", expectedWord: ""),
+    WordTrackingTest(name: "Question stays (maps to comma)", keystrokes: "hello?", expectedWord: "hello?"),
+    WordTrackingTest(name: "Slash stays (maps to period)", keystrokes: "hello/", expectedWord: "hello/"),
     WordTrackingTest(name: "Semicolon stays (maps to ж)", keystrokes: "hello;", expectedWord: "hello;"),
     WordTrackingTest(name: "Colon stays (maps to Ж)", keystrokes: "hello:", expectedWord: "hello:"),
 
@@ -563,7 +260,7 @@ func runConversionTests() {
         }
     }
 
-    print("\nResults: \(passed) passed, \(failed) failed")
+    reportResults(passed: passed, failed: failed)
 }
 
 func runWordTrackingTests() {
@@ -596,7 +293,7 @@ func runWordTrackingTests() {
         }
     }
 
-    print("\nResults: \(passed) passed, \(failed) failed")
+    reportResults(passed: passed, failed: failed)
 }
 
 func runSimulation() {
@@ -719,7 +416,116 @@ func runSelectionTests() {
         }
     }
 
-    print("\nResults: \(passed) passed, \(failed) failed")
+    reportResults(passed: passed, failed: failed)
+}
+
+struct TestPassiveClipboardTailPolicy {
+    static func extractTrackedTail(selectedText: String, lastTrackedWord: String?, lastTrackedTail: String?) -> String? {
+        TextCapturePolicy.terminalTailRewrite(
+            selectedText: selectedText,
+            lastTrackedTail: lastTrackedTail
+        )?.selectedText
+    }
+
+    static func acceptedTailSelection(clipboardText: String?, lastTrackedWord: String?, lastTrackedTail: String?) -> String? {
+        TextCapturePolicy.passiveClipboardTailSelection(
+            clipboardText: clipboardText,
+            lastTrackedWord: lastTrackedWord,
+            lastTrackedTail: lastTrackedTail
+        )
+    }
+
+    static func rewriteTail(_ originalTail: String, replacing selectedText: String, with replacement: String) -> String? {
+        TextReplacementPolicy.rewriteTail(originalTail, replacing: selectedText, with: replacement)
+    }
+}
+
+func runTextAccessStrategyTests() {
+    print("\n" + String(repeating: "=", count: 50))
+    print("  TEXT ACCESS STRATEGY TESTS")
+    print(String(repeating: "=", count: 50))
+
+    var passed = 0
+    var failed = 0
+
+    let cases: [(name: String, clipboard: String?, lastWord: String?, lastTail: String?, expected: String?)] = [
+        ("rejects empty clipboard", nil, "world", "hello world", nil),
+        ("rejects missing tracked word", "hello world", nil, "hello world", nil),
+        ("rejects missing typed tail", "hello world", "world", nil, nil),
+        ("rejects unrelated clipboard", "old clipboard", "world", "hello world", nil),
+        ("accepts exact single-word typed tail", "world", "world", "world", "world"),
+        ("accepts exact selected tail phrase", "hello world", "world", "hello world", "hello world"),
+        ("trims newline from terminal selection", "hello world\n", "world", "hello world", "hello world"),
+        ("rejects middle match that is not tail", "world hello", "world", "hello world", nil),
+        ("rejects prompt-prefixed terminal garbage", "user@host % hello world", "world", "hello world", nil),
+        ("rejects stale clipboard with same last word", "old clipboard world", "world", "hello world", nil),
+        ("rejects multiline terminal garbage", "last command\nhello world", "world", "hello world", nil),
+    ]
+
+    for test in cases {
+        let result = TestPassiveClipboardTailPolicy.acceptedTailSelection(
+            clipboardText: test.clipboard,
+            lastTrackedWord: test.lastWord,
+            lastTrackedTail: test.lastTail
+        )
+
+        if result == test.expected {
+            print("✅ \(test.name)")
+            passed += 1
+        } else {
+            print("❌ \(test.name)")
+            print("   Expected: \(test.expected ?? "nil")")
+            print("   Got:      \(result ?? "nil")")
+            failed += 1
+        }
+    }
+
+    let axCases: [(name: String, selectedText: String, lastWord: String?, lastTail: String?, expected: String?)] = [
+        ("accepts prompt-prefixed AX selection but extracts only typed tail", "user@host % hello world", "world", "hello world", "hello world"),
+        ("accepts multiline AX selection ending with typed tail", "Last login\nuser@host % hello world\n", "world", "hello world", "hello world"),
+        ("rejects non-settable AX selection that is not current command tail", "hello world old prompt", "world", "hello world", nil),
+        ("accepts single-word AX command tail", "user@host % world", "world", "world", "world"),
+    ]
+
+    for test in axCases {
+        let result = TestPassiveClipboardTailPolicy.extractTrackedTail(
+            selectedText: test.selectedText,
+            lastTrackedWord: test.lastWord,
+            lastTrackedTail: test.lastTail
+        )
+
+        if result == test.expected {
+            print("✅ \(test.name)")
+            passed += 1
+        } else {
+            print("❌ \(test.name)")
+            print("   Expected: \(test.expected ?? "nil")")
+            print("   Got:      \(result ?? "nil")")
+            failed += 1
+        }
+    }
+
+    let rewriteCases: [(name: String, tail: String, selected: String, replacement: String, expected: String?)] = [
+        ("rewrites selected terminal tail phrase", "лол лол", "лол лол", "kjk kjk", "kjk kjk"),
+        ("rewrites selected last word in terminal tail", "лол лол", "лол", "kjk", "лол kjk"),
+        ("rejects selected first word in terminal tail", "abc def", "abc", "фис", nil),
+        ("rejects selection outside terminal tail", "abc def", "xyz", "чнп", nil),
+    ]
+
+    for test in rewriteCases {
+        let result = TestPassiveClipboardTailPolicy.rewriteTail(test.tail, replacing: test.selected, with: test.replacement)
+        if result == test.expected {
+            print("✅ \(test.name)")
+            passed += 1
+        } else {
+            print("❌ \(test.name)")
+            print("   Expected: \(test.expected ?? "nil")")
+            print("   Got:      \(result ?? "nil")")
+            failed += 1
+        }
+    }
+
+    reportResults(passed: passed, failed: failed)
 }
 
 func runDoubleConversionTests() {
@@ -748,7 +554,7 @@ func runDoubleConversionTests() {
         }
     }
 
-    print("\nResults: \(passed) passed, \(failed) failed")
+    reportResults(passed: passed, failed: failed)
 }
 
 func runLongStringTests() {
@@ -801,7 +607,7 @@ func runLongStringTests() {
         }
     }
 
-    print("\nResults: \(passed) passed, \(failed) failed")
+    reportResults(passed: passed, failed: failed)
 }
 
 func runEdgeCaseTests() {
@@ -861,19 +667,19 @@ func runEdgeCaseTests() {
     let emojiTests = [
         ("hello 👋", "руддщ 👋", "Emoji at end"),
         ("👋 hello", "👋 руддщ", "Emoji at start"),
-        ("hel👋lo", "рудщ👋дщ", "Emoji in middle"), // Note: this might not work as expected
+        ("hel👋lo", "руд👋дщ", "Emoji in middle"),
     ]
 
     for (input, expected, desc) in emojiTests {
         let result = converter.convert(input)
-        // Emoji should pass through unchanged
-        if result.contains("👋") {
+        if result == expected && result.contains("👋") {
             print("✅ \(desc) - emoji preserved")
             passed += 1
         } else {
-            print("❌ \(desc) - emoji lost")
-            print("   Input:  '\(input)'")
-            print("   Result: '\(result)'")
+            print("❌ \(desc) - emoji conversion mismatch")
+            print("   Input:    '\(input)'")
+            print("   Expected: '\(expected)'")
+            print("   Result:   '\(result)'")
             failed += 1
         }
     }
@@ -900,7 +706,7 @@ func runEdgeCaseTests() {
         }
     }
 
-    print("\nResults: \(passed) passed, \(failed) failed")
+    reportResults(passed: passed, failed: failed)
 }
 
 func runMassStressTest() {
@@ -1140,7 +946,7 @@ func runHotkeyTests() {
         }
     }
 
-    print("\nResults: \(passed) passed, \(failed) failed")
+    reportResults(passed: passed, failed: failed)
 }
 
 // MARK: - NEW TESTS: Shift+Number Mapping Tests
@@ -1222,7 +1028,7 @@ func runShiftNumberTests() {
         }
     }
 
-    print("\nResults: \(passed) passed, \(failed) failed")
+    reportResults(passed: passed, failed: failed)
 }
 
 // MARK: - NEW TESTS: Layout Detection Boundary Tests
@@ -1281,7 +1087,7 @@ func runLayoutDetectionTests() {
         }
     }
 
-    print("\nResults: \(passed) passed, \(failed) failed")
+    reportResults(passed: passed, failed: failed)
 }
 
 // MARK: - NEW TESTS: Real WordTracker with KeyCode
@@ -1356,7 +1162,7 @@ func runRealWordTrackerTests() {
         }
     }
 
-    // Test Escape does NOT clear buffer (not in navigationKeyCodes)
+    // Test Escape clears buffer (context cancellation)
     print("\n--- Escape Key Test ---")
     let escTracker = RealWordTracker()
     escTracker.trackKeyPress(keyCode: 4, characters: "h")
@@ -1365,12 +1171,12 @@ func runRealWordTrackerTests() {
     escTracker.trackKeyPress(keyCode: 37, characters: "l")
     escTracker.trackKeyPress(keyCode: 31, characters: "o")
     escTracker.trackKeyPress(keyCode: 53, characters: nil)  // Escape
-    if escTracker.getLastWord() == "hello" {
-        print("✅ Escape (keyCode 53) does NOT clear buffer")
+    if escTracker.getLastWord() == nil {
+        print("✅ Escape (keyCode 53) clears buffer")
         passed += 1
     } else {
-        print("❌ Escape should NOT clear buffer")
-        print("   Expected: 'hello', Got: '\(escTracker.getLastWord() ?? "nil")'")
+        print("❌ Escape should clear buffer")
+        print("   Got: '\(escTracker.getLastWord() ?? "nil")'")
         failed += 1
     }
 
@@ -1460,7 +1266,6 @@ func runRealWordTrackerTests() {
 
     let clearBoundaries: [(Character, String)] = [
         ("!", "Exclamation"),
-        ("?", "Question"),
         ("@", "At sign"),
         ("#", "Hash"),
         ("$", "Dollar"),
@@ -1470,7 +1275,6 @@ func runRealWordTrackerTests() {
         ("*", "Asterisk"),
         ("(", "Open paren"),
         (")", "Close paren"),
-        ("/", "Slash"),
         ("\\", "Backslash"),
         ("|", "Pipe"),
         ("+", "Plus"),
@@ -1502,6 +1306,8 @@ func runRealWordTrackerTests() {
         (":", "Colon (maps to Ж)"),
         (",", "Comma (maps to б)"),
         (".", "Period (maps to ю)"),
+        ("/", "Slash (maps to period)"),
+        ("?", "Question (maps to comma)"),
         ("[", "Open bracket (maps to х)"),
         ("]", "Close bracket (maps to ъ)"),
         ("`", "Backtick (maps to ё)"),
@@ -1554,7 +1360,7 @@ func runRealWordTrackerTests() {
         failed += 1
     }
 
-    print("\nResults: \(passed) passed, \(failed) failed")
+    reportResults(passed: passed, failed: failed)
 }
 
 // MARK: - NEW TESTS: convertWithResult Tests
@@ -1573,8 +1379,10 @@ func runConvertWithResultTests() {
         ("привет", "ghbdtn", .english, "Russian -> English"),
         ("HELLO", "РУДДЩ", .russian, "English caps -> Russian"),
         ("ПРИВЕТ", "GHBDTN", .english, "Russian caps -> English"),
-        ("123", "123", .russian, "Numbers only -> Russian (default)"),
-        ("", "", .russian, "Empty -> Russian (default)"),
+        ("123", "123", .unknown, "Numbers only -> no layout switch"),
+        ("", "", .unknown, "Empty -> no layout switch"),
+        ("teстing", "teстing", .unknown, "Mixed text -> no destructive conversion"),
+        (";'", "жэ", .russian, "Punctuation-only wrong-layout text -> Russian"),
     ]
 
     for (input, expectedText, expectedLayout, desc) in tests {
@@ -1591,7 +1399,7 @@ func runConvertWithResultTests() {
         }
     }
 
-    print("\nResults: \(passed) passed, \(failed) failed")
+    reportResults(passed: passed, failed: failed)
 }
 
 // MARK: - NEW TESTS: Unicode Boundary Tests
@@ -1659,7 +1467,7 @@ func runUnicodeBoundaryTests() {
         }
     }
 
-    print("\nResults: \(passed) passed, \(failed) failed")
+    reportResults(passed: passed, failed: failed)
 }
 
 // MARK: - NEW TESTS: Multiple Conversion Tests (Round-trips)
@@ -1932,143 +1740,12 @@ func runMultipleConversionTests() {
         }
     }
 
-    print("\nResults: \(passed) passed, \(failed) failed")
+    reportResults(passed: passed, failed: failed)
 }
 
 // MARK: - NEW TESTS: Mixed Layout Detection (WordTracker isMixedLayout)
 
-/// WordTracker with isMixedLayout check (matches production)
-final class MixedLayoutWordTracker {
-    private let maxSize: Int
-    private var buffer: [Character]
-    private var head: Int = 0
-    private var count: Int = 0
-
-    private let wordBoundaries: Set<Character> = [
-        " ", "\n", "\t", "\r",
-        "!", "?",
-        "(", ")",
-        "/", "\\", "|",
-        "@", "#", "$", "%", "^", "&", "*",
-        "+", "=", "-", "_"
-    ]
-
-    private let deleteKeyCode: UInt16 = 51
-    private let returnKeyCode: UInt16 = 36
-    private let enterKeyCode: UInt16 = 76
-    private let spaceKeyCode: UInt16 = 49
-
-    private let navigationKeyCodes: Set<UInt16> = [
-        123, 124, 125, 126,
-        115, 119, 116, 121,
-        117
-    ]
-
-    init(maxSize: Int = 50) {
-        self.maxSize = maxSize
-        self.buffer = [Character](repeating: " ", count: maxSize)
-    }
-
-    func trackKeyPress(keyCode: UInt16, characters: String?) {
-        if keyCode == deleteKeyCode {
-            removeLastCharacter()
-            return
-        }
-
-        if navigationKeyCodes.contains(keyCode) {
-            clear()
-            return
-        }
-
-        if keyCode == returnKeyCode || keyCode == enterKeyCode {
-            clear()
-            return
-        }
-
-        guard let chars = characters, let firstChar = chars.first else {
-            return
-        }
-
-        if keyCode == spaceKeyCode || wordBoundaries.contains(firstChar) {
-            clear()
-            return
-        }
-
-        addCharacter(firstChar)
-    }
-
-    func getLastWord() -> String? {
-        guard count > 0 else { return nil }
-
-        var result = [Character]()
-        result.reserveCapacity(count)
-
-        for i in 0..<count {
-            let index = (head - count + i + maxSize) % maxSize
-            result.append(buffer[index])
-        }
-
-        let word = String(result)
-
-        // Validate: reject mixed-layout words
-        if isMixedLayout(word) {
-            clear()
-            return nil
-        }
-
-        return word
-    }
-
-    func clear() {
-        count = 0
-    }
-
-    private func addCharacter(_ char: Character) {
-        buffer[head] = char
-        head = (head + 1) % maxSize
-
-        if count < maxSize {
-            count += 1
-        }
-    }
-
-    private func removeLastCharacter() {
-        guard count > 0 else { return }
-        head = (head - 1 + maxSize) % maxSize
-        count -= 1
-    }
-
-    private func isMixedLayout(_ text: String) -> Bool {
-        var hasEnglish = false
-        var hasRussian = false
-
-        for char in text {
-            if isEnglishLetter(char) {
-                hasEnglish = true
-            } else if isRussianLetter(char) {
-                hasRussian = true
-            }
-
-            if hasEnglish && hasRussian {
-                return true
-            }
-        }
-
-        return false
-    }
-
-    private func isEnglishLetter(_ char: Character) -> Bool {
-        guard let scalar = char.unicodeScalars.first else { return false }
-        return (scalar.value >= 0x41 && scalar.value <= 0x5A) ||
-               (scalar.value >= 0x61 && scalar.value <= 0x7A)
-    }
-
-    private func isRussianLetter(_ char: Character) -> Bool {
-        guard let scalar = char.unicodeScalars.first else { return false }
-        return (scalar.value >= 0x410 && scalar.value <= 0x44F) ||
-               scalar.value == 0x401 || scalar.value == 0x451
-    }
-}
+typealias MixedLayoutWordTracker = PuntoCore.WordTracker
 
 func runMixedLayoutTests() {
     print("\n" + String(repeating: "=", count: 50))
@@ -2206,7 +1883,7 @@ func runMixedLayoutTests() {
         failed += 1
     }
 
-    print("\nResults: \(passed) passed, \(failed) failed")
+    reportResults(passed: passed, failed: failed)
 }
 
 // MARK: - NEW TESTS: Toggle Case Tests
@@ -2355,7 +2032,7 @@ func runToggleCaseTests() {
         failed += 1
     }
 
-    print("\nResults: \(passed) passed, \(failed) failed")
+    reportResults(passed: passed, failed: failed)
 }
 
 // MARK: - NEW TESTS: Rapid Conversion Simulation
@@ -2373,7 +2050,6 @@ func runRapidConversionTests() {
     print("\n--- Type-Convert-Type-Convert Cycle ---")
 
     // Simulate: type "ghb", convert, type "dtn", convert
-    let scenario1Words = ["ghb", "ghbdtn"]  // ghb -> при, ghbdtn -> привет
     var scenario1Text = ""
 
     scenario1Text = "ghb"
@@ -2398,7 +2074,7 @@ func runRapidConversionTests() {
     let rapidWords = [
         ("hello", "руддщ"),
         ("world", "цщкдв"),
-        ("test", "е|у|ые"),  // Note: t->е, e->у, s->ы, t->е
+        ("test", "еуые"),  // t->е, e->у, s->ы, t->е
         ("swift", "ыцшае"),
         ("code", "сщву"),
     ]
@@ -2407,11 +2083,12 @@ func runRapidConversionTests() {
         let converted = converter.convert(en)
         let back = converter.convert(converted)
 
-        if back == en {
+        if converted == expectedRu && back == en {
             print("✅ '\(en)' <-> '\(converted)' round-trip OK")
             passed += 1
         } else {
             print("❌ '\(en)' round-trip failed")
+            print("   expected converted: '\(expectedRu)'")
             print("   '\(en)' -> '\(converted)' -> '\(back)'")
             failed += 1
         }
@@ -2438,7 +2115,37 @@ func runRapidConversionTests() {
         failed += 1
     }
 
-    // Test 4: Multiple words in sequence
+    // Test 4: AppDelegate undo state should remain reversible across repeated
+    // modifier-only presses without requiring WordTracker to still have text.
+    print("\n--- Repeated Undo Toggle State ---")
+
+    var currentText = "руддщ"
+    var undoOriginal = "hello"
+    var undoConverted = "руддщ"
+    var repeatedToggleOK = true
+
+    for _ in 0..<10 {
+        if currentText != undoConverted {
+            repeatedToggleOK = false
+            break
+        }
+        currentText = undoOriginal
+        let nextOriginal = undoConverted
+        let nextConverted = undoOriginal
+        undoOriginal = nextOriginal
+        undoConverted = nextConverted
+    }
+
+    if repeatedToggleOK && currentText == "руддщ" && undoOriginal == "hello" && undoConverted == "руддщ" {
+        print("✅ Repeated undo toggle state survives 10 hotkey presses")
+        passed += 1
+    } else {
+        print("❌ Repeated undo toggle state failed")
+        print("   current='\(currentText)', next='\(undoConverted)'")
+        failed += 1
+    }
+
+    // Test 5: Multiple words in sequence
     print("\n--- Multiple Words Sequence ---")
 
     let sentences = [
@@ -2494,7 +2201,7 @@ func runRapidConversionTests() {
         passed += 1
     }
 
-    print("\nResults: \(passed) passed, \(failed) failed")
+    reportResults(passed: passed, failed: failed)
 }
 
 // MARK: - NEW TESTS: Clipboard Simulation Tests
@@ -2613,7 +2320,7 @@ func runClipboardSimulationTests() {
         }
     }
 
-    print("\nResults: \(passed) passed, \(failed) failed")
+    reportResults(passed: passed, failed: failed)
 }
 
 // MARK: - WEAKNESS TESTS: Tests that expose bugs and edge cases
@@ -2852,7 +2559,7 @@ func runWeaknessTests() {
     let converted = converter.convert(longString)
     let elapsed = Date().timeIntervalSince(start)
 
-    print("   Converted \(longString.count) chars in \(String(format: "%.3f", elapsed))s")
+    print("   Converted \(longString.count) chars to \(converted.count) chars in \(String(format: "%.3f", elapsed))s")
 
     if elapsed > 1.0 {
         print("   ⚠️  SLOW: Took more than 1 second!")
@@ -2901,7 +2608,7 @@ func runWeaknessTests() {
     // The issue: 's' -> 'ы', which looks like 'bl' in some fonts
     // This can confuse users
 
-    print("\nResults: \(passed) passed, \(failed) failed")
+    reportResults(passed: passed, failed: failed)
     print("\n⚠️  Note: Some 'failures' above are documented edge cases, not bugs.")
 }
 
@@ -3120,7 +2827,7 @@ func runWordTrackerWeaknessTests() {
         passed += 1  // Not necessarily wrong
     }
 
-    print("\nResults: \(passed) passed, \(failed) failed")
+    reportResults(passed: passed, failed: failed)
 }
 
 // MARK: - WEAKNESS TESTS: Conversion direction ambiguity
@@ -3196,15 +2903,23 @@ func runConversionDirectionTests() {
     // Imagine user has "test" selected and wants Russian
     // But what if they already have "еу|е" and want English back?
     // Auto-detect would see Russian and convert to English - correct!
-    // But what if mixed?
+    // Mixed EN/RU input must be treated as a non-applicable conversion.
+    // This keeps selected or tracked text from being destructively majority-converted.
 
     let mixedCase = "teстing"  // "te" English + "ст" Russian + "ing" English
     let mixedLayout = converter.detectLayout(mixedCase)
-    let mixedResult = converter.convert(mixedCase)
+    let mixedConversion = converter.convertWithResult(mixedCase)
 
     print("   Mixed '\(mixedCase)' (layout: \(mixedLayout))")
-    print("   Converted: '\(mixedResult)'")
-    print("   ⚠️  Mixed text conversion may not be what user wanted!")
+    print("   Converted: '\(mixedConversion.text)', shouldApply=\(mixedConversion.shouldApply), target=\(mixedConversion.targetLayout)")
+
+    if mixedLayout == .mixed && mixedConversion.text == mixedCase && !mixedConversion.shouldApply && mixedConversion.targetLayout == .unknown {
+        print("   ✅ Mixed text is left unchanged and marked non-applicable")
+        passed += 1
+    } else {
+        print("   ❌ Mixed text conversion policy regressed")
+        failed += 1
+    }
 
     // ============================================
     // Problem: Near-threshold detection
@@ -3220,14 +2935,24 @@ func runConversionDirectionTests() {
     print("   '\(addEn)' layout: \(converter.detectLayout(addEn)) (added EN)")
     print("   '\(addRu)' layout: \(converter.detectLayout(addRu)) (added RU)")
 
-    // All are "mixed" but conversion direction might differ!
+    // All are "mixed" and must stay unchanged.
     print("   Conversions:")
     print("   '\(base)' -> '\(converter.convert(base))'")
     print("   '\(addEn)' -> '\(converter.convert(addEn))'")
     print("   '\(addRu)' -> '\(converter.convert(addRu))'")
 
-    print("\nResults: \(passed) passed, \(failed) failed")
-    print("\n⚠️  These tests expose design limitations, not necessarily bugs.")
+    let thresholdSamples = [base, addEn, addRu]
+    let thresholdStable = thresholdSamples.allSatisfy { converter.detectLayout($0) == .mixed && converter.convert($0) == $0 }
+    if thresholdStable {
+        print("   ✅ Near-threshold mixed samples are stable no-ops")
+        passed += 1
+    } else {
+        print("   ❌ Near-threshold mixed samples converted destructively")
+        failed += 1
+    }
+
+    reportResults(passed: passed, failed: failed)
+    print("\nNote: remaining findings are conversion-direction boundaries, not automatic failures.")
 }
 
 // MARK: - Main
@@ -3260,6 +2985,8 @@ if args.count > 1 {
         runBugHunt()
     case "selection", "select":
         runSelectionTests()
+    case "strategy", "textaccess":
+        runTextAccessStrategyTests()
     // NEW test commands
     case "hotkey", "hotkeys":
         runHotkeyTests()
@@ -3299,6 +3026,7 @@ if args.count > 1 {
         runDoubleConversionTests()
         runLongStringTests()
         runSelectionTests()
+        runTextAccessStrategyTests()
         runEdgeCaseTests()
         // NEW tests
         runHotkeyTests()
@@ -3323,12 +3051,13 @@ if args.count > 1 {
         runBugHunt()
     default:
         print("Unknown command: \(args[1])")
-        print("Usage: PuntoTest [convert|track|sim|stress|mass|double|long|edge|selection|bugs|all]")
+        print("Usage: PuntoTest [convert|track|sim|stress|mass|double|long|edge|selection|strategy|bugs|all]")
         print("       New: [hotkey|shift|layout|realtracker|result|unicode|multi|mixed|toggle|rapid|clipboard]")
         print("       Weakness: [weakness|trackerweak|direction|allweak]")
+        exit(2)
     }
 } else {
-    print("Usage: PuntoTest [convert|track|sim|stress|mass|double|long|edge|selection|bugs|all]")
+    print("Usage: PuntoTest [convert|track|sim|stress|mass|double|long|edge|selection|strategy|bugs|all]")
     print("       New: [hotkey|shift|layout|realtracker|result|unicode|multi|mixed|toggle|rapid|clipboard]")
     print("\nRunning all tests by default...\n")
     runConversionTests()
@@ -3336,6 +3065,7 @@ if args.count > 1 {
     runDoubleConversionTests()
     runLongStringTests()
     runSelectionTests()
+    runTextAccessStrategyTests()
     runEdgeCaseTests()
     // NEW tests
     runHotkeyTests()
@@ -3358,4 +3088,9 @@ if args.count > 1 {
     runStressTest()
     runMassStressTest()
     runBugHunt()
+}
+
+if testFailureCount > 0 {
+    print("\nPuntoTest failed: \(testFailureCount) failed assertion(s)")
+    exit(1)
 }

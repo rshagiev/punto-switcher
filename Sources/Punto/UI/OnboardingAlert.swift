@@ -1,4 +1,5 @@
 import AppKit
+import PuntoCore
 
 /// Shows the onboarding alert for first-time users
 enum OnboardingAlert {
@@ -8,15 +9,11 @@ enum OnboardingAlert {
     static func show(completion: @escaping (Bool) -> Void) {
         let alert = NSAlert()
         alert.alertStyle = .warning
-        alert.messageText = "Punto needs permissions"
-        alert.informativeText = """
-        To convert text in other apps, Punto needs Accessibility access.
+        alert.messageText = AccessibilityPreferencesPolicy.permissionRequestTitle
+        alert.informativeText = AccessibilityPreferencesPolicy.permissionRequestMessage
 
-        Click "Open System Settings" and add Punto to the list.
-        """
-
-        alert.addButton(withTitle: "Open System Settings")
-        alert.addButton(withTitle: "Cancel")
+        alert.addButton(withTitle: AccessibilityPreferencesPolicy.openSettingsButtonTitle)
+        alert.addButton(withTitle: AccessibilityPreferencesPolicy.cancelButtonTitle)
 
         // Set the icon
         if let appIcon = NSImage(named: NSImage.applicationIconName) {
@@ -37,21 +34,16 @@ enum OnboardingAlert {
     static func showAccessibilityDenied() {
         let alert = NSAlert()
         alert.alertStyle = .critical
-        alert.messageText = "Accessibility Access Denied"
-        alert.informativeText = """
-        Punto cannot function without Accessibility access.
+        alert.messageText = AccessibilityPreferencesPolicy.permissionDeniedTitle
+        alert.informativeText = AccessibilityPreferencesPolicy.permissionDeniedMessage
 
-        Please go to System Settings > Privacy & Security > Accessibility and enable Punto.
-        """
-
-        alert.addButton(withTitle: "Open System Settings")
-        alert.addButton(withTitle: "Quit")
+        alert.addButton(withTitle: AccessibilityPreferencesPolicy.openSettingsButtonTitle)
+        alert.addButton(withTitle: AccessibilityPreferencesPolicy.quitButtonTitle)
 
         let response = alert.runModal()
 
         if response == .alertFirstButtonReturn {
-            let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!
-            NSWorkspace.shared.open(url)
+            NSWorkspace.shared.open(AccessibilityPreferencesPolicy.preferencesURL)
         } else {
             NSApplication.shared.terminate(nil)
         }

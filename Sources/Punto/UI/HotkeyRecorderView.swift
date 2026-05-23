@@ -1,5 +1,6 @@
 import AppKit
 import Carbon.HIToolbox
+import PuntoCore
 
 /// Custom view for recording keyboard shortcuts - native pill button style
 final class HotkeyRecorderView: NSView {
@@ -155,6 +156,11 @@ final class HotkeyRecorderView: NSView {
 
         // Any key press clears pending modifiers (user wants key+modifier combo)
         pendingModifiers = nil
+
+        guard HotkeyValidationPolicy.isAllowedShortcutCharacterKeycode(event.keyCode) else {
+            NSSound.beep()
+            return true
+        }
 
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
         let hasCommand = flags.contains(.command)

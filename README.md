@@ -191,11 +191,8 @@ cd punto-switcher
 # Build universal binary (arm64 + x86_64)
 ./Scripts/build.sh
 
-# Or build for Apple Silicon only (faster)
-swift build -c release --arch arm64
-
-# Install
-cp -r Release/Punto.app /Applications/
+# Or build, sign, install, and restart Apple Silicon only (faster)
+./Scripts/deploy.sh
 ```
 
 ### Logs
@@ -254,7 +251,7 @@ Built from scratch in Swift. ~7000 lines of code. Zero dependencies.
 
 **Self-capture prevention** — When Punto types replacement text, those keystrokes would be captured by its own event tap. Solved with `ignoreEvents` flag and 300ms cooldown window.
 
-**Layout switch echo** — Switching keyboard layout fires `kTISNotifySelectedKeyboardInputSourceChanged`, which normally clears the word buffer. `ignoreNextInputSourceChange` flag prevents clearing after programmatic switch.
+**Layout switch echo** — Switching keyboard layout fires one or more `kTISNotifySelectedKeyboardInputSourceChanged` notifications, which normally clear the word buffer. `ignoreInputSourceChangesUntil` keeps a short grace window after Punto's own programmatic switch so delayed notifications do not erase undo state or the tracked word.
 
 **Mixed layout detection** — WordTracker rejects words containing both Cyrillic and Latin characters (e.g., "heпо"). This catches race conditions when layout change notification arrives with delay.
 

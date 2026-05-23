@@ -17,6 +17,7 @@
 import Foundation
 import ApplicationServices
 import AppKit
+import PuntoCore
 
 // MARK: - Colors
 
@@ -42,160 +43,137 @@ func printHeader(_ msg: String) {
     print(color("═══════════════════════════════════════════════════", .blue))
 }
 
-// MARK: - LayoutConverter (Copy for testing)
-
-final class LayoutConverter {
-    private let enToRu: [Character: Character] = [
-        "q": "й", "w": "ц", "e": "у", "r": "к", "t": "е", "y": "н", "u": "г",
-        "i": "ш", "o": "щ", "p": "з", "[": "х", "]": "ъ", "a": "ф", "s": "ы",
-        "d": "в", "f": "а", "g": "п", "h": "р", "j": "о", "k": "л", "l": "д",
-        ";": "ж", "'": "э", "z": "я", "x": "ч", "c": "с", "v": "м", "b": "и",
-        "n": "т", "m": "ь", ",": "б", ".": "ю", "/": ".",
-        "`": "ё",
-        "Q": "Й", "W": "Ц", "E": "У", "R": "К", "T": "Е", "Y": "Н", "U": "Г",
-        "I": "Ш", "O": "Щ", "P": "З", "{": "Х", "}": "Ъ", "A": "Ф", "S": "Ы",
-        "D": "В", "F": "А", "G": "П", "H": "Р", "J": "О", "K": "Л", "L": "Д",
-        ":": "Ж", "\"": "Э", "Z": "Я", "X": "Ч", "C": "С", "V": "М", "B": "И",
-        "N": "Т", "M": "Ь", "<": "Б", ">": "Ю", "?": ",",
-        "~": "Ё",
-        "@": "\"", "#": "№", "$": ";", "^": ":", "&": "?"
-    ]
-
-    private var ruToEn: [Character: Character] = [:]
-
-    init() {
-        for (en, ru) in enToRu { ruToEn[ru] = en }
-        ruToEn["№"] = "#"
-    }
-
-    func convert(_ text: String) -> String {
-        let layout = detectLayout(text)
-        switch layout {
-        case .english: return convertToRussian(text)
-        case .russian: return convertToEnglish(text)
-        case .mixed, .unknown: return convertBasedOnMajority(text)
-        }
-    }
-
-    func convertToRussian(_ text: String) -> String {
-        return String(text.map { enToRu[$0] ?? $0 })
-    }
-
-    func convertToEnglish(_ text: String) -> String {
-        return String(text.map { ruToEn[$0] ?? $0 })
-    }
-
-    enum DetectedLayout: String { case english, russian, mixed, unknown }
-
-    func detectLayout(_ text: String) -> DetectedLayout {
-        var en = 0, ru = 0
-        for char in text {
-            let s = char.unicodeScalars.first!.value
-            if (s >= 0x41 && s <= 0x5A) || (s >= 0x61 && s <= 0x7A) { en += 1 }
-            else if (s >= 0x410 && s <= 0x44F) || s == 0x401 || s == 0x451 { ru += 1 }
-        }
-        let total = en + ru
-        if total == 0 { return .unknown }
-        let ratio = Double(en) / Double(total)
-        if ratio > 0.8 { return .english }
-        if ratio < 0.2 { return .russian }
-        return .mixed
-    }
-
-    private func convertBasedOnMajority(_ text: String) -> String {
-        var enToRuCount = 0, ruToEnCount = 0
-        for char in text {
-            if enToRu[char] != nil { enToRuCount += 1 }
-            if ruToEn[char] != nil { ruToEnCount += 1 }
-        }
-        return enToRuCount >= ruToEnCount ? convertToRussian(text) : convertToEnglish(text)
-    }
-}
-
-// MARK: - WordTracker (Copy for testing)
-
-final class WordTracker {
-    private let maxSize: Int
-    private var buffer: [Character]
-    private var head: Int = 0
-    private var count: Int = 0
-
-    private let wordBoundaries: Set<Character> = [
-        " ", "\n", "\t", "\r",
-        "!", "?",
-        "(", ")",
-        "/", "\\", "|",
-        "@", "#", "$", "%", "^", "&", "*",
-        "+", "=", "-", "_"
-    ]
-
-    init(maxSize: Int = 50) {
-        self.maxSize = maxSize
-        self.buffer = [Character](repeating: " ", count: maxSize)
-    }
-
-    func trackKeyPress(keyCode: UInt16, characters: String?) {
-        if keyCode == 51 { removeLastCharacter(); return }
-        if [123, 124, 125, 126, 115, 119, 116, 121, 117].contains(keyCode) { clear(); return }
-        if keyCode == 36 || keyCode == 76 { clear(); return }  // Return/Enter
-        guard let chars = characters, let firstChar = chars.first else { return }
-        if keyCode == 49 || wordBoundaries.contains(firstChar) { clear(); return }
-        addCharacter(firstChar)
-    }
-
-    func getLastWord() -> String? {
-        guard count > 0 else { return nil }
-        var result = [Character]()
-        for i in 0..<count {
-            let index = (head - count + i + maxSize) % maxSize
-            result.append(buffer[index])
-        }
-        let word = String(result)
-
-        // Validate: reject mixed-layout words
-        if isMixedLayout(word) { clear(); return nil }
-        return word
-    }
-
-    func clear() { count = 0 }
-
-    private func addCharacter(_ char: Character) {
-        buffer[head] = char
-        head = (head + 1) % maxSize
-        if count < maxSize { count += 1 }
-    }
-
-    private func removeLastCharacter() {
-        guard count > 0 else { return }
-        head = (head - 1 + maxSize) % maxSize
-        count -= 1
-    }
-
-    private func isMixedLayout(_ text: String) -> Bool {
-        var hasEnglish = false
-        var hasRussian = false
-        for char in text {
-            if isEnglishLetter(char) { hasEnglish = true }
-            else if isRussianLetter(char) { hasRussian = true }
-            if hasEnglish && hasRussian { return true }
-        }
-        return false
-    }
-
-    private func isEnglishLetter(_ char: Character) -> Bool {
-        guard let scalar = char.unicodeScalars.first else { return false }
-        return (scalar.value >= 0x41 && scalar.value <= 0x5A) ||
-               (scalar.value >= 0x61 && scalar.value <= 0x7A)
-    }
-
-    private func isRussianLetter(_ char: Character) -> Bool {
-        guard let scalar = char.unicodeScalars.first else { return false }
-        return (scalar.value >= 0x410 && scalar.value <= 0x44F) ||
-               scalar.value == 0x401 || scalar.value == 0x451
-    }
-}
-
 // MARK: - Diagnostic Commands
+
+struct AutoCorrectionHarnessCase {
+    let name: String
+    let typedText: String
+    let expectedText: String
+}
+
+func simulateAutoCorrectionTyping(
+    _ text: String,
+    rules: [AutoCorrectionRule]
+) -> (finalText: String, corrections: [String], undoRecords: [ConversionRecord]) {
+    let engine = AutoCorrectionEngine(rules: rules)
+    let session = ConversionSession()
+    var finalText = ""
+    var currentWord = ""
+    var corrections: [String] = []
+    var undoRecords: [ConversionRecord] = []
+
+    for character in text {
+        finalText.append(character)
+
+        let isSeparator = character == " "
+            || character == "\n"
+            || character == "\t"
+            || character == "\r"
+
+        if isSeparator {
+            if let decision = engine.correction(for: currentWord) {
+                let original = decision.original + String(character)
+                let replacement = decision.replacement + String(character)
+                finalText.removeLast(original.count)
+                finalText.append(replacement)
+                session.record(
+                    originalText: original,
+                    convertedText: replacement,
+                    replacementMethod: .keyboardBackspacePaste,
+                    origin: .autoCorrection(rule: decision.rule)
+                )
+                if let record = session.undoCandidate() {
+                    undoRecords.append(record)
+                }
+                corrections.append("\(decision.original)->\(decision.replacement)")
+            }
+            currentWord = ""
+        } else {
+            currentWord.append(character)
+        }
+    }
+
+    return (finalText, corrections, undoRecords)
+}
+
+func testAutoCorrectionHarness() {
+    printHeader("Auto-correction Runtime Harness")
+
+    let rules = AutoCorrectionStarterCatalog.rules
+
+    let issues = AutoCorrectionRuleCatalog.validationIssues(for: rules)
+    if issues.isEmpty {
+        printSuccess("Rule catalog validation passed")
+    } else {
+        printError("Rule catalog validation found \(issues.count) issue(s)")
+        for issue in issues {
+            print("  row \(issue.ruleIndex + 1): \(issue.severity.rawValue) \(issue.message)")
+        }
+        return
+    }
+
+    let cases = [
+        AutoCorrectionHarnessCase(
+            name: "wrong-layout typed word",
+            typedText: "ghbdtn ",
+            expectedText: "привет "
+        ),
+        AutoCorrectionHarnessCase(
+            name: "preserve title case",
+            typedText: "Teh quick test",
+            expectedText: "The quick test"
+        ),
+        AutoCorrectionHarnessCase(
+            name: "multiple corrections",
+            typedText: "teh cat adn dog ",
+            expectedText: "the cat and dog "
+        ),
+        AutoCorrectionHarnessCase(
+            name: "starter wrong-layout common word",
+            typedText: "cgfcb,j ",
+            expectedText: "спасибо "
+        ),
+        AutoCorrectionHarnessCase(
+            name: "newline separator",
+            typedText: "TEH\nnext",
+            expectedText: "THE\nnext"
+        )
+    ]
+
+    var failures = 0
+    for testCase in cases {
+        let result = simulateAutoCorrectionTyping(testCase.typedText, rules: rules)
+        if result.finalText == testCase.expectedText {
+            printSuccess("\(testCase.name): '\(testCase.typedText)' -> '\(result.finalText)'")
+            if result.corrections.isEmpty {
+                printWarning("  no corrections recorded")
+            } else {
+                print("  corrections: \(result.corrections.joined(separator: ", "))")
+            }
+            if result.undoRecords.count != result.corrections.count {
+                printWarning("  undo records \(result.undoRecords.count) != corrections \(result.corrections.count)")
+            }
+        } else {
+            failures += 1
+            printError("\(testCase.name): expected '\(testCase.expectedText)', got '\(result.finalText)'")
+        }
+    }
+
+    let filtered = AutoCorrectionRuleCatalog.filteredRuleIndexes(in: rules, query: "the")
+    if filtered.contains(where: { rules[$0].replacement == "the" }) {
+        printSuccess("Rule search returned an expected rule for 'the'")
+    } else {
+        failures += 1
+        printError("Rule search did not return the 'the' replacement, got \(filtered)")
+    }
+
+    if failures == 0 {
+        printSuccess("Auto-correction harness passed")
+    } else {
+        printError("Auto-correction harness failed: \(failures) failure(s)")
+        exit(1)
+    }
+}
 
 func testPermissions() {
     printHeader("Accessibility Permissions")
@@ -281,10 +259,10 @@ func testConverter() {
     for test in detectionTests {
         let result = converter.detectLayout(test.input)
         if result == test.expected {
-            printSuccess("'\(test.input)' → \(result.rawValue)")
+            printSuccess("'\(test.input)' → \(result)")
             passed += 1
         } else {
-            printError("'\(test.input)' expected \(test.expected.rawValue), got \(result.rawValue)")
+            printError("'\(test.input)' expected \(test.expected), got \(result)")
             failed += 1
         }
     }
@@ -352,8 +330,8 @@ func testTracker() {
         failed += 1
     }
 
-    // Test 5: Punctuation that maps to Russian letters should NOT clear buffer
-    // Period (.) maps to ю, comma (,) maps to б, etc.
+    // Test 5: Punctuation that maps through the keyboard layout should NOT clear buffer
+    // Period (.) maps to ю, slash (/) maps to period, etc.
     let tracker3 = WordTracker()
     tracker3.trackKeyPress(keyCode: 4, characters: "t")
     tracker3.trackKeyPress(keyCode: 14, characters: "e")
@@ -366,6 +344,19 @@ func testTracker() {
         passed += 1
     } else {
         printError("Period should NOT clear, got: '\(tracker3.getLastWord() ?? "nil")'")
+        failed += 1
+    }
+
+    let slashTracker = WordTracker()
+    for char in "test/" {
+        slashTracker.trackKeyPress(keyCode: 0, characters: String(char))
+    }
+
+    if slashTracker.getLastWord() == "test/" {
+        printSuccess("Slash does NOT clear buffer (maps to period): 'test/'")
+        passed += 1
+    } else {
+        printError("Slash should NOT clear, got: '\(slashTracker.getLastWord() ?? "nil")'")
         failed += 1
     }
 
@@ -522,8 +513,11 @@ func testClipboard() {
 
     let pasteboard = NSPasteboard.general
 
-    // Save current contents
-    let original = pasteboard.string(forType: .string)
+    let snapshot = PasteboardSnapshot(pasteboard)
+    defer {
+        snapshot.restore(to: pasteboard)
+        printSuccess("Restored original clipboard snapshot")
+    }
 
     // Test write
     let testString = "Punto test: привет hello 123"
@@ -537,11 +531,35 @@ func testClipboard() {
         printError("Clipboard write/read failed")
     }
 
-    // Restore original
+    // Test multi-item, multi-type snapshot restoration. This matches the runtime
+    // clipboard contract used around Cmd+C/Cmd+V fallbacks.
+    let richItem = NSPasteboardItem()
+    richItem.setString("plain text", forType: .string)
+    richItem.setData(Data("<b>rich text</b>".utf8), forType: .html)
+
+    let fileItem = NSPasteboardItem()
+    fileItem.setString("file:///tmp/punto-test.txt", forType: .fileURL)
+
     pasteboard.clearContents()
-    if let orig = original {
-        pasteboard.setString(orig, forType: .string)
-        printSuccess("Restored original clipboard contents")
+    pasteboard.writeObjects([richItem, fileItem])
+    let richSnapshot = PasteboardSnapshot(pasteboard)
+
+    pasteboard.clearContents()
+    pasteboard.setString("replacement", forType: .string)
+    richSnapshot.restore(to: pasteboard)
+
+    let restoredItems = pasteboard.pasteboardItems ?? []
+    let restoredPlain = restoredItems.first?.string(forType: .string)
+    let restoredHTML = restoredItems.first?.data(forType: .html)
+    let restoredFileURL = restoredItems.dropFirst().first?.string(forType: .fileURL)
+
+    if restoredItems.count == 2,
+       restoredPlain == "plain text",
+       restoredHTML == Data("<b>rich text</b>".utf8),
+       restoredFileURL == "file:///tmp/punto-test.txt" {
+        printSuccess("Full pasteboard snapshot restores multiple items and types")
+    } else {
+        printError("Full pasteboard snapshot restore failed")
     }
 }
 
@@ -607,6 +625,7 @@ func runAll() {
     testTracker()
     testClipboard()
     testAccessibility()
+    testAutoCorrectionHarness()
 
     printHeader("Summary")
     print("All diagnostic tests completed.")
@@ -635,6 +654,8 @@ case "clipboard", "clip":
     testClipboard()
 case "accessibility", "ax":
     testAccessibility()
+case "autocorrect", "ac":
+    testAutoCorrectionHarness()
 case "help", "-h", "--help":
     print("PuntoDiag - Diagnostic tool for Punto")
     print("")
@@ -649,6 +670,7 @@ case "help", "-h", "--help":
     print("  hotkeys       Interactive hotkey detection")
     print("  clipboard     Test clipboard operations")
     print("  accessibility Test Accessibility API")
+    print("  autocorrect   Test auto-correction rule runtime harness")
     print("  help          Show this help")
 default:
     print("Unknown command: \(command)")

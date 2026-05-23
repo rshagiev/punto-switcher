@@ -9,6 +9,7 @@ set -e
 APP_NAME="Punto"
 BUNDLE_ID="com.rshagiev.Punto"
 VERSION="1.0.0"
+SIGN_IDENTITY="${PUNTO_SIGN_IDENTITY:-Punto Local Code Signing}"
 
 # Directories
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -115,9 +116,21 @@ if [ -d "$PROJECT_DIR/Resources/Assets.xcassets" ]; then
     fi
 fi
 
-# Sign the app (ad-hoc signing for local use)
+if [ -d "$PROJECT_DIR/Resources/Sounds" ]; then
+    echo "Copying sound feedback resources..."
+    mkdir -p "$APP_BUNDLE/Contents/Resources/Sounds"
+    cp "$PROJECT_DIR"/Resources/Sounds/*.wav "$APP_BUNDLE/Contents/Resources/Sounds/"
+fi
+
+# Sign the app. A stable local identity keeps the Accessibility TCC grant
+# valid across rebuilds; ad-hoc signing falls back to cdhash-only identity.
 echo "Signing app bundle..."
-codesign --force --deep --sign - "$APP_BUNDLE" 2>/dev/null || echo "Warning: Code signing failed (this is OK for local use)"
+if security find-identity -v -p codesigning | grep -Fq "\"$SIGN_IDENTITY\""; then
+    codesign --force --deep --sign "$SIGN_IDENTITY" --entitlements "$PROJECT_DIR/Resources/Punto.entitlements" "$APP_BUNDLE"
+else
+    echo "Warning: code-signing identity '$SIGN_IDENTITY' not found; falling back to ad-hoc signing."
+    codesign --force --deep --sign - --entitlements "$PROJECT_DIR/Resources/Punto.entitlements" "$APP_BUNDLE" 2>/dev/null || echo "Warning: Code signing failed (this is OK for local use)"
+fi
 
 # Copy to Applications
 echo "Installing to /Applications..."

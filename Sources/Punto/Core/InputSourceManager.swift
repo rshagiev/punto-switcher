@@ -1,5 +1,6 @@
 import Carbon
 import Foundation
+import PuntoCore
 
 /// Язык для переключения раскладки
 enum KeyboardLanguage {
@@ -12,8 +13,18 @@ final class InputSourceManager {
 
     private var englishSource: TISInputSource?
     private var russianSource: TISInputSource?
+    private let preferredRussianLayoutType: () -> KeyboardLayoutType
+    private let preferredEnglishSourceID: () -> String?
+    private let preferredRussianSourceID: () -> String?
 
-    init() {
+    init(
+        preferredRussianLayoutType: @escaping () -> KeyboardLayoutType = { KeyboardLayoutTypePolicy.defaultRussianLayoutType },
+        preferredEnglishSourceID: @escaping () -> String? = { nil },
+        preferredRussianSourceID: @escaping () -> String? = { nil }
+    ) {
+        self.preferredRussianLayoutType = preferredRussianLayoutType
+        self.preferredEnglishSourceID = preferredEnglishSourceID
+        self.preferredRussianSourceID = preferredRussianSourceID
         refreshInputSources()
     }
 
@@ -23,21 +34,39 @@ final class InputSourceManager {
             return
         }
 
+        englishSource = nil
+        russianSource = nil
+
+        let candidates = sourceList.map { source in
+            InputSourceCandidate(
+                sourceID: getSourceId(source),
+                languages: getLanguages(source),
+                isSelectableKeyboard: isSelectableKeyboard(source),
+                isEnabled: isEnabledInputSource(source)
+            )
+        }
+        let selection = InputSourceSelectionPolicy.selection(
+            from: candidates,
+            preferredRussianLayoutType: preferredRussianLayoutType(),
+            preferredEnglishSourceID: preferredEnglishSourceID(),
+            preferredRussianSourceID: preferredRussianSourceID()
+        )
+
         for source in sourceList {
-            guard isSelectableKeyboard(source) else { continue }
-
-            let languages = getLanguages(source)
             let sourceId = getSourceId(source)
-
-            if englishSource == nil && (languages.contains("en") || sourceId.contains("US") || sourceId.contains("ABC")) {
+            if englishSource == nil, sourceId == selection.englishSourceID {
                 englishSource = source
                 PuntoLog.info("Found English input source: \(sourceId)")
             }
 
-            if russianSource == nil && (languages.contains("ru") || sourceId.contains("Russian")) {
+            if russianSource == nil, sourceId == selection.russianSourceID {
                 russianSource = source
                 PuntoLog.info("Found Russian input source: \(sourceId)")
             }
+        }
+
+        if let message = InputSourceSelectionPolicy.missingRequiredLayoutsLogMessage(selection: selection) {
+            PuntoLog.error(message)
         }
     }
 
@@ -51,14 +80,77 @@ final class InputSourceManager {
             return false
         }
 
+        let targetLayoutID = getSourceId(source)
         let status = TISSelectInputSource(source)
-        if status == noErr {
+        let result = InputSourceSwitchVerificationPolicy.result(
+            selectStatus: status,
+            targetLayoutID: targetLayoutID,
+            currentLayoutIDAfterSwitch: currentLayoutID()
+        )
+
+        switch result {
+        case .switched:
             PuntoLog.info("Switched keyboard to \(language)")
             return true
-        } else {
+        case .selectFailed(let status):
             PuntoLog.error("Failed to switch input source, error: \(status)")
             return false
+        case .layoutStayedSame(let currentLayoutID):
+            PuntoLog.error("Tried to switch to layout '\(targetLayoutID)' for \(language), but layout stayed '\(currentLayoutID ?? "unknown")'")
+            return false
         }
+    }
+
+    @discardableResult
+    func switchToLayoutID(_ layoutID: String) -> Bool {
+        if layoutID == languageLayoutID(.english) {
+            return switchTo(.english)
+        }
+        if layoutID == languageLayoutID(.russian) {
+            return switchTo(.russian)
+        }
+
+        guard let sourceList = TISCreateInputSourceList(nil, false)?.takeRetainedValue() as? [TISInputSource] else {
+            return false
+        }
+
+        for source in sourceList where getSourceId(source) == layoutID && isSelectableKeyboard(source) {
+            let targetLayoutID = getSourceId(source)
+            let status = TISSelectInputSource(source)
+            let result = InputSourceSwitchVerificationPolicy.result(
+                selectStatus: status,
+                targetLayoutID: targetLayoutID,
+                currentLayoutIDAfterSwitch: currentLayoutID()
+            )
+
+            switch result {
+            case .switched:
+                PuntoLog.info("Switched keyboard to remembered layout \(layoutID)")
+                return true
+            case .selectFailed(let status):
+                PuntoLog.error("Failed to switch remembered input source \(layoutID), error: \(status)")
+                return false
+            case .layoutStayedSame(let currentLayoutID):
+                PuntoLog.error("Tried to switch to remembered layout '\(targetLayoutID)', but layout stayed '\(currentLayoutID ?? "unknown")'")
+                return false
+            }
+        }
+
+        PuntoLog.info("Remembered input source not found: \(layoutID)")
+        return false
+    }
+
+    func currentLayoutID() -> String? {
+        guard let source = TISCopyCurrentKeyboardLayoutInputSource()?.takeRetainedValue() else {
+            return nil
+        }
+        return getSourceId(source)
+    }
+
+    func languageLayoutID(_ language: KeyboardLanguage) -> String? {
+        let source = language == .english ? englishSource : russianSource
+        guard let source else { return nil }
+        return getSourceId(source)
     }
 
     // MARK: - Private Helpers
@@ -69,6 +161,10 @@ final class InputSourceManager {
             return false
         }
         return getProperty(source, kTISPropertyInputSourceIsSelectCapable) as? Bool ?? false
+    }
+
+    private func isEnabledInputSource(_ source: TISInputSource) -> Bool {
+        getProperty(source, kTISPropertyInputSourceIsEnabled) as? Bool ?? true
     }
 
     private func getSourceId(_ source: TISInputSource) -> String {
