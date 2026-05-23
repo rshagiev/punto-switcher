@@ -830,80 +830,71 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func handleAutoCorrectionIfNeeded() {
         let token = wordTracker?.consumeCompletedToken()
-        if let statisticsEvent = ProductStatisticsPolicy.eventAfterCompletedTokenConsumption(token != nil) {
-            settingsManager?.recordProductStatisticsEvent(statisticsEvent)
-        }
-        let routePreflight = AutoCorrectionRuntimePolicy.routePreflightAction(
+        let gatePlan = AutoCorrectionRuntimePolicy.gatePlan(
+            token: token,
             isEnabled: settingsManager?.isEnabled == true,
             autoCorrectionEnabled: settingsManager?.autoCorrectionEnabled == true,
             autoCorrectOnEnterAndTab: settingsManager?.autoCorrectOnEnterAndTab
                 ?? SettingsPersistencePolicy.defaultAutoCorrectOnEnterAndTab,
             isConversionInProgress: isConversionInProgress,
             isCurrentApplicationDisabled: isCurrentApplicationDisabled(),
-            token: token
-        )
-
-        switch routePreflight {
-        case .proceed:
-            break
-        case .consumeTokenAndSkip, .skip:
-            if let message = AutoCorrectionPreflightPolicy.logMessage(for: routePreflight) {
-                PuntoLog.info(message)
-            }
-            return
-        case .blockAndClear:
-            break
-        }
-
-        guard let token else { return }
-
-        let securityPreflight = AutoCorrectionRuntimePolicy.securityPreflightAction(
-            token: token,
-            autoCorrectOnEnterAndTab: settingsManager?.autoCorrectOnEnterAndTab
-                ?? SettingsPersistencePolicy.defaultAutoCorrectOnEnterAndTab,
             isSecureInputEnabled: textAccessor?.isSecureInputEnabled() == true,
             isPasswordField: textAccessor?.isPasswordField() == true
         )
 
-        if case .blockAndClear(let reason) = securityPreflight {
-            clearTextStateForSecureInput(context: reason)
-            if let message = AutoCorrectionPreflightPolicy.logMessage(for: securityPreflight) {
-                PuntoLog.info(message)
+        func recordCompletedTokenStatistics(_ event: ProductStatisticsEvent?) {
+            if let event {
+                settingsManager?.recordProductStatisticsEvent(event)
+            }
+        }
+
+        let plan: AutoCorrectionRuntimeAttemptPlan
+        switch gatePlan {
+        case .skipped(let completedTokenStatisticsEvent, let logMessage):
+            recordCompletedTokenStatistics(completedTokenStatisticsEvent)
+            if let logMessage {
+                PuntoLog.info(logMessage)
             }
             return
-        }
 
-        reloadAutoCorrectionRules()
-        let trackedTailBeforeCorrection = wordTracker?.getTypedTailPreservingBoundaryWhitespace()
-
-        let plan = AutoCorrectionRuntimePolicy.replacementPlan(
-            token: token,
-            trackedTailBeforeCorrection: trackedTailBeforeCorrection,
-            engine: autoCorrectionEngine
-        )
-
-        if case .noCorrection = plan {
+        case .blockAndClear(let completedTokenStatisticsEvent, let reason, let logMessage):
+            recordCompletedTokenStatistics(completedTokenStatisticsEvent)
+            clearTextStateForSecureInput(context: reason)
+            if let logMessage {
+                PuntoLog.info(logMessage)
+            }
             return
-        }
 
-        _ = beginReplacementWindow()
-        defer {
-            finishReplacementWindow()
+        case .proceed(let completedTokenStatisticsEvent, let token):
+            reloadAutoCorrectionRules()
+            plan = AutoCorrectionRuntimePolicy.runtimeAttemptPlan(
+                token: token,
+                completedTokenStatisticsEvent: completedTokenStatisticsEvent,
+                trackedTailBeforeCorrection: wordTracker?.getTypedTailPreservingBoundaryWhitespace(),
+                engine: autoCorrectionEngine
+            )
         }
 
         switch plan {
-        case .noCorrection:
+        case .noCorrection(let completedTokenStatisticsEvent):
+            recordCompletedTokenStatistics(completedTokenStatisticsEvent)
             return
-
-        case .planFailure:
-            PuntoLog.info("Auto-correction aborted: replacement plan could not be derived")
-            if AutoCorrectionReplacementPolicy.shouldClearConversionSessionAfterPlanFailure() {
-                conversionSession.clear(reason: "auto-correction plan derivation failed")
+        case .planFailure(let completedTokenStatisticsEvent, let logMessage, let conversionSessionClearReason):
+            recordCompletedTokenStatistics(completedTokenStatisticsEvent)
+            PuntoLog.info(logMessage)
+            if let conversionSessionClearReason {
+                conversionSession.clear(reason: conversionSessionClearReason)
             }
             return
 
-        case .replacement(let decision, let replacement):
-            PuntoLog.info("Auto-correcting completed word '\(decision.original)' -> '\(decision.replacement)'")
+        case .replacement(let completedTokenStatisticsEvent, let logMessage, let replacement, let commitPlan):
+            recordCompletedTokenStatistics(completedTokenStatisticsEvent)
+            PuntoLog.info(logMessage)
+
+            _ = beginReplacementWindow()
+            defer {
+                finishReplacementWindow()
+            }
 
             let applied = textAccessor?.replaceRecentText(
                 length: replacement.replacementLength,
@@ -911,7 +902,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             ) ?? false
             if applied {
                 commitSuccessfulTextReplacement(
-                    TextReplacementCommitPolicy.autoCorrection(decision: decision, replacement: replacement),
+                    commitPlan,
                     contextID: activeApplicationBundleID ?? NSWorkspace.shared.frontmostApplication?.bundleIdentifier
                 )
             } else {
