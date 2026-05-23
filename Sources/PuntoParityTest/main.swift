@@ -146,6 +146,198 @@ private func runRoundTripCorpus() throws {
     }
 }
 
+private func runRepeatedConversionCorpus() throws {
+    let converter = LayoutConverter()
+
+    let simpleRoundTrips = [
+        "hello",
+        "ghbdtn",
+        "привет",
+        "HELLO",
+        "GHBDTN",
+        "Hello World",
+        "test123"
+    ]
+    for sample in simpleRoundTrips {
+        try expect(
+            converter.convert(converter.convert(sample)),
+            sample,
+            "repeated conversion simple round-trip \(sample.debugDescription)"
+        )
+    }
+
+    for sample in ["hello", "привет", "Test"] {
+        var text = sample
+        for _ in 1...3 {
+            text = converter.convert(text)
+        }
+        let after3 = text
+        text = converter.convert(text)
+        let after4 = text
+        text = converter.convert(text)
+        let after5 = text
+
+        try expect(after4, sample, "repeated conversion even symmetry \(sample.debugDescription)")
+        try expect(after5, after3, "repeated conversion odd symmetry \(sample.debugDescription)")
+        try expect(after5 != sample, true, "repeated conversion odd state differs from original \(sample.debugDescription)")
+    }
+
+    for sample in ["keyboard", "клавиатура", "MixedCase", "123abc456"] {
+        var text = sample
+        for index in 1...20 {
+            text = converter.convert(text)
+            if index.isMultiple(of: 2) {
+                try expect(text, sample, "repeated conversion 10 round-trips \(sample.debugDescription) at step \(index)")
+            }
+        }
+    }
+
+    try expect(converter.convert("ghbdtn"), "привет", "repeated conversion user scenario EN keys to RU word")
+    try expect(converter.convert("привет"), "ghbdtn", "repeated conversion user scenario back to original EN keys")
+    try expect(converter.convert("руддщ"), "hello", "repeated conversion reverse user scenario RU keys to EN word")
+    try expect(converter.convert("hello"), "руддщ", "repeated conversion reverse user scenario back to original RU keys")
+
+    let specialRoundTrips = [";", "'", "[", "]", "`", ",", "."]
+    for sample in specialRoundTrips {
+        try expect(
+            converter.convert(converter.convert(sample)),
+            sample,
+            "repeated conversion special-key round-trip \(sample.debugDescription)"
+        )
+    }
+
+    for sample in ["hello;world", "test'case", "data[0]", "path/to/file"] {
+        try expect(
+            converter.convert(converter.convert(sample)),
+            sample,
+            "repeated conversion punctuation text round-trip \(sample.debugDescription)"
+        )
+    }
+
+    try expect(converter.convert("12345"), "12345", "repeated conversion leaves numbers unchanged")
+    try expect(converter.convert(converter.convert("12345")), "12345", "repeated conversion numbers stay unchanged twice")
+
+    let caseSamples: [(String, String)] = [
+        ("HeLLo", "РуДДщ"),
+        ("WORLD", "ЦЩКДВ"),
+        ("MiXeD", "ЬшЧуВ")
+    ]
+    for (input, expectedConverted) in caseSamples {
+        let once = converter.convert(input)
+        let twice = converter.convert(once)
+        let thrice = converter.convert(twice)
+        let fourth = converter.convert(thrice)
+        try expect(once, expectedConverted, "repeated conversion preserves first-pass case \(input)")
+        try expect(twice, input, "repeated conversion preserves second-pass case \(input)")
+        try expect(thrice, expectedConverted, "repeated conversion preserves third-pass case \(input)")
+        try expect(fourth, input, "repeated conversion preserves fourth-pass case \(input)")
+    }
+
+    for sample in ["hello", "привет", "Test123"] {
+        var text = sample
+        for index in 1...100 {
+            text = converter.convert(text)
+            if index.isMultiple(of: 2) {
+                try expect(text, sample, "repeated conversion 50 round-trips \(sample.debugDescription) at step \(index)")
+            }
+        }
+    }
+}
+
+private func runRapidConversionCorpus() throws {
+    let converter = LayoutConverter()
+
+    try expect(converter.convert("ghb"), "при", "rapid conversion incremental partial word")
+    try expect(converter.convert("ghbdtn"), "привет", "rapid conversion incremental full word")
+
+    let rapidWords: [(String, String)] = [
+        ("hello", "руддщ"),
+        ("world", "цщкдв"),
+        ("test", "еуые"),
+        ("swift", "ыцшае"),
+        ("code", "сщву")
+    ]
+    for (input, expected) in rapidWords {
+        let converted = converter.convert(input)
+        try expect(converted, expected, "rapid conversion word \(input)")
+        try expect(converter.convert(converted), input, "rapid conversion word round-trip \(input)")
+    }
+
+    let fixed = converter.convert("руддщ")
+    let undone = converter.convert(fixed)
+    try expect(fixed, "hello", "rapid conversion mistake scenario fixes text")
+    try expect(undone, "руддщ", "rapid conversion mistake scenario converts back")
+
+    for sample in ["ghbdtn vbh", "hello world"] {
+        try expect(
+            converter.convert(converter.convert(sample)),
+            sample,
+            "rapid conversion multi-word round-trip \(sample.debugDescription)"
+        )
+    }
+
+    let stressWords = [
+        "apple", "banana", "cherry", "date", "elderberry",
+        "fig", "grape", "honeydew", "kiwi", "lemon",
+        "mango", "nectarine", "orange", "papaya", "quince",
+        "raspberry", "strawberry", "tangerine", "watermelon", "zucchini",
+        "ant", "bee", "cat", "dog", "elephant",
+        "fox", "goat", "horse", "iguana", "jaguar",
+        "koala", "lion", "mouse", "newt", "owl",
+        "penguin", "quail", "rabbit", "snake", "tiger",
+        "urchin", "viper", "whale", "xerus", "yak",
+        "zebra", "aardvark", "badger", "coyote", "dolphin"
+    ]
+    for word in stressWords {
+        let converted = converter.convert(word)
+        try expect(converter.convert(converted), word, "rapid conversion stress word \(word)")
+    }
+}
+
+private func runSelectedTextCorpus() throws {
+    let converter = LayoutConverter()
+
+    let singleWordCases: [(String, String)] = [
+        ("ghbdtn", "привет"),
+        ("привет", "ghbdtn"),
+        ("GHBDTN", "ПРИВЕТ"),
+        ("Ghbdtn", "Привет")
+    ]
+    for (input, expected) in singleWordCases {
+        try expect(converter.convert(input), expected, "selected text single-word conversion \(input)")
+    }
+
+    let paragraph = "Ghbdtn? Rfr ltkf? Z gbie yf Hecctrv!"
+    try expect(
+        converter.convert(converter.convert(paragraph)),
+        paragraph,
+        "selected text paragraph round-trip"
+    )
+
+    let partialCases: [(String, String)] = [
+        ("hel", "руд"),
+        ("при", "ghb"),
+        ("HEL", "РУД")
+    ]
+    for (input, expected) in partialCases {
+        try expect(converter.convert(input), expected, "selected text partial-word conversion \(input)")
+    }
+
+    for sample in [
+        "Line one\nLine two\nLine three",
+        "hello\tworld",
+        "hello  world",
+        "hello\nworld",
+        "  hello  "
+    ] {
+        try expect(
+            converter.convert(converter.convert(sample)),
+            sample,
+            "selected text whitespace/multiline round-trip \(sample.debugDescription)"
+        )
+    }
+}
+
 private func runLayoutDecisionCorpus() throws {
     let converter = LayoutConverter()
     let cases: [(String, LayoutConverter.DetectedLayout, String)] = [
@@ -231,6 +423,9 @@ private func runCaptureAndReplacementCorpus() throws {
 private let suites: [(String, () throws -> Void)] = [
     ("conversion corpus", runConversionCorpus),
     ("round-trip corpus", runRoundTripCorpus),
+    ("repeated conversion corpus", runRepeatedConversionCorpus),
+    ("rapid conversion corpus", runRapidConversionCorpus),
+    ("selected text corpus", runSelectedTextCorpus),
     ("layout decisions", runLayoutDecisionCorpus),
     ("word tracker corpus", runWordTrackerCorpus),
     ("capture and replacement corpus", runCaptureAndReplacementCorpus)

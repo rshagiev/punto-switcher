@@ -57,6 +57,12 @@ puntotest_copy_heavy_patterns=(
     "class TestWordTracker"
     "legacy test adapter"
     "trackKeyPress(character:"
+    "runMultipleConversionTests"
+    "MULTIPLE CONVERSION TESTS"
+    "runRapidConversionTests"
+    "RAPID CONVERSION SIMULATION TESTS"
+    "runClipboardSimulationTests"
+    "CLIPBOARD SIMULATION TESTS"
 )
 
 for pattern in "${puntotest_copy_heavy_patterns[@]}"; do
