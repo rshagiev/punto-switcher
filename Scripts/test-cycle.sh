@@ -27,6 +27,10 @@ for ((i = 1; i <= ITERATIONS; i++)); do
     swift run PuntoCoreTest
 
     echo
+    echo "=== iteration $i/$ITERATIONS: PuntoParityTest ==="
+    swift run PuntoParityTest
+
+    echo
     echo "=== iteration $i/$ITERATIONS: PuntoTest all ==="
     swift run PuntoTest all
 

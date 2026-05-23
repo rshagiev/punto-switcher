@@ -115,6 +115,7 @@ cmd_components() {
     cd "$PROJECT_DIR"
 
     swift run PuntoCoreTest
+    swift run PuntoParityTest
     swift run PuntoDiag converter
     swift run PuntoDiag tracker
     swift run PuntoDiag autocorrect

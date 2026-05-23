@@ -12,7 +12,7 @@ This document contains all test cases for the Punto keyboard layout converter.
 | `q` | `й` | Single letter | - |
 | `GHBDTN` | `ПРИВЕТ` | All caps | - |
 | `Ghbdtn` | `Привет` | First letter capitalized | - |
-| `test` | `еу|е` | Common word | - |
+| `test` | `еуые` | Common word | - |
 
 ## 2. Basic RU to EN Conversions
 
@@ -69,7 +69,7 @@ This document contains all test cases for the Punto keyboard layout converter.
 |-------|----------|-------------|--------|
 | `123` | `123` | Numbers only | - |
 | `hello 123` | `руддщ 123` | Text + numbers | - |
-| `test123test` | `еу|е123еу|е` | Numbers inside word | - |
+| `test123test` | `еуые123еуые` | Numbers inside word | - |
 | `   ` | `   ` | Only spaces | - |
 | `hello world` | `руддщ цщкдв` | Two words | - |
 | `0` | `0` | Single zero | - |
@@ -127,7 +127,7 @@ Test strings:
 | Return/Enter | `` | Enter clears | - |
 | `hello` + `,` | `hello,` | Comma STAYS (maps to б) | - |
 | `hello` + `!` | `` | Exclamation clears | - |
-| `hello` + `?` | `` | Question clears | - |
+| `hello` + `?` | `hello?` | Question mark STAYS (maps to comma) | - |
 | `hello` + `:` | `hello:` | Colon STAYS (maps to Ж) | - |
 | `hello` + `;` | `hello;` | Semicolon STAYS (maps to ж) | - |
 | `hello` + `'` | `hello'` | Apostrophe STAYS (maps to э) | - |
@@ -181,9 +181,9 @@ Characters that CLEAR WordTracker buffer:
 ```
 Space: " "
 Newlines: "\n", "\t", "\r"
-Sentence terminators: "!", "?"
+Sentence terminators: "!"
 Brackets: "(", ")"
-Slashes: "/", "\\", "|"
+Slashes on Windows-style Russian layout: "\\", "|"
 Special: "@", "#", "$", "%", "^", "&", "*"
 Math: "+", "=", "-", "_"
 ```
@@ -200,6 +200,7 @@ Comparison: "<" -> Б, ">" -> Ю
 Backtick: "`" -> ё
 Tilde: "~" -> Ё
 Double quote: "\"" -> Э
+Slash/question: "/" -> ., "?" -> ,
 ```
 
 ## 14. Stress Tests
@@ -227,7 +228,8 @@ Test cases:
 - `12345` (no letters) -> `.unknown`
 - `abcdefghij абв` (77% EN) -> `.mixed` (below 0.8)
 - `abcdefghijk абв` (79% EN) -> `.mixed` (below 0.8)
-- `abcdefghijkl абв` (80% EN) -> `.english` (at threshold)
+- `abcdefghijkl абв` (80% EN) -> `.mixed` (exact threshold is not enough)
+- `abcdefghijklm абв` (>80% EN) -> `.english` (above threshold)
 
 ---
 
@@ -306,6 +308,7 @@ swift run PuntoDiag all
 | **Shift+Number** | ~11 | 0 | NEW: @→", #→№, $→;, ^→:, &→? mappings |
 | **Layout Detection** | ~13 | 0 | NEW: 80%/20% threshold boundaries |
 | **Real WordTracker** | ~45 | 0 | NEW: keyCode handling, navigation keys, boundaries |
+| **PuntoParityTest** | corpus | 0 | Executable documented parity corpus over production PuntoCore |
 | **ConvertWithResult** | ~6 | 0 | NEW: direction metadata |
 | **Unicode Boundary** | ~14 | 0 | NEW: isEnglishLetter/isRussianLetter boundaries |
 
@@ -317,10 +320,11 @@ swift run PuntoDiag all
 
 None - all tests pass.
 
-### Notes on `/` and `.` Mapping
+### Notes on `/`, `?`, and `.` Mapping
 
 The mapping handles these correctly thanks to layout detection:
 - EN `/` -> RU `.` (period)
+- EN `?` -> RU `,` (comma)
 - EN `.` -> RU `ю`
 
 Round-trips work correctly because:
@@ -338,3 +342,4 @@ Example: `path/to/file.txt` -> `зфер.ещ.ашдуюече` -> `path/to/file
 - 2026-01-17: Fixed incorrect test expectations (pipe character in expected values)
 - 2026-01-17: Fixed TestLayoutConverter to use layout detection (matching main app behavior)
 - 2026-01-17: All 110 tests now pass
+- 2026-05-24: Added executable PuntoParityTest corpus and aligned punctuation expectations with layout-aware tracking

@@ -7,6 +7,7 @@ Punto now has a small importable `PuntoCore` module and a macOS app target.
 - `PuntoCore`: deterministic logic that can be tested without Accessibility permissions or global event taps.
 - `Punto`: macOS integration layer: app lifecycle, event tap, Accessibility, clipboard, input source switching, status bar, settings UI.
 - `PuntoCoreTest`: executable test harness that imports real `PuntoCore` classes. This exists because the installed CLT Swift toolchain currently does not provide `XCTest` or Swift `Testing`.
+- `PuntoParityTest`: executable corpus harness over production `PuntoCore`, derived from the documented user-facing conversion, layout-detection, word-tracking, terminal capture, and replacement parity cases.
 - `PuntoTest`: legacy broad simulation harness. It is still useful, but much of it is copy-based, so it should not be the only regression gate.
 - `PuntoDiag`: command-line diagnostics that exercise real production modules. `Scripts/debug.sh components` delegates to `PuntoCoreTest` and `PuntoDiag`; it must not carry inline copies of `LayoutConverter`, `WordTracker`, or other core logic.
 
@@ -179,6 +180,7 @@ Export writes the normalized effective rule set as JSON so user-authored rules c
 - Last-word and auto-correction tracked-tail updates use the same suffix-boundary guard, so a stale/glued tail like `otherghbdtn` cannot be rewritten as if `ghbdtn` were the current word.
 - Production `WordTracker` keeps a larger typed-tail buffer than the compact last-word buffer, so terminal command-tail validation can cover longer commands without making ordinary last-word conversion stale.
 - `PuntoTest` remains copy-heavy. It can catch scenario drift, but it cannot prove production classes still behave the same. High-value cases should keep moving into `PuntoCoreTest`; dash-suffix auto-correction and mapped-punctuation boundaries now exercise production `WordBoundaryPolicy`, `WordTracker`, and `AutoCorrectionReplacementPolicy` directly.
+- `PuntoParityTest` keeps the documented broad behavior corpus executable without depending on XCTest. It is intentionally higher-level than `PuntoCoreTest`: if a user-visible mapping, word-boundary, terminal-tail, or layout-threshold case is added to docs, the matching production-core corpus should move with it.
 - Diagnostic scripts should compose production harnesses instead of recreating core classes inline. `Scripts/test-legacy-boundary.sh` now fails if `Scripts/debug.sh` grows duplicate `LayoutConverter` / `WordTracker` implementations again.
 - The installed CLT Swift toolchain still has no usable XCTest/Swift Testing module, so placeholder `Tests/` targets are misleading. `Scripts/test-legacy-boundary.sh` fails if the old placeholder SwiftPM test file returns; real coverage must stay in executable harnesses until the toolchain changes.
 - Per-app layout memory is default-off, exposed in Settings, and persisted through `SettingsManager`. Activation restore is guarded so frontmost-app layout observations cannot corrupt the previous app's remembered layout. Settings also exposes the remembered layout snapshot so stale per-app records can be inspected, removed, or cleared.
@@ -203,6 +205,7 @@ Fast local loop:
 ```bash
 ./Scripts/test-legacy-boundary.sh
 swift run PuntoCoreTest
+swift run PuntoParityTest
 swift run PuntoTest all
 swift run PuntoDiag converter
 swift run PuntoDiag tracker
@@ -225,7 +228,7 @@ Detached non-UI background loop:
 tail -f /tmp/punto-background-tests.log
 ```
 
-This loop is submitted through `launchctl` so it survives the caller shell exiting. It runs core, broad simulation, converter/tracker diagnostics against `PuntoCore`, auto-correction, and clipboard snapshot diagnostics. It intentionally excludes the live UI harness because that harness clicks/focuses an `NSTextView` through Accessibility.
+This loop is submitted through `launchctl` so it survives the caller shell exiting. It runs reverse, legacy-boundary, native-bundle, core, parity-corpus, broad simulation, converter/tracker diagnostics against `PuntoCore`, auto-correction, and clipboard snapshot diagnostics. It intentionally excludes the live UI harness because that harness clicks/focuses an `NSTextView` through Accessibility.
 
 Auto-correction runtime harness:
 
