@@ -7078,6 +7078,36 @@ private func runHotkeyPolicyTests() throws {
         "setShortcutsPreferencesController:",
         "legacy hotkey policy preserves observed shortcuts preferences controller setter"
     )
+    try expect(
+        LegacyHotkeyPolicy.observedSwitchAutocorrectionSelector,
+        "switchAutocorrection:",
+        "legacy hotkey policy preserves observed switch-autocorrection action selector"
+    )
+    try expect(
+        LegacyHotkeyPolicy.observedCancelLayoutChangeShortcutKey,
+        "cancelLayoutChangeShortcut",
+        "legacy hotkey policy preserves observed cancel-layout-change shortcut field key"
+    )
+    try expect(
+        LegacyHotkeyPolicy.observedSwitchAutocorrectionShortcutKey,
+        "switchAutocorrectionShortcut",
+        "legacy hotkey policy preserves observed switch-autocorrection shortcut field key"
+    )
+    try expect(
+        LegacyHotkeyPolicy.observedChangeCaseShortcutKey,
+        "changeCaseShortcut",
+        "legacy hotkey policy preserves observed change-case shortcut field key"
+    )
+    try expect(
+        LegacyHotkeyPolicy.observedSetChangeCaseShortcutSelector,
+        "setChangeCaseShortcut:",
+        "legacy hotkey policy preserves observed change-case shortcut-field setter"
+    )
+    try expect(
+        LegacyHotkeyPolicy.observedShortcutFieldClassName,
+        "ShortcutField",
+        "legacy hotkey policy preserves observed shortcut-field class boundary"
+    )
 
     try expect(
         HotkeyCollisionPolicy.observedDoesCollideSelector,

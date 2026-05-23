@@ -140,6 +140,12 @@ public enum LegacyHotkeyPolicy {
     public static let observedSetShortcutFindInSlovariSelector = "setShortcutFindInSlovari:"
     public static let observedShortcutsPreferencesControllerKey = "shortcutsPreferencesController"
     public static let observedSetShortcutsPreferencesControllerSelector = "setShortcutsPreferencesController:"
+    public static let observedSwitchAutocorrectionSelector = "switchAutocorrection:"
+    public static let observedCancelLayoutChangeShortcutKey = "cancelLayoutChangeShortcut"
+    public static let observedSwitchAutocorrectionShortcutKey = "switchAutocorrectionShortcut"
+    public static let observedChangeCaseShortcutKey = "changeCaseShortcut"
+    public static let observedSetChangeCaseShortcutSelector = "setChangeCaseShortcut:"
+    public static let observedShortcutFieldClassName = "ShortcutField"
 
     public static func hotkey(from dictionary: [String: Any]?) -> Hotkey? {
         guard let dictionary,
