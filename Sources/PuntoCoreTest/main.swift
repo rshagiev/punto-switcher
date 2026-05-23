@@ -3622,6 +3622,11 @@ private func runProductStatisticsPolicyTests() throws {
         "product statistics policy preserves observed typed symbols setter"
     )
     try expect(
+        ProductStatisticsPolicy.observedSetAutomaticSwitchesSelector,
+        "setAutomaticSwitches:",
+        "product statistics policy preserves observed automatic switches setter"
+    )
+    try expect(
         ProductStatisticsPolicy.observedSetManualSwitchesSelector,
         "setManualSwitches:",
         "product statistics policy preserves observed manual switches setter"
@@ -3640,6 +3645,50 @@ private func runProductStatisticsPolicyTests() throws {
         ProductStatisticsPolicy.observedTypedWordMetricName,
         "product.typed.word",
         "product statistics policy preserves observed typed-word metric name"
+    )
+    try expect(
+        ProductStatisticsPolicy.observedAutomaticSwitchMetricName,
+        "product.switch.auto",
+        "product statistics policy preserves observed automatic-switch metric name"
+    )
+    try expect(
+        ProductStatisticsPolicy.observedManualSwitchMetricName,
+        "product.switch.manual",
+        "product statistics policy preserves observed manual-switch metric name"
+    )
+    try expect(
+        ProductStatisticsPolicy.observedRevertMetricName,
+        "product.switch.reverse",
+        "product statistics policy preserves observed revert metric name"
+    )
+    try expect(
+        ProductStatisticsPolicy.observedMetricName(for: .typedText("a ")),
+        "product.typed.symbol",
+        "product statistics policy maps typed-symbol events to observed metric name"
+    )
+    try expectNil(
+        ProductStatisticsPolicy.observedMetricName(for: .typedText("\n\t ")),
+        "product statistics policy skips observed typed-symbol metric for whitespace-only text"
+    )
+    try expect(
+        ProductStatisticsPolicy.observedMetricName(for: .completedWord),
+        "product.typed.word",
+        "product statistics policy maps completed words to observed metric name"
+    )
+    try expect(
+        ProductStatisticsPolicy.observedMetricName(for: .automaticSwitch),
+        "product.switch.auto",
+        "product statistics policy maps automatic switches to observed metric name"
+    )
+    try expect(
+        ProductStatisticsPolicy.observedMetricName(for: .manualSwitch),
+        "product.switch.manual",
+        "product statistics policy maps manual switches to observed metric name"
+    )
+    try expect(
+        ProductStatisticsPolicy.observedMetricName(for: .revert),
+        "product.switch.reverse",
+        "product statistics policy maps reverts to observed metric name"
     )
     try expect(
         dayuseSettings["LastDayuseDate"] as? Date,
