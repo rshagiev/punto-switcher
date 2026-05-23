@@ -28,6 +28,7 @@ The read-only Punto Switcher pass exposed a useful boundary split. Punto now mir
 - `AccessibilityPreferencesPolicy`: Punto Switcher-style Accessibility-permission opener and alert-copy boundary. It pins the observed `launchAccessibilityPreferences` / `openAccesibilityPrefPane:` selector surface, opens the observed `x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility` URL first, keeps the observed `System Preferences` AppleScript reveal-anchor fallback for systems or environments where URL opening fails, and preserves the observed modern/legacy Accessibility alert message keys while using native-owned UI copy.
 - `PointerEventPolicy`: pointer down events invalidate typed-tail and undo state because a click can move focus/cursor without producing a keyboard event. This mirrors Punto Switcher's click/search awareness without implementing proprietary search suggestions.
 - `LayoutConverter`: deterministic layout conversion and target-layout reporting.
+- `ManualLayoutConversionPolicy`: pure route planner for the manual conversion hotkey. It gives selected text priority, blocks unsafe non-settable selections, converts terminal tails and ordinary selections through the same replacement policy, falls back to last-word conversion only when there is no safe selection, and reports stale last-word tail cleanup separately from ordinary no-op conversions.
 - `LayoutDetectionPolicy`: shared single-scalar ASCII/Cyrillic letter classification and the strict 80/20 mixed-layout threshold used by conversion and typed-buffer corruption checks. Combining grapheme clusters, emoji/ZWJ sequences, CJK text, and control characters are treated as non-EN/RU evidence so they can pass through conversion without triggering a layout switch by their first Unicode scalar.
 - User-facing `convertWithResult` rejects genuinely mixed English/Russian text as non-applicable; the convenience `convert` API delegates to the same safe decision path so diagnostic callers cannot accidentally apply majority conversion to mixed EN/RU text. Punctuation-only unknown text can still convert through the physical-key majority fallback.
 - `CaseConverter`: reversible per-character case inversion for `Cmd+Opt+Z` (`Hello` -> `hELLO` -> `Hello`, while digits/punctuation stay unchanged).
@@ -101,11 +102,12 @@ The macOS app target wires these policies into:
    - no safe evidence -> block.
 7. `LayoutConverter.convertWithResult(...)` converts text and returns target layout.
 8. Mixed or unknown non-convertible results are skipped before any replacement is attempted.
-9. `TextAccessor.replaceCapturedText(...)` applies the replacement and returns whether it actually sent a viable replacement path.
-10. `TextReplacementPolicy` derives any tracked-tail update, selection-retention behavior, and undo replacement method from the actual successful replacement. Stale last-word tails are rejected instead of being rewritten blindly.
-11. `ConversionSession` records the conversion for the 3 second undo window only after replacement reports success, and stores the active app context id with the record.
-12. `Cmd+Opt+Delete` mirrors Punto Switcher's cancel-layout-change shortcut by invoking the same scoped undo helper that repeat-convert uses, so explicit cancellation and repeat-hotkey undo share replacement planning, input-source restoration, sound feedback, and the gated auto-correction undo-learning path.
-12. `AppDelegate` optionally switches keyboard layout.
+9. `ManualLayoutConversionPolicy` chooses the replacement route or cleanup action: selected text, terminal tail, last word, blocked capture, stale-tail cleanup, no text, or no-op skip.
+10. `TextAccessor.replaceCapturedText(...)` applies the replacement and returns whether it actually sent a viable replacement path.
+11. `TextReplacementPolicy` derives any tracked-tail update, selection-retention behavior, and undo replacement method from the actual successful replacement. Stale last-word tails are rejected instead of being rewritten blindly.
+12. `ConversionSession` records the conversion for the 3 second undo window only after replacement reports success, and stores the active app context id with the record.
+13. `Cmd+Opt+Delete` mirrors Punto Switcher's cancel-layout-change shortcut by invoking the same scoped undo helper that repeat-convert uses, so explicit cancellation and repeat-hotkey undo share replacement planning, input-source restoration, sound feedback, and the gated auto-correction undo-learning path.
+14. `AppDelegate` optionally switches keyboard layout.
     Selected-text conversions pass through a separate selected-text switch gate, matching Punto Switcher's observed `switchLayoutOnSelectedTextSwitch` / `setSwitchLanguageWhenChangingSelectionLayout:` setting shape. Native settings read that legacy key as an import fallback.
 
 ## Current Auto-Correction Flow

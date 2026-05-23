@@ -597,28 +597,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let capturedText = textAccessor?.captureSelectedText(lastTrackedWord: lastTrackedWord, lastTrackedTail: lastTrackedTail)
         let getTextTime = (CFAbsoluteTimeGetCurrent() - t1) * 1000
 
-        // Process selected text if any
-        if let capturedText = capturedText, TextCapturePolicy.shouldStopAfterBlockedCapture(capturedText) {
+        let plan = ManualLayoutConversionPolicy.plan(
+            capturedText: capturedText,
+            lastWord: lastTrackedWord,
+            lastTrackedTail: lastTrackedTail,
+            russianLayoutType: settingsManager?.russianKeyboardLayoutType
+                ?? KeyboardLayoutTypePolicy.defaultRussianLayoutType,
+            converter: layoutConverter!
+        )
+
+        switch plan {
+        case .blockedCapture(let capturedText):
             PuntoLog.info("Blocked unsafe selection fallback: \(capturedText.source)")
             clearStateAfterBlockedCapture(capturedText)
             return
-        } else if let capturedText = capturedText, !capturedText.text.isEmpty {
-            PuntoLog.info("⏱️ getSelectedText: \(String(format: "%.1f", getTextTime))ms")
 
-            PuntoLog.info("Converting captured text (\(capturedText.source)): '\(capturedText.text)'")
-            let result = layoutConverter!.convertWithResult(
-                capturedText.text,
-                russianLayoutType: settingsManager?.russianKeyboardLayoutType
-                    ?? KeyboardLayoutTypePolicy.defaultRussianLayoutType
-            )
-            PuntoLog.info("Converted to: '\(result.text)'")
-            guard let replacement = LayoutConversionReplacementPolicy.replacement(
-                for: capturedText,
-                conversionResult: result
-            ) else {
-                PuntoLog.info("Captured text conversion skipped: replacement plan could not be derived")
-                return
-            }
+        case .selectedText(let replacement):
+            PuntoLog.info("⏱️ getSelectedText: \(String(format: "%.1f", getTextTime))ms")
+            PuntoLog.info("Converting captured text (\(replacement.capturedText.source)): '\(replacement.capturedText.text)'")
+            PuntoLog.info("Converted to: '\(replacement.convertedText)'")
 
             t1 = CFAbsoluteTimeGetCurrent()
             let replacementApplied = textAccessor?.replaceCapturedText(
@@ -657,74 +654,61 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 replacementMethod: replacement.undoMethod,
                 contextID: conversionContextID
             )
-        } else {
-            PuntoLog.info("⏱️ getSelectedText (empty): \(String(format: "%.1f", getTextTime))ms")
 
-            // No selection - convert last word
-            if let lastWord = wordTracker?.getLastWord(), !lastWord.isEmpty {
-                PuntoLog.info("Converting last word: '\(lastWord)'")
-                let result = layoutConverter!.convertWithResult(
-                    lastWord,
+        case .lastWord(let replacement):
+            PuntoLog.info("⏱️ getSelectedText (empty): \(String(format: "%.1f", getTextTime))ms")
+            PuntoLog.info("Converting last word: '\(replacement.capturedText.text)'")
+            PuntoLog.info("Converted to: '\(replacement.convertedText)'")
+
+            t1 = CFAbsoluteTimeGetCurrent()
+            let replacementApplied = textAccessor?.replaceCapturedText(
+                replacement.capturedText,
+                with: replacement.convertedText,
+                keepSelection: replacement.keepSelection
+            ) ?? false
+            let replaceTime = (CFAbsoluteTimeGetCurrent() - t1) * 1000
+            PuntoLog.info("⏱️ replaceLastWord: \(String(format: "%.1f", replaceTime))ms")
+            guard replacementApplied else {
+                PuntoLog.info("Last-word replacement aborted")
+                clearTrackedTextAfterFailedReplacement(method: replacement.capturedText.replacementMethod)
+                return
+            }
+
+            wordTracker?.clear(reason: "conversion completed")
+            if let updatedTail = replacement.trackedTailAfterReplacement {
+                wordTracker?.replaceTrackedTail(
+                    with: updatedTail,
+                    reason: "last-word conversion completed",
+                    suppressAutoCorrectionForCurrentToken: settingsManager?.suppressAutoCorrectionAfterManualConversion
+                        ?? SettingsPersistencePolicy.defaultSuppressAutoCorrectionAfterManualConversion,
                     russianLayoutType: settingsManager?.russianKeyboardLayoutType
                         ?? KeyboardLayoutTypePolicy.defaultRussianLayoutType
                 )
-                PuntoLog.info("Converted to: '\(result.text)'")
-                guard let replacement = LayoutConversionReplacementPolicy.lastWordReplacement(
-                    lastWord: lastWord,
-                    conversionResult: result,
-                    lastTrackedTail: lastTrackedTail
-                ) else {
-                    PuntoLog.info("Last-word conversion skipped: replacement plan could not be derived")
-                    if LayoutConversionReplacementPolicy.shouldClearTrackedTextAfterSkippedLastWordReplacement(
-                        lastWord: lastWord,
-                        conversionResult: result,
-                        lastTrackedTail: lastTrackedTail
-                    ) {
-                        wordTracker?.clear(reason: "stale last-word tracked tail")
-                    }
-                    return
-                }
-
-                t1 = CFAbsoluteTimeGetCurrent()
-                let replacementApplied = textAccessor?.replaceCapturedText(
-                    replacement.capturedText,
-                    with: replacement.convertedText,
-                    keepSelection: replacement.keepSelection
-                ) ?? false
-                let replaceTime = (CFAbsoluteTimeGetCurrent() - t1) * 1000
-                PuntoLog.info("⏱️ replaceLastWord: \(String(format: "%.1f", replaceTime))ms")
-                guard replacementApplied else {
-                    PuntoLog.info("Last-word replacement aborted")
-                    clearTrackedTextAfterFailedReplacement(method: replacement.capturedText.replacementMethod)
-                    return
-                }
-
-                wordTracker?.clear(reason: "conversion completed")
-                if let updatedTail = replacement.trackedTailAfterReplacement {
-                    wordTracker?.replaceTrackedTail(
-                        with: updatedTail,
-                        reason: "last-word conversion completed",
-                        suppressAutoCorrectionForCurrentToken: settingsManager?.suppressAutoCorrectionAfterManualConversion
-                            ?? SettingsPersistencePolicy.defaultSuppressAutoCorrectionAfterManualConversion,
-                        russianLayoutType: settingsManager?.russianKeyboardLayoutType
-                            ?? KeyboardLayoutTypePolicy.defaultRussianLayoutType
-                    )
-                }
-                statusBarController?.flashIcon()
-                soundFeedbackController?.play(.layoutConversion)
-                settingsManager?.recordProductStatisticsEvent(.manualSwitch)
-                switchLayoutIfEnabled(replacement.targetLayout, surface: .lastWord)
-
-                // Save for undo
-                conversionSession.record(
-                    originalText: replacement.capturedText.text,
-                    convertedText: replacement.convertedText,
-                    replacementMethod: replacement.undoMethod,
-                    contextID: conversionContextID
-                )
-            } else {
-                PuntoLog.info("No text to convert")
             }
+            statusBarController?.flashIcon()
+            soundFeedbackController?.play(.layoutConversion)
+            settingsManager?.recordProductStatisticsEvent(.manualSwitch)
+            switchLayoutIfEnabled(replacement.targetLayout, surface: .lastWord)
+
+            conversionSession.record(
+                originalText: replacement.capturedText.text,
+                convertedText: replacement.convertedText,
+                replacementMethod: replacement.undoMethod,
+                contextID: conversionContextID
+            )
+
+        case .clearTrackedTextAfterSkippedLastWord:
+            PuntoLog.info("Last-word conversion skipped: replacement plan could not be derived")
+            wordTracker?.clear(reason: "stale last-word tracked tail")
+            return
+
+        case .skipped(let reason):
+            PuntoLog.info("Layout conversion skipped: \(reason)")
+            return
+
+        case .noText:
+            PuntoLog.info("No text to convert")
+            return
         }
     }
 
