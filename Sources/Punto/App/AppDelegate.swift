@@ -519,22 +519,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         let capturedText = textAccessor?.captureSelectedText(lastTrackedWord: nil, lastTrackedTail: nil)
+        let runtimePlan = SelectedTextSearchPolicy.runtimePlan(
+            from: SelectedTextSearchPolicy.plan(capturedText: capturedText, destination: destination)
+        )
 
-        switch SelectedTextSearchPolicy.plan(capturedText: capturedText, destination: destination) {
-        case .blockedCapture(let capturedText):
-            PuntoLog.info("Selected text search blocked unsafe selection fallback: \(capturedText.source)")
+        switch runtimePlan {
+        case .blockedCapture(let capturedText, let logMessage):
+            PuntoLog.info(logMessage)
             clearStateAfterBlockedCapture(capturedText)
 
-        case .open(let url):
-            PuntoLog.info("Opening selected text search URL: \(url.absoluteString)")
+        case .open(let url, let logMessage, let shouldFlashIcon):
+            PuntoLog.info(logMessage)
             NSWorkspace.shared.open(url)
-            statusBarController?.flashIcon()
+            if shouldFlashIcon {
+                statusBarController?.flashIcon()
+            }
 
-        case .skipped:
-            PuntoLog.info("Selected text search skipped: empty normalized query")
+        case .skipped(let logMessage):
+            PuntoLog.info(logMessage)
 
-        case .noText:
-            PuntoLog.info("Selected text search skipped: no selected text")
+        case .noText(let logMessage):
+            PuntoLog.info(logMessage)
         }
     }
 

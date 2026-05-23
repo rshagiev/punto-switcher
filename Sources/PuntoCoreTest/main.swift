@@ -8421,6 +8421,38 @@ private func runSelectedTextSearchPolicyTests() throws {
         .skipped(reason: "empty normalized query"),
         "selected-text search policy skips blank normalized query"
     )
+
+    let searchURL = URL(string: "http://yandex.ru/yandsearch?text=%D0%BF%D1%80%D0%B8%D0%B2%D0%B5%D1%82%20%D0%BC%D0%B8%D1%80&clid=141986&yasoft=puntomac")!
+    try expect(
+        SelectedTextSearchPolicy.runtimePlan(from: .open(searchURL)),
+        .open(
+            url: searchURL,
+            logMessage: "Opening selected text search URL: \(searchURL.absoluteString)",
+            shouldFlashIcon: true
+        ),
+        "selected-text search runtime policy owns URL opening log and icon flash"
+    )
+
+    try expect(
+        SelectedTextSearchPolicy.runtimePlan(from: .blockedCapture(blockedCapture)),
+        .blockedCapture(
+            capturedText: blockedCapture,
+            logMessage: "Selected text search blocked unsafe selection fallback: unsafe stale clipboard fallback"
+        ),
+        "selected-text search runtime policy owns blocked-capture cleanup log"
+    )
+
+    try expect(
+        SelectedTextSearchPolicy.runtimePlan(from: .skipped(reason: "empty normalized query")),
+        .skipped(logMessage: "Selected text search skipped: empty normalized query"),
+        "selected-text search runtime policy owns skipped log"
+    )
+
+    try expect(
+        SelectedTextSearchPolicy.runtimePlan(from: .noText),
+        .noText(logMessage: "Selected text search skipped: no selected text"),
+        "selected-text search runtime policy owns no-text log"
+    )
 }
 
 private func runSearchClickPolicyTests() throws {
