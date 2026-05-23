@@ -605,79 +605,53 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             converter: layoutConverter!
         )
 
-        switch plan {
-        case .blockedCapture(let capturedText):
-            PuntoLog.info("Blocked unsafe selection fallback: \(capturedText.source)")
+        let runtimePlan = ManualLayoutConversionRuntimePolicy.runtimePlan(
+            from: plan,
+            suppressAutoCorrectionAfterManualConversion: settingsManager?.suppressAutoCorrectionAfterManualConversion
+                ?? SettingsPersistencePolicy.defaultSuppressAutoCorrectionAfterManualConversion
+        )
+
+        switch runtimePlan {
+        case .blockedCapture(let capturedText, let logMessage):
+            PuntoLog.info(logMessage)
             clearStateAfterBlockedCapture(capturedText)
             return
 
-        case .selectedText(let replacement):
-            PuntoLog.info("⏱️ getSelectedText: \(String(format: "%.1f", getTextTime))ms")
-            PuntoLog.info("Converting captured text (\(replacement.capturedText.source)): '\(replacement.capturedText.text)'")
-            PuntoLog.info("Converted to: '\(replacement.convertedText)'")
+        case .replace(let replacementPlan):
+            PuntoLog.info("⏱️ \(replacementPlan.captureTimingLabel): \(String(format: "%.1f", getTextTime))ms")
+            PuntoLog.info(replacementPlan.originalTextLogMessage)
+            PuntoLog.info(replacementPlan.convertedTextLogMessage)
 
             t1 = CFAbsoluteTimeGetCurrent()
             let replacementApplied = textAccessor?.replaceCapturedText(
-                replacement.capturedText,
-                with: replacement.convertedText,
-                keepSelection: replacement.keepSelection
-            ) ?? false
-            let setTextTime = (CFAbsoluteTimeGetCurrent() - t1) * 1000
-            PuntoLog.info("⏱️ setSelectedText: \(String(format: "%.1f", setTextTime))ms")
-            guard replacementApplied else {
-                PuntoLog.info("Captured text replacement aborted")
-                clearTrackedTextAfterFailedReplacement(method: replacement.capturedText.replacementMethod)
-                return
-            }
-
-            commitSuccessfulTextReplacement(
-                TextReplacementCommitPolicy.manualSelectedText(
-                    replacement,
-                    suppressAutoCorrectionAfterManualConversion: settingsManager?.suppressAutoCorrectionAfterManualConversion
-                        ?? SettingsPersistencePolicy.defaultSuppressAutoCorrectionAfterManualConversion
-                ),
-                contextID: conversionContextID
-            )
-
-        case .lastWord(let replacement):
-            PuntoLog.info("⏱️ getSelectedText (empty): \(String(format: "%.1f", getTextTime))ms")
-            PuntoLog.info("Converting last word: '\(replacement.capturedText.text)'")
-            PuntoLog.info("Converted to: '\(replacement.convertedText)'")
-
-            t1 = CFAbsoluteTimeGetCurrent()
-            let replacementApplied = textAccessor?.replaceCapturedText(
-                replacement.capturedText,
-                with: replacement.convertedText,
-                keepSelection: replacement.keepSelection
+                replacementPlan.replacement.capturedText,
+                with: replacementPlan.replacement.convertedText,
+                keepSelection: replacementPlan.replacement.keepSelection
             ) ?? false
             let replaceTime = (CFAbsoluteTimeGetCurrent() - t1) * 1000
-            PuntoLog.info("⏱️ replaceLastWord: \(String(format: "%.1f", replaceTime))ms")
+            PuntoLog.info("⏱️ \(replacementPlan.replacementTimingLabel): \(String(format: "%.1f", replaceTime))ms")
             guard replacementApplied else {
-                PuntoLog.info("Last-word replacement aborted")
-                clearTrackedTextAfterFailedReplacement(method: replacement.capturedText.replacementMethod)
+                PuntoLog.info(replacementPlan.failedReplacementLogMessage)
+                clearTrackedTextAfterFailedReplacement(method: replacementPlan.failedReplacementMethod)
                 return
             }
 
             commitSuccessfulTextReplacement(
-                TextReplacementCommitPolicy.manualLastWord(
-                    replacement,
-                    suppressAutoCorrectionAfterManualConversion: settingsManager?.suppressAutoCorrectionAfterManualConversion
-                        ?? SettingsPersistencePolicy.defaultSuppressAutoCorrectionAfterManualConversion
-                ),
+                replacementPlan.commitPlan,
                 contextID: conversionContextID
             )
 
-        case .clearTrackedTextAfterSkippedLastWord:
-            PuntoLog.info("Last-word conversion skipped: replacement plan could not be derived")
-            wordTracker?.clear(reason: "stale last-word tracked tail")
+        case .clearTrackedText(let reason, let logMessage):
+            PuntoLog.info(logMessage)
+            wordTracker?.clear(reason: reason)
             return
 
-        case .skipped(let reason):
-            PuntoLog.info("Layout conversion skipped: \(reason)")
+        case .skip(let logMessage):
+            PuntoLog.info(logMessage)
             return
 
-        case .noText:
-            PuntoLog.info("No text to convert")
+        case .noText(let logMessage):
+            PuntoLog.info(logMessage)
             return
         }
     }
