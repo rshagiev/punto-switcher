@@ -165,7 +165,6 @@ final class SettingsManager {
         }
         set {
             defaults.set(newValue, forKey: Keys.launchAtLogin)
-            defaults.set(newValue, forKey: Keys.launchesOnStartup)
             updateLoginItem(enabled: newValue)
         }
     }
@@ -184,7 +183,6 @@ final class SettingsManager {
             if let data = try? encoder.encode(normalized) {
                 defaults.set(data, forKey: Keys.convertLayoutHotkey)
             }
-            defaults.set(LegacyHotkeyPolicy.dictionary(from: normalized), forKey: Keys.shortcutChangeLayout)
         }
     }
 
@@ -202,7 +200,6 @@ final class SettingsManager {
             if let data = try? encoder.encode(normalized) {
                 defaults.set(data, forKey: Keys.toggleCaseHotkey)
             }
-            defaults.set(LegacyHotkeyPolicy.dictionary(from: normalized), forKey: Keys.shortcutChangeCase)
         }
     }
 
@@ -220,7 +217,6 @@ final class SettingsManager {
             if let data = try? encoder.encode(normalized) {
                 defaults.set(data, forKey: Keys.toggleAutoCorrectionHotkey)
             }
-            defaults.set(LegacyHotkeyPolicy.dictionary(from: normalized), forKey: Keys.shortcutSwitchAutocorrection)
         }
     }
 
@@ -238,7 +234,6 @@ final class SettingsManager {
             if let data = try? encoder.encode(normalized) {
                 defaults.set(data, forKey: Keys.cancelLayoutChangeHotkey)
             }
-            defaults.set(LegacyHotkeyPolicy.dictionary(from: normalized), forKey: Keys.shortcutCancelLayoutChange)
         }
     }
 
@@ -256,7 +251,6 @@ final class SettingsManager {
             if let data = try? encoder.encode(normalized) {
                 defaults.set(data, forKey: Keys.findInYandexHotkey)
             }
-            defaults.set(LegacyHotkeyPolicy.dictionary(from: normalized), forKey: Keys.shortcutFindInYandex)
         }
     }
 
@@ -274,7 +268,6 @@ final class SettingsManager {
             if let data = try? encoder.encode(normalized) {
                 defaults.set(data, forKey: Keys.findInSlovariHotkey)
             }
-            defaults.set(LegacyHotkeyPolicy.dictionary(from: normalized), forKey: Keys.shortcutFindInSlovari)
         }
     }
 
@@ -318,7 +311,6 @@ final class SettingsManager {
         }
         set {
             defaults.set(newValue, forKey: Keys.switchLayoutAfterSelectedTextConversion)
-            defaults.set(newValue, forKey: Keys.switchLayoutOnSelectedTextSwitch)
         }
     }
 
@@ -334,7 +326,6 @@ final class SettingsManager {
         }
         set {
             defaults.set(newValue, forKey: Keys.manualConversionDisabled)
-            defaults.set(newValue, forKey: Keys.isManualConversionDisabled)
         }
     }
 
@@ -349,7 +340,6 @@ final class SettingsManager {
         }
         set {
             defaults.set(newValue.rawValue, forKey: Keys.russianKeyboardLayoutType)
-            defaults.set(newValue == .windows ? "pc" : "appl", forKey: Keys.kbdLayoutType)
             NotificationCenter.default.post(name: .puntoRussianKeyboardLayoutTypeChanged, object: self)
             NotificationCenter.default.post(name: .puntoInputSourcePreferencesChanged, object: self)
         }
@@ -365,11 +355,7 @@ final class SettingsManager {
             )
         }
         set {
-            setPreferredInputSourceID(
-                newValue,
-                nativeKey: Keys.preferredEnglishInputSourceID,
-                legacyKey: Keys.englishLayoutID
-            )
+            setPreferredInputSourceID(newValue, nativeKey: Keys.preferredEnglishInputSourceID)
         }
     }
 
@@ -383,11 +369,7 @@ final class SettingsManager {
             )
         }
         set {
-            setPreferredInputSourceID(
-                newValue,
-                nativeKey: Keys.preferredRussianInputSourceID,
-                legacyKey: Keys.russianLayoutID
-            )
+            setPreferredInputSourceID(newValue, nativeKey: Keys.preferredRussianInputSourceID)
         }
     }
 
@@ -404,7 +386,6 @@ final class SettingsManager {
         }
         set {
             defaults.set(newValue, forKey: Keys.rememberInputSourceForEachApp)
-            defaults.set(newValue, forKey: Keys.shouldRememberInputSourceForEachApp)
         }
     }
 
@@ -434,7 +415,6 @@ final class SettingsManager {
         set {
             let normalized = Array(SettingsPersistencePolicy.normalizedDisabledApplicationBundleIDs(newValue)).sorted()
             defaults.set(normalized, forKey: Keys.disabledApplicationBundleIDs)
-            defaults.set(normalized, forKey: Keys.disabledApps)
         }
     }
 
@@ -457,7 +437,6 @@ final class SettingsManager {
         }
         set {
             defaults.set(newValue, forKey: Keys.completelyDisableInExceptionApplications)
-            defaults.set(newValue, forKey: Keys.completelyDisableInExceptionApps)
         }
     }
 
@@ -492,7 +471,6 @@ final class SettingsManager {
                 normalized,
                 forKey: Keys.resetOnReturnBundleComponents
             )
-            defaults.set(normalized, forKey: Keys.switcherResetOnReturn)
         }
     }
 
@@ -508,7 +486,6 @@ final class SettingsManager {
         }
         set {
             defaults.set(newValue, forKey: Keys.autoCorrectionEnabled)
-            defaults.set(newValue, forKey: Keys.isAutocorrectionActive)
         }
     }
 
@@ -534,8 +511,6 @@ final class SettingsManager {
         }
         set {
             defaults.set(newValue, forKey: Keys.autoCorrectionStarterRulesEnabled)
-            defaults.set(newValue, forKey: Keys.switcherUseOldRulesDefaultConf)
-            defaults.set(newValue, forKey: Keys.switcherUseOldRulesAccessor)
         }
     }
 
@@ -551,7 +526,6 @@ final class SettingsManager {
         }
         set {
             defaults.set(newValue, forKey: Keys.autoCorrectOnEnterAndTab)
-            defaults.set(!newValue, forKey: Keys.shouldNotAutoconvertWithTabOrEnter)
         }
     }
 
@@ -571,24 +545,6 @@ final class SettingsManager {
         }
         set {
             defaults.set(newValue, forKey: Keys.autoCorrectionUndoLearningEnabled)
-            defaults.set(
-                SettingsPersistencePolicy.undoLearningDictionary(
-                    from: defaults.dictionary(forKey: Keys.undoLearning),
-                    undoCollectionEnabled: newValue
-                ),
-                forKey: Keys.undoLearning
-            )
-        }
-    }
-
-    var undoLearningSettings: UndoLearningSettingsSnapshot {
-        get {
-            UndoLearningSettingsPolicy.snapshot(from: defaults.dictionary(forKey: Keys.undoLearning))
-                ?? UndoLearningSettingsPolicy.defaultSnapshot
-        }
-        set {
-            defaults.set(UndoLearningSettingsPolicy.dictionary(from: newValue), forKey: Keys.undoLearning)
-            defaults.set(newValue.undoCollectionEnabled, forKey: Keys.autoCorrectionUndoLearningEnabled)
         }
     }
 
@@ -604,7 +560,6 @@ final class SettingsManager {
         }
         set {
             defaults.set(newValue, forKey: Keys.suppressAutoCorrectionAfterManualConversion)
-            defaults.set(!newValue, forKey: Keys.shouldNotAutoconvertAfterConvertion)
         }
     }
 
@@ -622,9 +577,6 @@ final class SettingsManager {
                 Array(SettingsPersistencePolicy.normalizedAutoCorrectionCancellingKeyNames(newValue)).sorted(),
                 forKey: Keys.autoCorrectionCancellingKeyNames
             )
-            if newValue.isEmpty {
-                defaults.set(0, forKey: Keys.cancellingKeys)
-            }
         }
     }
 
@@ -659,7 +611,6 @@ final class SettingsManager {
         }
         set {
             defaults.set(newValue, forKey: Keys.soundEffectsEnabled)
-            defaults.set(newValue, forKey: Keys.isSoundOn)
         }
     }
 
@@ -686,10 +637,6 @@ final class SettingsManager {
         set {
             let normalized = SoundFeedbackPolicy.normalizedEnabledResourceNames(newValue)
             defaults.set(Array(normalized).sorted(), forKey: Keys.enabledSoundResourceNames)
-            defaults.set(SoundFeedbackPolicy.legacyBitmask(fromEnabledResourceNames: normalized), forKey: Keys.enabledSounds)
-            for (key, value) in SoundFeedbackPolicy.legacyToggleValues(fromEnabledResourceNames: normalized) {
-                defaults.set(value, forKey: key)
-            }
         }
     }
 
@@ -719,7 +666,6 @@ final class SettingsManager {
         }
         set {
             defaults.set(newValue, forKey: Keys.restorePasteboardAfterConversion)
-            defaults.set(newValue, forKey: Keys.shouldRestorePasteboard)
         }
     }
 
@@ -801,7 +747,6 @@ final class SettingsManager {
         set {
             guard let data = try? AutoCorrectionRuleStore.encodeRules(newValue) else { return }
             defaults.set(data, forKey: Keys.autoCorrectionRules)
-            defaults.set(LegacyUserRulePolicy.dictionaries(from: newValue), forKey: Keys.userRulesDictionary)
         }
     }
 
@@ -892,13 +837,11 @@ final class SettingsManager {
         }
     }
 
-    private func setPreferredInputSourceID(_ sourceID: String?, nativeKey: String, legacyKey: String) {
+    private func setPreferredInputSourceID(_ sourceID: String?, nativeKey: String) {
         if let normalized = SettingsPersistencePolicy.normalizedInputSourceID(sourceID) {
             defaults.set(normalized, forKey: nativeKey)
-            defaults.set(normalized, forKey: legacyKey)
         } else {
             defaults.removeObject(forKey: nativeKey)
-            defaults.set(InputSourceSelectionPolicy.observedUndefinedSourceID, forKey: legacyKey)
         }
         NotificationCenter.default.post(name: .puntoInputSourcePreferencesChanged, object: self)
     }

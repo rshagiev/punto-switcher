@@ -44,14 +44,26 @@ no native snapshot exists, but runtime events only update the Codable
 `productStatistics` payload. The old `PSDayuseSettings` writer remains in
 `ProductStatisticsPolicy` for audit/import coverage, not for hot-path app writes.
 
+## Settings Mirror Cut
+
+Most legacy settings keys are now read-only import fallbacks at runtime. Native
+settings changes write native keys for hotkeys, selected-text layout switching,
+manual conversion, layout preferences, app exceptions, return-reset apps,
+auto-correction gates, sound resources, pasteboard restore, and user rules. The
+old Punto Switcher key names remain pinned in policies, tests, and reverse audit
+so imported preferences still work, but normal use no longer rewrites the old
+plist shape on every settings change.
+
+The intentional exception is first-run/update consumption. When onboarding or an
+installer/update presentation consumes old state, Punto still clears the observed
+legacy booleans as well as the native state so imported `isFirstInstallation`,
+`isJustInstalled`, or `isJustUpdated` values cannot reopen one-shot UI.
+
 ## Next Candidates
 
-- Convert simple boolean legacy aliases in `SettingsManager` into read-only
-  migration inputs instead of write mirrors.
 - Split reverse-audit constants from behavior policies where the constants are
   only test anchors.
-- Keep `LegacyHotkeyPolicy` and `LegacyUserRulePolicy` as import adapters, but
-  stop using their output as mandatory write mirrors unless explicit export is
-  added.
+- Add an explicit export path if we ever need to generate Punto Switcher-shaped
+  settings intentionally; keep routine runtime writes native-only.
 - Review searchbar/click-search code separately: selected-text Yandex shortcuts
   are real behavior, proprietary searchbar state is mostly compatibility shell.
