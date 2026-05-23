@@ -56,22 +56,6 @@ public enum LegacyUserRulePolicy {
         return AutoCorrectionRule(trigger: trigger, replacement: replacement)
     }
 
-    public static func dictionaries(from rules: [AutoCorrectionRule]) -> [[String: Any]] {
-        AutoCorrectionRuleStore.normalizedRules(rules).map { rule in
-            [
-                ruleStringKey: rule.trigger,
-                stringKey: rule.trigger,
-                ruleKey: rule.replacement,
-                isActiveKey: true,
-                isRuleActiveKey: true,
-                isRegExpKey: false,
-                isRegExpCamelKey: false,
-                doReplaceKey: true,
-                shouldSwitchLayoutKey: true
-            ]
-        }
-    }
-
     private static func stringValue(_ value: Any?) -> String? {
         switch value {
         case let value as String:

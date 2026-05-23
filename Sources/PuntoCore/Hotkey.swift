@@ -183,16 +183,6 @@ public enum LegacyHotkeyPolicy {
         )
     }
 
-    public static func dictionary(from hotkey: Hotkey) -> [String: Any] {
-        [
-            keyCodeKey: hotkey.isModifierOnly || hotkey.isDisabled ? Int(noKeyCode) : Int(hotkey.keyCode),
-            commandKey: hotkey.command,
-            optionKey: hotkey.option,
-            shiftKey: hotkey.shift,
-            controlKey: hotkey.control
-        ]
-    }
-
     public static func normalized(_ dictionary: [String: Any]?, fallback: Hotkey) -> Hotkey {
         guard let hotkey = hotkey(from: dictionary) else {
             return fallback

@@ -3109,27 +3109,6 @@ private func runSettingsPersistencePolicyTests() throws {
         SettingsPersistencePolicy.legacyUndoCollectionEnabled(from: nil),
         "settings persistence ignores missing undoLearning dictionaries"
     )
-    let undoLearning = SettingsPersistencePolicy.undoLearningDictionary(
-        from: [
-            UndoLearningSettingsPolicy.mustShowUndoWindowKey: NSNumber(value: true),
-            UndoLearningSettingsPolicy.undoDictionaryKey: ["teh": "the"]
-        ],
-        undoCollectionEnabled: false
-    )
-    try expect(
-        SettingsPersistencePolicy.legacyUndoCollectionEnabled(from: undoLearning),
-        false,
-        "settings persistence writes Punto Switcher undoLearning undoCollectionEnabled"
-    )
-    try expect(
-        UndoLearningSettingsPolicy.snapshot(from: undoLearning),
-        UndoLearningSettingsSnapshot(
-            undoCollectionEnabled: false,
-            mustShowUndoWindow: true,
-            undoDictionary: ["teh": "the"]
-        ),
-        "settings persistence writes full Punto Switcher undoLearning shape"
-    )
     try expect(
         SettingsPersistencePolicy.normalizedDisabledApplicationBundleIDs([
             " COM.Example.Editor ",
@@ -3473,37 +3452,14 @@ private func runUndoLearningSettingsPolicyTests() throws {
         "undo learning policy parses imported string-backed values and normalizes undo dictionary"
     )
 
-    let dictionary = UndoLearningSettingsPolicy.dictionary(from: UndoLearningSettingsSnapshot(
-        undoCollectionEnabled: true,
-        mustShowUndoWindow: false,
-        undoDictionary: ["ghbdtn": "привет"]
-    ))
     try expect(
-        dictionary[UndoLearningSettingsPolicy.undoCollectionEnabledKey] as? Bool,
-        true,
-        "undo learning policy writes undoCollectionEnabled key"
-    )
-    try expect(
-        dictionary[UndoLearningSettingsPolicy.mustShowUndoWindowKey] as? Bool,
-        false,
-        "undo learning policy writes mustShowUndoWindow key"
-    )
-    try expect(
-        dictionary[UndoLearningSettingsPolicy.undoDictionaryKey] as? [String: String],
+        UndoLearningSettingsPolicy.normalizedUndoDictionary([
+            " ghbdtn ": " привет ",
+            "": "ignored",
+            "adn": " "
+        ]),
         ["ghbdtn": "привет"],
-        "undo learning policy writes undoDictionary key"
-    )
-    try expect(
-        UndoLearningSettingsPolicy.snapshot(from: UndoLearningSettingsPolicy.dictionary(
-            from: dictionary,
-            undoCollectionEnabled: false
-        )),
-        UndoLearningSettingsSnapshot(
-            undoCollectionEnabled: false,
-            mustShowUndoWindow: false,
-            undoDictionary: ["ghbdtn": "привет"]
-        ),
-        "undo learning policy toggles collection flag while preserving observed fields"
+        "undo learning policy normalizes imported undo dictionary entries"
     )
 }
 
@@ -3670,41 +3626,6 @@ private func runProductStatisticsPolicyTests() throws {
         ),
         "product statistics policy lets present stale individual counters override matching dayuse fields only"
     )
-    let statisticsDate = Date(timeIntervalSince1970: 123_456)
-    let dayuseSettings = ProductStatisticsPolicy.dayuseSettings(from: ProductStatisticsSnapshot(
-            typedWords: 1,
-            typedSymbols: 2,
-            automaticSwitches: 3,
-            manualSwitches: 4,
-            reverts: 5
-        ),
-        date: statisticsDate
-    )
-    try expect(
-        dayuseSettings["TypedWords"] as? Int,
-        1,
-        "product statistics policy writes Punto Switcher PSDayuseSettings TypedWords"
-    )
-    try expect(
-        dayuseSettings["TypedSymbols"] as? Int,
-        2,
-        "product statistics policy writes Punto Switcher PSDayuseSettings TypedSymbols"
-    )
-    try expect(
-        dayuseSettings["AutoSwitches"] as? Int,
-        3,
-        "product statistics policy writes Punto Switcher PSDayuseSettings AutoSwitches"
-    )
-    try expect(
-        dayuseSettings["ManualSwitches"] as? Int,
-        4,
-        "product statistics policy writes Punto Switcher PSDayuseSettings ManualSwitches"
-    )
-    try expect(
-        dayuseSettings["Reverts"] as? Int,
-        5,
-        "product statistics policy writes Punto Switcher PSDayuseSettings keys"
-    )
     try expect(
         ProductStatisticsPolicy.dayuseSettingsKey,
         "PSDayuseSettings",
@@ -3808,16 +3729,6 @@ private func runProductStatisticsPolicyTests() throws {
         ProductStatisticsPolicy.observedMetricName(for: .revert),
         "product.switch.reverse",
         "product statistics policy maps reverts to observed metric name"
-    )
-    try expect(
-        dayuseSettings["LastDayuseDate"] as? Date,
-        statisticsDate,
-        "product statistics policy writes Punto Switcher LastDayuseDate"
-    )
-    try expect(
-        dayuseSettings["LastProductStatDate"] as? Date,
-        statisticsDate,
-        "product statistics policy writes Punto Switcher LastProductStatDate"
     )
     try expect(
         ProductStatisticsPolicy.effectiveSnapshot(
@@ -7129,11 +7040,6 @@ private func runHotkeyPolicyTests() throws {
         "legacy hotkey policy normalizes invalid single-modifier shortcuts"
     )
     try expect(
-        LegacyHotkeyPolicy.hotkey(from: LegacyHotkeyPolicy.dictionary(from: Hotkey.defaultCancelLayoutChange)),
-        Hotkey.defaultCancelLayoutChange,
-        "legacy hotkey policy writes Punto Switcher shortcut dictionaries"
-    )
-    try expect(
         LegacyHotkeyPolicy.observedShortcutChangeLayoutKey,
         "shortcutChangeLayout",
         "legacy hotkey policy preserves observed change-layout key"
@@ -8618,50 +8524,6 @@ private func runAutoCorrectionRuleStoreTests() throws {
         "showWordAddedTooltip:",
         "legacy user rule policy preserves observed word-added tooltip selector"
     )
-    let legacyDictionaries = LegacyUserRulePolicy.dictionaries(from: [
-        AutoCorrectionRule(trigger: " teh ", replacement: " the ", matchMode: .caseInsensitive),
-        AutoCorrectionRule(trigger: "empty", replacement: " "),
-        AutoCorrectionRule(trigger: "ghbdtn", replacement: "привет")
-    ])
-    try expect(legacyDictionaries.count, 2, "legacy user rule policy writes normalized non-empty rule dictionaries")
-    try expect(
-        legacyDictionaries[0][LegacyUserRulePolicy.ruleStringKey] as? String,
-        "teh",
-        "legacy user rule policy writes observed rule_string key"
-    )
-    try expect(
-        legacyDictionaries[0][LegacyUserRulePolicy.stringKey] as? String,
-        "teh",
-        "legacy user rule policy writes observed string key"
-    )
-    try expect(
-        legacyDictionaries[0][LegacyUserRulePolicy.ruleKey] as? String,
-        "the",
-        "legacy user rule policy writes observed rule key"
-    )
-    try expect(
-        legacyDictionaries[0][LegacyUserRulePolicy.isActiveKey] as? Bool,
-        true,
-        "legacy user rule policy writes observed active flag"
-    )
-    try expect(
-        legacyDictionaries[0][LegacyUserRulePolicy.isRegExpKey] as? Bool,
-        false,
-        "legacy user rule policy writes observed regexp flag"
-    )
-    try expect(
-        legacyDictionaries[0][LegacyUserRulePolicy.doReplaceKey] as? Bool,
-        true,
-        "legacy user rule policy writes observed replacement flag"
-    )
-    try expect(
-        LegacyUserRulePolicy.rules(from: legacyDictionaries),
-        [
-            AutoCorrectionRule(trigger: "teh", replacement: "the"),
-            AutoCorrectionRule(trigger: "ghbdtn", replacement: "привет")
-        ],
-        "legacy user rule policy round-trips native saved rules through Punto Switcher dictionary shape"
-    )
     try expect(
         LegacyUserRulePolicy.rules(from: []),
         [],
@@ -9037,11 +8899,6 @@ private func runSoundFeedbackPolicyTests() throws {
         ["reverse", "misprint", "en", "ru", "typeeng", "typerus"],
         "sound feedback reads observed Punto Switcher enabledSounds bitmask"
     )
-    try expect(
-        SoundFeedbackPolicy.legacyBitmask(fromEnabledResourceNames: ["replace", "switch", "unknown"]),
-        9,
-        "sound feedback writes Punto Switcher enabledSounds bitmask"
-    )
     try expectNil(
         SoundFeedbackPolicy.enabledResourceNames(fromLegacyBitmask: nil),
         "sound feedback ignores missing legacy enabledSounds bitmask"
@@ -9068,19 +8925,6 @@ private func runSoundFeedbackPolicyTests() throws {
     try expectNil(
         SoundFeedbackPolicy.enabledResourceNames(fromLegacyToggles: ["unknown": false]),
         "sound feedback ignores unknown legacy toggle names"
-    )
-    try expect(
-        SoundFeedbackPolicy.legacyToggleValues(fromEnabledResourceNames: ["replace", "reverse", "en"]),
-        [
-            "useSoundLayoutSwitchToRussian": false,
-            "useSoundLayoutSwitchToEnglish": true,
-            "useSoundConvertation": true,
-            "useSoundMisprint": false,
-            "useSoundAutocorrection": false,
-            "useSoundUndo": true,
-            "useSoundKeystrokes": false
-        ],
-        "sound feedback writes Punto Switcher useSound flags from native resource names"
     )
     try expect(
         SoundFeedbackPolicy.eventAfterTextInput(characters: "a", detectedLayout: .english),

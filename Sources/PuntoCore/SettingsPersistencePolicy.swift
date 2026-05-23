@@ -249,13 +249,4 @@ public enum SettingsPersistencePolicy {
         UndoLearningSettingsPolicy.snapshot(from: undoLearning)?.undoCollectionEnabled
     }
 
-    public static func undoLearningDictionary(
-        from existing: [String: Any]?,
-        undoCollectionEnabled: Bool
-    ) -> [String: Any] {
-        UndoLearningSettingsPolicy.dictionary(
-            from: existing,
-            undoCollectionEnabled: undoCollectionEnabled
-        )
-    }
 }

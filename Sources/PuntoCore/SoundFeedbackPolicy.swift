@@ -91,14 +91,6 @@ public enum SoundFeedbackPolicy {
         return normalizedEnabledResourceNames(enabledNames)
     }
 
-    public static func legacyBitmask(fromEnabledResourceNames names: Set<String>) -> Int {
-        let normalizedNames = normalizedEnabledResourceNames(names)
-        return legacyBitmaskResourceOrder.enumerated().reduce(0) { bitmask, item in
-            let (index, resourceName) = item
-            return normalizedNames.contains(resourceName) ? bitmask | (1 << index) : bitmask
-        }
-    }
-
     public static func enabledResourceNames(fromLegacyToggles toggles: [String: Bool]) -> Set<String>? {
         var hasKnownToggle = false
         var enabledNames = defaultEnabledResourceNames
@@ -123,13 +115,6 @@ public enum SoundFeedbackPolicy {
 
         enabledNames.subtract(disabledNames)
         return normalizedEnabledResourceNames(enabledNames)
-    }
-
-    public static func legacyToggleValues(fromEnabledResourceNames names: Set<String>) -> [String: Bool] {
-        let normalizedNames = normalizedEnabledResourceNames(names)
-        return legacyToggleResourceNamesByKey.mapValues { resources in
-            resources.isSubset(of: normalizedNames)
-        }
     }
 
     public static func eventAfterTextInput(

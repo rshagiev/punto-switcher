@@ -56,26 +56,6 @@ public enum UndoLearningSettingsPolicy {
         )
     }
 
-    public static func dictionary(from snapshot: UndoLearningSettingsSnapshot) -> [String: Any] {
-        [
-            undoCollectionEnabledKey: snapshot.undoCollectionEnabled,
-            mustShowUndoWindowKey: snapshot.mustShowUndoWindow,
-            undoDictionaryKey: normalizedUndoDictionary(snapshot.undoDictionary)
-        ]
-    }
-
-    public static func dictionary(
-        from existing: [String: Any]?,
-        undoCollectionEnabled: Bool
-    ) -> [String: Any] {
-        let snapshot = snapshot(from: existing) ?? defaultSnapshot
-        return dictionary(from: UndoLearningSettingsSnapshot(
-            undoCollectionEnabled: undoCollectionEnabled,
-            mustShowUndoWindow: snapshot.mustShowUndoWindow,
-            undoDictionary: snapshot.undoDictionary
-        ))
-    }
-
     public static func normalizedUndoDictionary(_ dictionary: [String: String]) -> [String: String] {
         dictionary.reduce(into: [:]) { result, entry in
             let key = entry.key.trimmingCharacters(in: .whitespacesAndNewlines)

@@ -212,19 +212,6 @@ public enum ProductStatisticsPolicy {
         ))
     }
 
-    public static func dayuseSettings(from snapshot: ProductStatisticsSnapshot, date: Date = Date()) -> [String: Any] {
-        let normalized = normalized(snapshot)
-        return [
-            dayuseTypedWordsKey: normalized.typedWords,
-            dayuseTypedSymbolsKey: normalized.typedSymbols,
-            dayuseAutoSwitchesKey: normalized.automaticSwitches,
-            dayuseManualSwitchesKey: normalized.manualSwitches,
-            dayuseRevertsKey: normalized.reverts,
-            dayuseLastDayuseDateKey: date,
-            dayuseLastProductStatDateKey: date
-        ]
-    }
-
     public static func effectiveSnapshot(
         persistedSnapshot: ProductStatisticsSnapshot?,
         legacyCountersSnapshot: ProductStatisticsSnapshot?
