@@ -775,32 +775,40 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         _ targetLayout: LayoutConverter.DetectedLayout,
         surface: LayoutConversionSurface
     ) {
-        guard LayoutSwitchPolicy.shouldSwitchLayoutAfterConversion(
+        let plan = LayoutSwitchRuntimePolicy.plan(
+            targetLayout: targetLayout,
             surface: surface,
             switchLayoutAfterConversion: settingsManager?.switchLayoutAfterConversion == true,
             switchLayoutAfterSelectedTextConversion: settingsManager?.switchLayoutAfterSelectedTextConversion
                 ?? SettingsPersistencePolicy.defaultSwitchLayoutAfterSelectedTextConversion
-        ) else {
+        )
+
+        switch plan {
+        case .skip:
             return
+
+        case .unsupportedTarget(let clearInputSourceIgnoreDeadline):
+            if clearInputSourceIgnoreDeadline {
+                ignoreInputSourceChangesUntil = nil
+            }
+
+        case .switchTo(let request):
+            ignoreInputSourceChangesUntil = request.ignoreInputSourceChangesUntil
+            PuntoLog.debug("ignoreInputSourceChangesUntil set (switching to \(request.targetLayout))")
+            let language = keyboardLanguage(for: request.language)
+            let targetLayoutID = inputSourceManager?.languageLayoutID(language)
+            let didSwitch = inputSourceManager?.switchTo(language) ?? false
+            playInputSourceSwitchSound(targetLayout: request.targetLayout, didSwitch: didSwitch, context: .textReplacement)
+            rememberProgrammaticLayoutSwitch(targetLayoutID: targetLayoutID, didSwitch: didSwitch)
         }
+    }
 
-        // Ignore the burst of notifications caused by our own programmatic switch.
-        ignoreInputSourceChangesUntil = ConversionProtectionPolicy.inputSourceIgnoreDeadline(now: Date())
-        PuntoLog.debug("ignoreInputSourceChangesUntil set (switching to \(targetLayout))")
-
-        switch targetLayout {
+    private func keyboardLanguage(for language: LayoutSwitchTargetLanguage) -> KeyboardLanguage {
+        switch language {
         case .english:
-            let targetLayoutID = inputSourceManager?.languageLayoutID(.english)
-            let didSwitch = inputSourceManager?.switchTo(KeyboardLanguage.english) ?? false
-            playInputSourceSwitchSound(targetLayout: targetLayout, didSwitch: didSwitch, context: .textReplacement)
-            rememberProgrammaticLayoutSwitch(targetLayoutID: targetLayoutID, didSwitch: didSwitch)
+            return .english
         case .russian:
-            let targetLayoutID = inputSourceManager?.languageLayoutID(.russian)
-            let didSwitch = inputSourceManager?.switchTo(KeyboardLanguage.russian) ?? false
-            playInputSourceSwitchSound(targetLayout: targetLayout, didSwitch: didSwitch, context: .textReplacement)
-            rememberProgrammaticLayoutSwitch(targetLayoutID: targetLayoutID, didSwitch: didSwitch)
-        case .mixed, .unknown:
-            ignoreInputSourceChangesUntil = nil  // Reset if no switch happened
+            return .russian
         }
     }
 
