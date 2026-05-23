@@ -1188,36 +1188,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func clearTrackedTextAfterFailedReplacement(method: TextReplacementMethod) {
         let action = ReplacementFailurePolicy.actionAfterFailedReplacement(method: method)
 
-        if action.clearTrackedText {
-            wordTracker?.clear(reason: "failed keyboard replacement")
+        if action.clearTrackedText, let reason = action.clearTrackedTextReason {
+            wordTracker?.clear(reason: reason)
         }
 
-        if action.clearConversionSession {
-            conversionSession.clear(reason: "failed keyboard replacement")
+        if action.clearConversionSession, let reason = action.clearConversionSessionReason {
+            conversionSession.clear(reason: reason)
         }
     }
 
     private func clearStateAfterFailedUndoReplacement(method: TextReplacementMethod) {
         let action = UndoReplacementPolicy.actionAfterFailedReplacement(method: method)
 
-        if action.clearTrackedText {
-            wordTracker?.clear(reason: "undo replacement failed")
+        if action.clearTrackedText, let reason = action.clearTrackedTextReason {
+            wordTracker?.clear(reason: reason)
         }
 
-        if action.clearConversionSession {
-            conversionSession.clear(reason: "undo replacement failed")
+        if action.clearConversionSession, let reason = action.clearConversionSessionReason {
+            conversionSession.clear(reason: reason)
         }
     }
 
     private func clearStateAfterBlockedCapture(_ capturedText: CapturedText?) {
         let action = TextCapturePolicy.actionAfterBlockedCapture(capturedText)
 
-        if action.clearTrackedText {
-            wordTracker?.clear(reason: "blocked unsafe text capture")
+        if action.clearTrackedText, let reason = action.clearTrackedTextReason {
+            wordTracker?.clear(reason: reason)
         }
 
-        if action.clearConversionSession {
-            conversionSession.clear(reason: "blocked unsafe text capture")
+        if action.clearConversionSession, let reason = action.clearConversionSessionReason {
+            conversionSession.clear(reason: reason)
         }
     }
 }

@@ -1370,7 +1370,12 @@ private func runTextCapturePolicyTests() throws {
         TextCapturePolicy.actionAfterBlockedCapture(
             CapturedText(text: "", replacementMethod: .blocked, source: "unsafe non-settable selection")
         ),
-        BlockedCaptureAction(clearTrackedText: true, clearConversionSession: true),
+        BlockedCaptureAction(
+            clearTrackedText: true,
+            clearConversionSession: true,
+            clearTrackedTextReason: "blocked unsafe text capture",
+            clearConversionSessionReason: "blocked unsafe text capture"
+        ),
         "capture policy clears stale state after blocked capture"
     )
     try expect(
@@ -2311,12 +2316,22 @@ private func runUndoReplacementPolicyTests() throws {
     )
     try expect(
         UndoReplacementPolicy.actionAfterFailedReplacement(method: .keyboardBackspacePaste),
-        ReplacementFailureAction(clearTrackedText: true, clearConversionSession: true),
+        ReplacementFailureAction(
+            clearTrackedText: true,
+            clearConversionSession: true,
+            clearTrackedTextReason: "undo replacement failed",
+            clearConversionSessionReason: "undo replacement failed"
+        ),
         "undo policy clears tracked text and session after failed keyboard undo"
     )
     try expect(
         UndoReplacementPolicy.actionAfterFailedReplacement(method: .keyboardRewriteTail(originalTail: "git commit привет")),
-        ReplacementFailureAction(clearTrackedText: true, clearConversionSession: true),
+        ReplacementFailureAction(
+            clearTrackedText: true,
+            clearConversionSession: true,
+            clearTrackedTextReason: "undo replacement failed",
+            clearConversionSessionReason: "undo replacement failed"
+        ),
         "undo policy clears tracked text and session after failed terminal-tail undo"
     )
     try expect(
@@ -7434,12 +7449,22 @@ private func runKeyboardReplacementPolicyTests() throws {
 private func runTextReplacementPolicyTests() throws {
     try expect(
         ReplacementFailurePolicy.actionAfterFailedReplacement(method: .keyboardBackspacePaste),
-        ReplacementFailureAction(clearTrackedText: true, clearConversionSession: true),
+        ReplacementFailureAction(
+            clearTrackedText: true,
+            clearConversionSession: true,
+            clearTrackedTextReason: "failed keyboard replacement",
+            clearConversionSessionReason: "failed keyboard replacement"
+        ),
         "replacement failure action clears tracked text and undo after failed keyboard replacement"
     )
     try expect(
         ReplacementFailurePolicy.actionAfterFailedReplacement(method: .keyboardRewriteTail(originalTail: "git commit")),
-        ReplacementFailureAction(clearTrackedText: true, clearConversionSession: true),
+        ReplacementFailureAction(
+            clearTrackedText: true,
+            clearConversionSession: true,
+            clearTrackedTextReason: "failed keyboard replacement",
+            clearConversionSessionReason: "failed keyboard replacement"
+        ),
         "replacement failure action clears tracked text and undo after failed terminal-tail replacement"
     )
     try expect(

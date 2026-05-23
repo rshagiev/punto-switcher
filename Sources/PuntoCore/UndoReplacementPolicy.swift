@@ -24,7 +24,10 @@ public struct UndoReplacement: Equatable {
 
 public enum UndoReplacementPolicy {
     public static func actionAfterFailedReplacement(method: TextReplacementMethod) -> ReplacementFailureAction {
-        ReplacementFailurePolicy.actionAfterFailedReplacement(method: method)
+        ReplacementFailurePolicy.actionAfterFailedReplacement(
+            method: method,
+            clearReason: "undo replacement failed"
+        )
     }
 
     public static func shouldClearSessionAfterFailedReplacement() -> Bool {

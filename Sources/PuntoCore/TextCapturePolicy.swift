@@ -34,10 +34,19 @@ public struct CapturedText: Equatable {
 public struct BlockedCaptureAction: Equatable {
     public let clearTrackedText: Bool
     public let clearConversionSession: Bool
+    public let clearTrackedTextReason: String?
+    public let clearConversionSessionReason: String?
 
-    public init(clearTrackedText: Bool, clearConversionSession: Bool) {
+    public init(
+        clearTrackedText: Bool,
+        clearConversionSession: Bool,
+        clearTrackedTextReason: String? = nil,
+        clearConversionSessionReason: String? = nil
+    ) {
         self.clearTrackedText = clearTrackedText
         self.clearConversionSession = clearConversionSession
+        self.clearTrackedTextReason = clearTrackedTextReason
+        self.clearConversionSessionReason = clearConversionSessionReason
     }
 }
 
@@ -68,7 +77,12 @@ public enum TextCapturePolicy {
             return BlockedCaptureAction(clearTrackedText: false, clearConversionSession: false)
         }
 
-        return BlockedCaptureAction(clearTrackedText: true, clearConversionSession: true)
+        return BlockedCaptureAction(
+            clearTrackedText: true,
+            clearConversionSession: true,
+            clearTrackedTextReason: "blocked unsafe text capture",
+            clearConversionSessionReason: "blocked unsafe text capture"
+        )
     }
 
     public static func shouldAttemptActiveClipboardFallbackForNonSettableSelection(
