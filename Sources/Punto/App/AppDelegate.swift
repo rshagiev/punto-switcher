@@ -927,30 +927,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let lastTrackedWord = wordTracker?.getLastWord()
         let lastTrackedTail = wordTracker?.getTypedTail()
         let capturedText = textAccessor?.captureSelectedText(lastTrackedWord: lastTrackedWord, lastTrackedTail: lastTrackedTail)
+        let runtimePlan = ToggleCaseConversionPolicy.runtimePlan(
+            from: ToggleCaseConversionPolicy.plan(capturedText: capturedText)
+        )
 
-        switch ToggleCaseConversionPolicy.plan(capturedText: capturedText) {
-        case .blockedCapture(let capturedText):
-            PuntoLog.info("Toggle case blocked unsafe selection fallback: \(capturedText.source)")
+        switch runtimePlan {
+        case .blockedCapture(let capturedText, let logMessage):
+            PuntoLog.info(logMessage)
             clearStateAfterBlockedCapture(capturedText)
 
-        case .capturedText(let capturedText, let replacement):
-            PuntoLog.info("Toggling case for captured text: '\(replacement.originalText)'")
-            let keepSelection = TextReplacementPolicy.shouldKeepSelectionAfterReplacement(method: capturedText.replacementMethod)
-            if textAccessor?.replaceCapturedText(capturedText, with: replacement.toggledText, keepSelection: keepSelection) == true {
+        case .replace(let replacementPlan):
+            PuntoLog.info(replacementPlan.logMessage)
+            if textAccessor?.replaceCapturedText(
+                replacementPlan.capturedText,
+                with: replacementPlan.replacement.toggledText,
+                keepSelection: replacementPlan.keepSelection
+            ) == true {
                 commitSuccessfulTextReplacement(
-                    TextReplacementCommitPolicy.toggleCase(replacement),
+                    replacementPlan.commitPlan,
                     contextID: conversionContextID
                 )
             } else {
-                PuntoLog.info("Toggle case replacement aborted")
-                clearTrackedTextAfterFailedReplacement(method: replacement.undoMethod)
+                PuntoLog.info(replacementPlan.failedReplacementLogMessage)
+                clearTrackedTextAfterFailedReplacement(method: replacementPlan.failedReplacementMethod)
             }
 
-        case .skipped:
-            PuntoLog.info("Toggle case aborted: replacement plan could not be derived")
+        case .skipped(let logMessage):
+            PuntoLog.info(logMessage)
 
-        case .noText:
-            PuntoLog.info("Toggle case: no selected text")
+        case .noText(let logMessage):
+            PuntoLog.info(logMessage)
         }
     }
 

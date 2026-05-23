@@ -8787,6 +8787,99 @@ private func runToggleCaseConversionPolicyTests() throws {
         .noText,
         "toggle-case conversion policy reports nil capture as no text"
     )
+
+    try expect(
+        ToggleCaseConversionPolicy.runtimePlan(
+            from: ToggleCaseConversionPolicy.plan(capturedText: axCapture)
+        ),
+        .replace(ToggleCaseReplacementRuntimePlan(
+            capturedText: axCapture,
+            replacement: ToggleCaseReplacement(
+                originalText: "Hello",
+                toggledText: "hELLO",
+                undoMethod: .accessibilitySelection,
+                trackedTailAfterReplacement: nil
+            ),
+            logMessage: "Toggling case for captured text: 'Hello'",
+            keepSelection: true,
+            failedReplacementLogMessage: "Toggle case replacement aborted",
+            failedReplacementMethod: .accessibilitySelection,
+            commitPlan: TextReplacementCommitPlan(
+                trackedTailCommit: nil,
+                layoutSwitchCommit: nil,
+                soundFeedbackEvent: .toggleCase,
+                productStatisticsEvent: nil,
+                conversionRecordCommit: ConversionRecordCommit(
+                    originalText: "Hello",
+                    convertedText: "hELLO",
+                    replacementMethod: .accessibilitySelection,
+                    origin: .toggleCase
+                )
+            )
+        )),
+        "toggle-case runtime policy plans editable replacement execution and commit"
+    )
+
+    try expect(
+        ToggleCaseConversionPolicy.runtimePlan(
+            from: ToggleCaseConversionPolicy.plan(capturedText: tailCapture)
+        ),
+        .replace(ToggleCaseReplacementRuntimePlan(
+            capturedText: tailCapture,
+            replacement: ToggleCaseReplacement(
+                originalText: "commit",
+                toggledText: "COMMIT",
+                undoMethod: .keyboardRewriteTail(originalTail: "git COMMIT"),
+                trackedTailAfterReplacement: "git COMMIT"
+            ),
+            logMessage: "Toggling case for captured text: 'commit'",
+            keepSelection: false,
+            failedReplacementLogMessage: "Toggle case replacement aborted",
+            failedReplacementMethod: .keyboardRewriteTail(originalTail: "git COMMIT"),
+            commitPlan: TextReplacementCommitPlan(
+                trackedTailCommit: TrackedTailCommit(text: "git COMMIT", reason: "toggle-case completed"),
+                layoutSwitchCommit: nil,
+                soundFeedbackEvent: .toggleCase,
+                productStatisticsEvent: nil,
+                conversionRecordCommit: ConversionRecordCommit(
+                    originalText: "commit",
+                    convertedText: "COMMIT",
+                    replacementMethod: .keyboardRewriteTail(originalTail: "git COMMIT"),
+                    origin: .toggleCase
+                )
+            )
+        )),
+        "toggle-case runtime policy plans terminal-tail replay and undo record"
+    )
+
+    try expect(
+        ToggleCaseConversionPolicy.runtimePlan(from: .blockedCapture(CapturedText(
+            text: "Hello",
+            replacementMethod: .blocked,
+            source: "unsafe stale clipboard fallback"
+        ))),
+        .blockedCapture(
+            capturedText: CapturedText(
+                text: "Hello",
+                replacementMethod: .blocked,
+                source: "unsafe stale clipboard fallback"
+            ),
+            logMessage: "Toggle case blocked unsafe selection fallback: unsafe stale clipboard fallback"
+        ),
+        "toggle-case runtime policy preserves blocked-capture cleanup log"
+    )
+
+    try expect(
+        ToggleCaseConversionPolicy.runtimePlan(from: .skipped(reason: "replacement unavailable")),
+        .skipped(logMessage: "Toggle case aborted: replacement plan could not be derived"),
+        "toggle-case runtime policy owns skipped log"
+    )
+
+    try expect(
+        ToggleCaseConversionPolicy.runtimePlan(from: .noText),
+        .noText(logMessage: "Toggle case: no selected text"),
+        "toggle-case runtime policy owns no-text log"
+    )
 }
 
 private func runAutoCorrectionEngineTests() throws {
