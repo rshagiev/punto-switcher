@@ -1,13 +1,6 @@
 import Foundation
 
 public enum KeyboardLayoutVariantPolicy {
-    public static let observedIsAppleLayoutSelector = "isAppleLayout"
-    public static let observedIsDvorakSelector = "isDvorak"
-    public static let observedWindowsLayoutUsedSelector = "windowsLayoutUsed"
-    public static let observedFixStringSelector = "fixString:isEnglish:isApple:"
-    public static let observedCreateMacToPcMappingSelector = "createMacToPcMappingWithString:pcLayoutA:pcLayoutB:"
-    public static let observedConvertStringLayoutSelector = "convertStringLayout:withMode:isPCLayout:"
-
     public static func isDefaultEnglishSource(_ sourceID: String) -> Bool {
         let tokens = normalizedTokens(sourceID)
         return tokens.contains("abc") || tokens.contains("us")

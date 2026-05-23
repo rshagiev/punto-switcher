@@ -2643,7 +2643,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings persistence preserves observed global enable key"
     )
     try expect(
-        SettingsPersistencePolicy.observedSetEnabledSelector,
+        PuntoSwitcherObservedSurface.Settings.setEnabledSelector,
         "setEnabled:",
         "settings persistence preserves observed global enable setter"
     )
@@ -2668,7 +2668,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings persistence preserves observed advanced-settings key"
     )
     try expect(
-        SettingsPersistencePolicy.observedSetShowAdvancedSettingsSelector,
+        PuntoSwitcherObservedSurface.Settings.setShowAdvancedSettingsSelector,
         "setShowAdvancedSettings:",
         "settings persistence preserves observed advanced-settings setter"
     )
@@ -2683,7 +2683,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings persistence preserves observed launch-at-login alias key"
     )
     try expect(
-        SettingsPersistencePolicy.observedSetLaunchesOnStartupSelector,
+        PuntoSwitcherObservedSurface.Settings.setLaunchesOnStartupSelector,
         "setLaunchesOnStartup:",
         "settings persistence preserves observed launch-at-login setter"
     )
@@ -2703,7 +2703,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings persistence preserves observed selected-text switch key"
     )
     try expect(
-        SettingsPersistencePolicy.observedSetSwitchLanguageWhenChangingSelectionLayoutSelector,
+        PuntoSwitcherObservedSurface.Settings.setSwitchLanguageWhenChangingSelectionLayoutSelector,
         "setSwitchLanguageWhenChangingSelectionLayout:",
         "settings persistence preserves observed selected-text switch setter"
     )
@@ -2745,7 +2745,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings persistence preserves observed manual-conversion-disable key"
     )
     try expect(
-        SettingsPersistencePolicy.observedSetIsManualConversionDisabledSelector,
+        PuntoSwitcherObservedSurface.Settings.setIsManualConversionDisabledSelector,
         "setIsManualConversionDisabled:",
         "settings persistence preserves observed manual-conversion-disable setter"
     )
@@ -2797,17 +2797,17 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings persistence preserves observed disabled-apps key"
     )
     try expect(
-        SettingsPersistencePolicy.observedSetDisabledApplicationsSelector,
+        PuntoSwitcherObservedSurface.Settings.setDisabledApplicationsSelector,
         "setDisabledApplications:",
         "settings persistence preserves observed disabled-apps setter"
     )
     try expect(
-        SettingsPersistencePolicy.observedDisabledAppsPreferencesControllerKey,
+        PuntoSwitcherObservedSurface.Settings.disabledAppsPreferencesControllerKey,
         "disabledAppsPreferencesController",
         "settings persistence preserves observed disabled-apps preferences controller key"
     )
     try expect(
-        SettingsPersistencePolicy.observedSetDisabledAppsPreferencesControllerSelector,
+        PuntoSwitcherObservedSurface.Settings.setDisabledAppsPreferencesControllerSelector,
         "setDisabledAppsPreferencesController:",
         "settings persistence preserves observed disabled-apps preferences controller setter"
     )
@@ -2847,7 +2847,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings persistence preserves observed post-conversion suppression key"
     )
     try expect(
-        SettingsPersistencePolicy.observedDontAutoconvertWordAfterConvertionSelector,
+        PuntoSwitcherObservedSurface.Settings.dontAutoconvertWordAfterConvertionSelector,
         "dontAutoconvertWordAfterConvertion:",
         "settings persistence preserves observed post-conversion suppression selector"
     )
@@ -2913,7 +2913,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "sound feedback preserves observed global sound key"
     )
     try expect(
-        SoundFeedbackPolicy.observedSetSoundStateSelector,
+        PuntoSwitcherObservedSurface.SoundFeedback.setSoundStateSelector,
         "setSoundState:isSoundOn:",
         "sound feedback preserves observed sound-state setter"
     )
@@ -2928,37 +2928,37 @@ private func runSettingsPersistencePolicyTests() throws {
         "clipboard replacement policy preserves observed pasteboard restore setting key"
     )
     try expect(
-        ClipboardReplacementPolicy.observedPreviousPasteboardContentsKey,
+        PuntoSwitcherObservedSurface.ClipboardReplacement.previousPasteboardContentsKey,
         "previousPasteboardContents",
         "clipboard replacement policy preserves observed previous pasteboard storage key"
     )
     try expect(
-        ClipboardReplacementPolicy.observedPasteboardRestoreTimerKey,
+        PuntoSwitcherObservedSurface.ClipboardReplacement.pasteboardRestoreTimerKey,
         "pasteboardRestoreTimer",
         "clipboard replacement policy preserves observed pasteboard restore timer key"
     )
     try expect(
-        ClipboardReplacementPolicy.observedGeneralPasteboardSelector,
+        PuntoSwitcherObservedSurface.ClipboardReplacement.generalPasteboardSelector,
         "generalPasteboard",
         "clipboard replacement policy preserves observed general pasteboard selector"
     )
     try expect(
-        ClipboardReplacementPolicy.observedGetPasteboardStringSelector,
+        PuntoSwitcherObservedSurface.ClipboardReplacement.getPasteboardStringSelector,
         "getPasteboardString",
         "clipboard replacement policy preserves observed pasteboard read selector"
     )
     try expect(
-        ClipboardReplacementPolicy.observedSetPasteboardStringSelector,
+        PuntoSwitcherObservedSurface.ClipboardReplacement.setPasteboardStringSelector,
         "setPasteboardString:",
         "clipboard replacement policy preserves observed pasteboard write selector"
     )
     try expect(
-        ClipboardReplacementPolicy.observedRestorePasteboardByTimerSelector,
+        PuntoSwitcherObservedSurface.ClipboardReplacement.restorePasteboardByTimerSelector,
         "restorePasteboardByTimer:",
         "clipboard replacement policy preserves observed AX pasteboard restore selector"
     )
     try expect(
-        ClipboardReplacementPolicy.observedRestorePasteboardForKeyboardByTimerSelector,
+        PuntoSwitcherObservedSurface.ClipboardReplacement.restorePasteboardForKeyboardByTimerSelector,
         "restorePasteboardForKeyboardByTimer:",
         "clipboard replacement policy preserves observed keyboard pasteboard restore selector"
     )
@@ -3149,7 +3149,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings persistence preserves observed Enter/Tab suppression key"
     )
     try expect(
-        SettingsPersistencePolicy.observedSetDontAutoconvertWithEnterOrTabSelector,
+        PuntoSwitcherObservedSurface.Settings.setDontAutoconvertWithEnterOrTabSelector,
         "setDontAutoconvertWithEnterOrTab:",
         "settings persistence preserves observed Enter/Tab suppression selector"
     )
@@ -3632,7 +3632,7 @@ private func runProductStatisticsPolicyTests() throws {
         "product statistics policy preserves observed dayuse settings key"
     )
     try expect(
-        ProductStatisticsPolicy.observedDayuseStatClassName,
+        PuntoSwitcherObservedSurface.ProductStatistics.dayuseStatClassName,
         "PSDayuseStat",
         "product statistics policy preserves observed dayuse stat class boundary"
     )
@@ -3647,86 +3647,86 @@ private func runProductStatisticsPolicyTests() throws {
         "product statistics policy preserves observed product stat date key"
     )
     try expect(
-        ProductStatisticsPolicy.observedSetDayuseSelector,
+        PuntoSwitcherObservedSurface.ProductStatistics.setDayuseSelector,
         "setDayuse:",
         "product statistics policy preserves observed setDayuse selector"
     )
     try expect(
-        ProductStatisticsPolicy.observedSetTypedWordsSelector,
+        PuntoSwitcherObservedSurface.ProductStatistics.setTypedWordsSelector,
         "setTypedWords:",
         "product statistics policy preserves observed typed words setter"
     )
     try expect(
-        ProductStatisticsPolicy.observedSetTypedSymbolsSelector,
+        PuntoSwitcherObservedSurface.ProductStatistics.setTypedSymbolsSelector,
         "setTypedSymbols:",
         "product statistics policy preserves observed typed symbols setter"
     )
     try expect(
-        ProductStatisticsPolicy.observedSetAutomaticSwitchesSelector,
+        PuntoSwitcherObservedSurface.ProductStatistics.setAutomaticSwitchesSelector,
         "setAutomaticSwitches:",
         "product statistics policy preserves observed automatic switches setter"
     )
     try expect(
-        ProductStatisticsPolicy.observedSetManualSwitchesSelector,
+        PuntoSwitcherObservedSurface.ProductStatistics.setManualSwitchesSelector,
         "setManualSwitches:",
         "product statistics policy preserves observed manual switches setter"
     )
     try expect(
-        ProductStatisticsPolicy.observedSetRevertsSelector,
+        PuntoSwitcherObservedSurface.ProductStatistics.setRevertsSelector,
         "setReverts:",
         "product statistics policy preserves observed reverts setter"
     )
     try expect(
-        ProductStatisticsPolicy.observedTypedSymbolMetricName,
+        PuntoSwitcherObservedSurface.ProductStatistics.typedSymbolMetricName,
         "product.typed.symbol",
         "product statistics policy preserves observed typed-symbol metric name"
     )
     try expect(
-        ProductStatisticsPolicy.observedTypedWordMetricName,
+        PuntoSwitcherObservedSurface.ProductStatistics.typedWordMetricName,
         "product.typed.word",
         "product statistics policy preserves observed typed-word metric name"
     )
     try expect(
-        ProductStatisticsPolicy.observedAutomaticSwitchMetricName,
+        PuntoSwitcherObservedSurface.ProductStatistics.automaticSwitchMetricName,
         "product.switch.auto",
         "product statistics policy preserves observed automatic-switch metric name"
     )
     try expect(
-        ProductStatisticsPolicy.observedManualSwitchMetricName,
+        PuntoSwitcherObservedSurface.ProductStatistics.manualSwitchMetricName,
         "product.switch.manual",
         "product statistics policy preserves observed manual-switch metric name"
     )
     try expect(
-        ProductStatisticsPolicy.observedRevertMetricName,
+        PuntoSwitcherObservedSurface.ProductStatistics.revertMetricName,
         "product.switch.reverse",
         "product statistics policy preserves observed revert metric name"
     )
     try expect(
-        ProductStatisticsPolicy.observedMetricName(for: .typedText("a ")),
+        ProductStatisticsPolicy.metricName(for: .typedText("a ")),
         "product.typed.symbol",
         "product statistics policy maps typed-symbol events to observed metric name"
     )
     try expectNil(
-        ProductStatisticsPolicy.observedMetricName(for: .typedText("\n\t ")),
+        ProductStatisticsPolicy.metricName(for: .typedText("\n\t ")),
         "product statistics policy skips observed typed-symbol metric for whitespace-only text"
     )
     try expect(
-        ProductStatisticsPolicy.observedMetricName(for: .completedWord),
+        ProductStatisticsPolicy.metricName(for: .completedWord),
         "product.typed.word",
         "product statistics policy maps completed words to observed metric name"
     )
     try expect(
-        ProductStatisticsPolicy.observedMetricName(for: .automaticSwitch),
+        ProductStatisticsPolicy.metricName(for: .automaticSwitch),
         "product.switch.auto",
         "product statistics policy maps automatic switches to observed metric name"
     )
     try expect(
-        ProductStatisticsPolicy.observedMetricName(for: .manualSwitch),
+        ProductStatisticsPolicy.metricName(for: .manualSwitch),
         "product.switch.manual",
         "product statistics policy maps manual switches to observed metric name"
     )
     try expect(
-        ProductStatisticsPolicy.observedMetricName(for: .revert),
+        ProductStatisticsPolicy.metricName(for: .revert),
         "product.switch.reverse",
         "product statistics policy maps reverts to observed metric name"
     )
@@ -3884,22 +3884,22 @@ private func runStartupPresentationPolicyTests() throws {
         "startup presentation policy preserves observed installer argument"
     )
     try expect(
-        StartupPresentationPolicy.observedHandleInstallArgumentSelector,
+        PuntoSwitcherObservedSurface.StartupPresentation.handleInstallArgumentSelector,
         "handleInstallArgument",
         "startup presentation policy preserves observed install handler selector"
     )
     try expect(
-        StartupPresentationPolicy.observedInstalledTooltipKey,
+        PuntoSwitcherObservedSurface.StartupPresentation.installedTooltipKey,
         "tooltip-app-installed",
         "startup presentation policy preserves observed installed tooltip key"
     )
     try expect(
-        StartupPresentationPolicy.observedShowUpdateFinishedTooltipSelector,
+        PuntoSwitcherObservedSurface.StartupPresentation.showUpdateFinishedTooltipSelector,
         "showUpdateFinishedTooltip",
         "startup presentation policy preserves observed update-finished tooltip selector"
     )
     try expect(
-        StartupPresentationPolicy.observedShouldDisplayWelcomeSelector,
+        PuntoSwitcherObservedSurface.StartupPresentation.shouldDisplayWelcomeSelector,
         "shouldDisplayWelcome",
         "startup presentation policy preserves observed welcome selector"
     )
@@ -4323,12 +4323,12 @@ private func runApplicationDisablePolicyTests() throws {
 
 private func runStatusIconPolicyTests() throws {
     try expect(
-        StatusIconPolicy.observedUpdateMenubarIconSelector,
+        PuntoSwitcherObservedSurface.StatusIcon.updateMenubarIconSelector,
         "updateMenubarIcon:",
         "status icon policy preserves observed Punto Switcher menu bar update selector"
     )
     try expect(
-        StatusIconPolicy.observedResourceNames,
+        PuntoSwitcherObservedSurface.StatusIcon.resourceNames,
         [
             "icon_active",
             "icon_inactive",
@@ -4368,12 +4368,12 @@ private func runStatusIconPolicyTests() throws {
 
 private func runAccessibilityPreferencesPolicyTests() throws {
     try expect(
-        AccessibilityPreferencesPolicy.observedLaunchAccessibilityPreferencesSelector,
+        PuntoSwitcherObservedSurface.AccessibilityPreferences.launchAccessibilityPreferencesSelector,
         "launchAccessibilityPreferences",
         "accessibility preferences policy pins observed launch selector"
     )
     try expect(
-        AccessibilityPreferencesPolicy.observedOpenAccessibilityPrefPaneSelector,
+        PuntoSwitcherObservedSurface.AccessibilityPreferences.openAccessibilityPrefPaneSelector,
         "openAccesibilityPrefPane:",
         "accessibility preferences policy pins observed Accessibility pane opener selector"
     )
@@ -4393,12 +4393,12 @@ private func runAccessibilityPreferencesPolicyTests() throws {
         "accessibility preferences policy builds observed System Settings URL"
     )
     try expect(
-        AccessibilityPreferencesPolicy.observedAccessibilityAlertMessageKey,
+        PuntoSwitcherObservedSurface.AccessibilityPreferences.accessibilityAlertMessageKey,
         "accessibility-alert-message",
         "accessibility preferences policy preserves observed modern alert message key"
     )
     try expect(
-        AccessibilityPreferencesPolicy.observedAccessibilityAlertLegacyMessageKey,
+        PuntoSwitcherObservedSurface.AccessibilityPreferences.accessibilityAlertLegacyMessageKey,
         "accessibility-alert-messageLegacy",
         "accessibility preferences policy preserves observed legacy alert message key"
     )
@@ -4715,32 +4715,32 @@ private func runInputSourceLanguagePolicyTests() throws {
         "keyboard layout variant policy does not treat USInternational as default US"
     )
     try expect(
-        KeyboardLayoutVariantPolicy.observedIsAppleLayoutSelector,
+        PuntoSwitcherObservedSurface.KeyboardLayoutVariant.isAppleLayoutSelector,
         "isAppleLayout",
         "keyboard layout variant policy preserves observed Apple-layout selector"
     )
     try expect(
-        KeyboardLayoutVariantPolicy.observedIsDvorakSelector,
+        PuntoSwitcherObservedSurface.KeyboardLayoutVariant.isDvorakSelector,
         "isDvorak",
         "keyboard layout variant policy preserves observed Dvorak selector"
     )
     try expect(
-        KeyboardLayoutVariantPolicy.observedWindowsLayoutUsedSelector,
+        PuntoSwitcherObservedSurface.KeyboardLayoutVariant.windowsLayoutUsedSelector,
         "windowsLayoutUsed",
         "keyboard layout variant policy preserves observed Windows-layout selector"
     )
     try expect(
-        KeyboardLayoutVariantPolicy.observedFixStringSelector,
+        PuntoSwitcherObservedSurface.KeyboardLayoutVariant.fixStringSelector,
         "fixString:isEnglish:isApple:",
         "keyboard layout variant policy preserves observed punctuation-fix selector"
     )
     try expect(
-        KeyboardLayoutVariantPolicy.observedCreateMacToPcMappingSelector,
+        PuntoSwitcherObservedSurface.KeyboardLayoutVariant.createMacToPcMappingSelector,
         "createMacToPcMappingWithString:pcLayoutA:pcLayoutB:",
         "keyboard layout variant policy preserves observed Mac-to-PC mapping selector"
     )
     try expect(
-        KeyboardLayoutVariantPolicy.observedConvertStringLayoutSelector,
+        PuntoSwitcherObservedSurface.KeyboardLayoutVariant.convertStringLayoutSelector,
         "convertStringLayout:withMode:isPCLayout:",
         "keyboard layout variant policy preserves observed layout conversion selector"
     )
@@ -4971,17 +4971,17 @@ private func runInputSourceLanguagePolicyTests() throws {
     )
     let missingSelection = InputSourceSelection(englishSourceID: nil, russianSourceID: "com.apple.keylayout.Russian")
     try expect(
-        InputSourceSelectionPolicy.observedInputSourceEnabledSelector,
+        PuntoSwitcherObservedSurface.InputSources.inputSourceEnabledSelector,
         "inputSourceEnabled:",
         "input source selection policy preserves observed enabled selector"
     )
     try expect(
-        InputSourceSelectionPolicy.observedHandleInputSourcesEnabledSelector,
+        PuntoSwitcherObservedSurface.InputSources.handleInputSourcesEnabledSelector,
         "handleInputSourcesEnabled",
         "input source selection policy preserves observed enabled handler selector"
     )
     try expect(
-        InputSourceSelectionPolicy.observedPromptUserToInstallLayoutsSelector,
+        PuntoSwitcherObservedSurface.InputSources.promptUserToInstallLayoutsSelector,
         "promptUserToInstallLayouts",
         "input source selection policy preserves observed install-layouts prompt selector"
     )
@@ -5674,17 +5674,17 @@ private func runAccessibilityRolePolicyTests() throws {
         "accessibility role policy rejects static ancestry without AXWebArea"
     )
     try expect(
-        AccessibilityRolePolicy.observedMailFullWordReplacementSelector,
+        PuntoSwitcherObservedSurface.AccessibilityMailReplacement.fullWordReplacementSelector,
         "applyMailBehaviourForFullWords:withEvent:withCharsToSelect:withForceWordEndingCharPresent:",
         "accessibility role policy pins observed Punto Switcher Mail full-word helper selector"
     )
     try expect(
-        AccessibilityRolePolicy.observedMailPartialWordReplacementSelector,
+        PuntoSwitcherObservedSurface.AccessibilityMailReplacement.partialWordReplacementSelector,
         "applyMailBehaviourForPartialWords:",
         "accessibility role policy pins observed Punto Switcher Mail partial-word helper selector"
     )
     try expect(
-        AccessibilityRolePolicy.observedMailDeletionCounterKey,
+        PuntoSwitcherObservedSurface.AccessibilityMailReplacement.deletionCounterKey,
         "numberOfDeletionsInMail",
         "accessibility role policy pins observed Punto Switcher Mail deletion counter"
     )
@@ -7070,62 +7070,62 @@ private func runHotkeyPolicyTests() throws {
         "legacy hotkey policy preserves observed find-in-Slovari key"
     )
     try expect(
-        LegacyHotkeyPolicy.observedSetShortcutSelector,
+        PuntoSwitcherObservedSurface.Hotkeys.setShortcutSelector,
         "setShortcut:",
         "legacy hotkey policy preserves observed generic shortcut setter"
     )
     try expect(
-        LegacyHotkeyPolicy.observedShortcutWithDictionarySelector,
+        PuntoSwitcherObservedSurface.Hotkeys.shortcutWithDictionarySelector,
         "shortcutWithDictionary:",
         "legacy hotkey policy preserves observed dictionary importer selector"
     )
     try expect(
-        LegacyHotkeyPolicy.observedResetShortcutsToDefaultsSelector,
+        PuntoSwitcherObservedSurface.Hotkeys.resetShortcutsToDefaultsSelector,
         "resetShortcutsToDefaults:",
         "legacy hotkey policy preserves observed reset-shortcuts selector"
     )
     try expect(
-        LegacyHotkeyPolicy.observedSetShortcutChangeLayoutSelector,
+        PuntoSwitcherObservedSurface.Hotkeys.setShortcutChangeLayoutSelector,
         "setShortcutChangeLayout:",
         "legacy hotkey policy preserves observed change-layout setter"
     )
     try expect(
-        LegacyHotkeyPolicy.observedSetShortcutChangeCaseSelector,
+        PuntoSwitcherObservedSurface.Hotkeys.setShortcutChangeCaseSelector,
         "setShortcutChangeCase:",
         "legacy hotkey policy preserves observed change-case setter"
     )
     try expect(
-        LegacyHotkeyPolicy.observedSetShortcutSwitchAutocorrectionSelector,
+        PuntoSwitcherObservedSurface.Hotkeys.setShortcutSwitchAutocorrectionSelector,
         "setShortcutSwitchAutocorrection:",
         "legacy hotkey policy preserves observed switch-autocorrection setter"
     )
     try expect(
-        LegacyHotkeyPolicy.observedSetShortcutCancelLayoutChangeSelector,
+        PuntoSwitcherObservedSurface.Hotkeys.setShortcutCancelLayoutChangeSelector,
         "setShortcutCancelLayoutChange:",
         "legacy hotkey policy preserves observed cancel-layout-change setter"
     )
     try expect(
-        LegacyHotkeyPolicy.observedSetShortcutFindInYandexSelector,
+        PuntoSwitcherObservedSurface.Hotkeys.setShortcutFindInYandexSelector,
         "setShortcutFindInYandex:",
         "legacy hotkey policy preserves observed find-in-Yandex setter"
     )
     try expect(
-        LegacyHotkeyPolicy.observedSetShortcutFindInSlovariSelector,
+        PuntoSwitcherObservedSurface.Hotkeys.setShortcutFindInSlovariSelector,
         "setShortcutFindInSlovari:",
         "legacy hotkey policy preserves observed find-in-Slovari setter"
     )
     try expect(
-        LegacyHotkeyPolicy.observedShortcutsPreferencesControllerKey,
+        PuntoSwitcherObservedSurface.Hotkeys.shortcutsPreferencesControllerKey,
         "shortcutsPreferencesController",
         "legacy hotkey policy preserves observed shortcuts preferences controller key"
     )
     try expect(
-        LegacyHotkeyPolicy.observedSetShortcutsPreferencesControllerSelector,
+        PuntoSwitcherObservedSurface.Hotkeys.setShortcutsPreferencesControllerSelector,
         "setShortcutsPreferencesController:",
         "legacy hotkey policy preserves observed shortcuts preferences controller setter"
     )
     try expect(
-        LegacyHotkeyPolicy.observedSwitchAutocorrectionSelector,
+        PuntoSwitcherObservedSurface.Hotkeys.switchAutocorrectionSelector,
         "switchAutocorrection:",
         "legacy hotkey policy preserves observed switch-autocorrection action selector"
     )
@@ -7145,38 +7145,38 @@ private func runHotkeyPolicyTests() throws {
         "legacy hotkey policy preserves observed change-case shortcut field key"
     )
     try expect(
-        LegacyHotkeyPolicy.observedSetChangeCaseShortcutSelector,
+        PuntoSwitcherObservedSurface.Hotkeys.setChangeCaseShortcutSelector,
         "setChangeCaseShortcut:",
         "legacy hotkey policy preserves observed change-case shortcut-field setter"
     )
     try expect(
-        LegacyHotkeyPolicy.observedShortcutFieldClassName,
+        PuntoSwitcherObservedSurface.Hotkeys.shortcutFieldClassName,
         "ShortcutField",
         "legacy hotkey policy preserves observed shortcut-field class boundary"
     )
 
     try expect(
-        HotkeyCollisionPolicy.observedDoesCollideSelector,
+        PuntoSwitcherObservedSurface.HotkeyCollision.doesCollideSelector,
         "doesCollideWithExistingShortcuts",
         "hotkey collision policy preserves observed collision selector"
     )
     try expect(
-        HotkeyCollisionPolicy.observedCanAllowShortcutSelector,
+        PuntoSwitcherObservedSurface.HotkeyCollision.canAllowShortcutSelector,
         "shortcutField:canAllowShortcut:",
         "hotkey collision policy preserves observed shortcut-field selector"
     )
     try expect(
-        HotkeyCollisionPolicy.observedEmptyShortcutSelector,
+        PuntoSwitcherObservedSurface.HotkeyCollision.emptyShortcutSelector,
         "emptyShortcut",
         "hotkey collision policy preserves observed empty-shortcut selector"
     )
     try expect(
-        HotkeyCollisionPolicy.observedAllowedCharacterKeycodeSelector,
+        PuntoSwitcherObservedSurface.HotkeyCollision.allowedCharacterKeycodeSelector,
         "isAllowedCharacterKeycode:",
         "hotkey collision policy preserves observed raw allowed-keycode selector"
     )
     try expect(
-        HotkeyCollisionPolicy.observedAllowedShortcutCharacterKeycodeSelector,
+        PuntoSwitcherObservedSurface.HotkeyCollision.allowedShortcutCharacterKeycodeSelector,
         "isAllowedShortcutCharacterKeycode:",
         "hotkey collision policy preserves observed shortcut allowed-keycode selector"
     )
@@ -7555,22 +7555,22 @@ private func runSearchShortcutPolicyTests() throws {
 
 private func runSearchClickPolicyTests() throws {
     try expect(
-        SearchClickPolicy.observedCanDoSearchClickSelector,
+        PuntoSwitcherObservedSurface.SearchClick.canDoSearchClickSelector,
         "canDoSearchClick",
         "search click policy pins observed Punto Switcher click capability selector"
     )
     try expect(
-        SearchClickPolicy.observedShowSearchWindowAutomaticallySelector,
+        PuntoSwitcherObservedSurface.SearchClick.showSearchWindowAutomaticallySelector,
         "showSearchWindowAutomatically",
         "search click policy pins observed Punto Switcher automatic search window selector"
     )
     try expect(
-        SearchClickPolicy.observedShowSearchWindowSelectedTextSelector,
+        PuntoSwitcherObservedSurface.SearchClick.showSearchWindowSelectedTextSelector,
         "showSearchWindowSelectedText",
         "search click policy pins observed Punto Switcher selected-text search window selector"
     )
     try expect(
-        SearchClickPolicy.observedSetIsClickSearchSelector,
+        PuntoSwitcherObservedSurface.SearchClick.setIsClickSearchSelector,
         "setIsClickSearch:",
         "search click policy pins observed Punto Switcher click-search state setter"
     )
@@ -8870,7 +8870,7 @@ private func runSoundFeedbackPolicyTests() throws {
         "sound feedback declares observed Punto Switcher per-resource sound toggles"
     )
     try expect(
-        SoundFeedbackPolicy.observedSkipNextLanguageChangeSoundSelector,
+        PuntoSwitcherObservedSurface.SoundFeedback.skipNextLanguageChangeSoundSelector,
         "shouldSkipNextLanguageChangeSound",
         "sound feedback pins observed Punto Switcher skip-next-language-change-sound selector"
     )
@@ -8880,7 +8880,7 @@ private func runSoundFeedbackPolicyTests() throws {
         "sound feedback pins observed Punto Switcher global sound key"
     )
     try expect(
-        SoundFeedbackPolicy.observedSetSoundStateSelector,
+        PuntoSwitcherObservedSurface.SoundFeedback.setSoundStateSelector,
         "setSoundState:isSoundOn:",
         "sound feedback pins observed Punto Switcher sound-state setter"
     )

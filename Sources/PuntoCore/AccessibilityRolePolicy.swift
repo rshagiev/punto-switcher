@@ -33,9 +33,6 @@ public enum AccessibilityRolePolicy {
         case click
     }
 
-    public static let observedMailFullWordReplacementSelector = "applyMailBehaviourForFullWords:withEvent:withCharsToSelect:withForceWordEndingCharPresent:"
-    public static let observedMailPartialWordReplacementSelector = "applyMailBehaviourForPartialWords:"
-    public static let observedMailDeletionCounterKey = "numberOfDeletionsInMail"
     public static let observedMailApplicationToken = "Mail"
     public static let observedParallelsBundleID = "com.parallels.desktop"
     public static let observedScrollAreaRole = "AXScrollArea"

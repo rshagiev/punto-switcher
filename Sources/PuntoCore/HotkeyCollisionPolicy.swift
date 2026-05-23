@@ -20,12 +20,6 @@ public struct HotkeyAssignment: Equatable {
 }
 
 public enum HotkeyCollisionPolicy {
-    public static let observedDoesCollideSelector = "doesCollideWithExistingShortcuts"
-    public static let observedCanAllowShortcutSelector = "shortcutField:canAllowShortcut:"
-    public static let observedEmptyShortcutSelector = "emptyShortcut"
-    public static let observedAllowedCharacterKeycodeSelector = "isAllowedCharacterKeycode:"
-    public static let observedAllowedShortcutCharacterKeycodeSelector = "isAllowedShortcutCharacterKeycode:"
-
     public static func collidingSlot(
         for candidate: Hotkey,
         in assignments: [HotkeyAssignment],

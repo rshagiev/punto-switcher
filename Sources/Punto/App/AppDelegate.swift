@@ -93,7 +93,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         var updateSettings: ApplicationUpdateSettingsSnapshot
         if StartupPresentationPolicy.shouldHandleInstallArgument(CommandLine.arguments) {
-            PuntoLog.info(StartupPresentationPolicy.observedHandleInstallArgumentSelector)
+            PuntoLog.info(PuntoSwitcherObservedSurface.StartupPresentation.handleInstallArgumentSelector)
             updateSettings = StartupPresentationPolicy.updateSettingsAfterInstallArgument(settingsManager!.applicationUpdateSettings)
             settingsManager!.applicationUpdateSettings = updateSettings
             PuntoLog.info(StartupPresentationPolicy.nativeInstalledTooltipMessage)
@@ -113,7 +113,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         if StartupPresentationPolicy.shouldDisplayUpdateFinishedTooltip(updateSettings: updateSettings) {
-            PuntoLog.info(StartupPresentationPolicy.observedShowUpdateFinishedTooltipSelector)
+            PuntoLog.info(PuntoSwitcherObservedSurface.StartupPresentation.showUpdateFinishedTooltipSelector)
             PuntoLog.info(StartupPresentationPolicy.nativeUpdatedTooltipMessage)
             updateSettings = StartupPresentationPolicy.updateSettingsAfterUpdateFinishedTooltip(updateSettings)
             settingsManager!.applicationUpdateSettings = updateSettings

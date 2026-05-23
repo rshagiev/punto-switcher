@@ -1,13 +1,9 @@
 import Foundation
 
 public enum AccessibilityPreferencesPolicy {
-    public static let observedLaunchAccessibilityPreferencesSelector = "launchAccessibilityPreferences"
-    public static let observedOpenAccessibilityPrefPaneSelector = "openAccesibilityPrefPane:"
     public static let observedSecurityPrivacyPaneID = "com.apple.preference.security"
     public static let observedAccessibilityAnchor = "Privacy_Accessibility"
     public static let observedURLString = "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
-    public static let observedAccessibilityAlertMessageKey = "accessibility-alert-message"
-    public static let observedAccessibilityAlertLegacyMessageKey = "accessibility-alert-messageLegacy"
 
     public static let permissionRequestTitle = "Punto needs Accessibility access"
     public static let permissionRequestMessage = """

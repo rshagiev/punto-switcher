@@ -1,14 +1,8 @@
 public enum StartupPresentationPolicy {
     public static let observedInstallArgument = "--install"
-    public static let observedHandleInstallArgumentSelector = "handleInstallArgument"
-    public static let observedOpenWindowAfterInstallerSelector = "openWindowAfterInstaller"
-    public static let observedShowInstallationFinishedTooltipSelector = "showInstallationFinishedTooltip"
-    public static let observedShowUpdateFinishedTooltipSelector = "showUpdateFinishedTooltip"
-    public static let observedInstalledTooltipKey = "tooltip-app-installed"
     public static let nativeInstalledTooltipMessage = "Punto installed. Automatic layout switching is ready."
     public static let nativeUpdatedTooltipMessage = "Punto updated. Automatic layout switching is ready."
 
-    public static let observedShouldDisplayWelcomeSelector = "shouldDisplayWelcome"
     public static let observedWelcomeLogMessage = "Displaying welcome screen..."
     public static let observedAccessibilityEnabledLogMessage = "Accessibility API enabled. Initializing services."
     public static let observedAccessibilityDisabledLogMessage = "Accessibility API disabled. Showing accessibility preference window."

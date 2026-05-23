@@ -57,24 +57,6 @@ public enum ProductStatisticsPolicy {
     public static let dayuseRevertsKey = "Reverts"
     public static let dayuseLastDayuseDateKey = "LastDayuseDate"
     public static let dayuseLastProductStatDateKey = "LastProductStatDate"
-    public static let observedDayuseStatClassName = "PSDayuseStat"
-    public static let observedSetDayuseSelector = "setDayuse:"
-    public static let observedTypedWordsAccessor = "typedWords"
-    public static let observedTypedSymbolsAccessor = "typedSymbols"
-    public static let observedLastDayuseDateAccessor = "lastDayuseDate"
-    public static let observedLastProductStatDateAccessor = "lastProductStatDate"
-    public static let observedSetTypedWordsSelector = "setTypedWords:"
-    public static let observedSetTypedSymbolsSelector = "setTypedSymbols:"
-    public static let observedSetAutomaticSwitchesSelector = "setAutomaticSwitches:"
-    public static let observedSetManualSwitchesSelector = "setManualSwitches:"
-    public static let observedSetRevertsSelector = "setReverts:"
-    public static let observedSetLastDayuseDateSelector = "setLastDayuseDate:"
-    public static let observedSetLastProductStatDateSelector = "setLastProductStatDate:"
-    public static let observedTypedSymbolMetricName = "product.typed.symbol"
-    public static let observedTypedWordMetricName = "product.typed.word"
-    public static let observedAutomaticSwitchMetricName = "product.switch.auto"
-    public static let observedManualSwitchMetricName = "product.switch.manual"
-    public static let observedRevertMetricName = "product.switch.reverse"
 
     public static func normalized(_ snapshot: ProductStatisticsSnapshot) -> ProductStatisticsSnapshot {
         ProductStatisticsSnapshot(
@@ -136,18 +118,18 @@ public enum ProductStatisticsPolicy {
         consumedCompletedToken ? .completedWord : nil
     }
 
-    public static func observedMetricName(for event: ProductStatisticsEvent) -> String? {
+    public static func metricName(for event: ProductStatisticsEvent) -> String? {
         switch event {
         case .typedText(let text):
-            typedSymbolCount(text) > 0 ? observedTypedSymbolMetricName : nil
+            typedSymbolCount(text) > 0 ? PuntoSwitcherObservedSurface.ProductStatistics.typedSymbolMetricName : nil
         case .completedWord:
-            observedTypedWordMetricName
+            PuntoSwitcherObservedSurface.ProductStatistics.typedWordMetricName
         case .automaticSwitch:
-            observedAutomaticSwitchMetricName
+            PuntoSwitcherObservedSurface.ProductStatistics.automaticSwitchMetricName
         case .manualSwitch:
-            observedManualSwitchMetricName
+            PuntoSwitcherObservedSurface.ProductStatistics.manualSwitchMetricName
         case .revert:
-            observedRevertMetricName
+            PuntoSwitcherObservedSurface.ProductStatistics.revertMetricName
         }
     }
 

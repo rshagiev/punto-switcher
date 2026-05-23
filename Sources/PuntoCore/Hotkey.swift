@@ -129,23 +129,9 @@ public enum LegacyHotkeyPolicy {
     public static let observedShortcutCancelLayoutChangeKey = "shortcutCancelLayoutChange"
     public static let observedShortcutFindInYandexKey = "shortcutFindInYandex"
     public static let observedShortcutFindInSlovariKey = "shortcutFindInSlovari"
-    public static let observedSetShortcutSelector = "setShortcut:"
-    public static let observedShortcutWithDictionarySelector = "shortcutWithDictionary:"
-    public static let observedResetShortcutsToDefaultsSelector = "resetShortcutsToDefaults:"
-    public static let observedSetShortcutChangeLayoutSelector = "setShortcutChangeLayout:"
-    public static let observedSetShortcutChangeCaseSelector = "setShortcutChangeCase:"
-    public static let observedSetShortcutSwitchAutocorrectionSelector = "setShortcutSwitchAutocorrection:"
-    public static let observedSetShortcutCancelLayoutChangeSelector = "setShortcutCancelLayoutChange:"
-    public static let observedSetShortcutFindInYandexSelector = "setShortcutFindInYandex:"
-    public static let observedSetShortcutFindInSlovariSelector = "setShortcutFindInSlovari:"
-    public static let observedShortcutsPreferencesControllerKey = "shortcutsPreferencesController"
-    public static let observedSetShortcutsPreferencesControllerSelector = "setShortcutsPreferencesController:"
-    public static let observedSwitchAutocorrectionSelector = "switchAutocorrection:"
     public static let observedCancelLayoutChangeShortcutKey = "cancelLayoutChangeShortcut"
     public static let observedSwitchAutocorrectionShortcutKey = "switchAutocorrectionShortcut"
     public static let observedChangeCaseShortcutKey = "changeCaseShortcut"
-    public static let observedSetChangeCaseShortcutSelector = "setChangeCaseShortcut:"
-    public static let observedShortcutFieldClassName = "ShortcutField"
 
     public static func hotkey(from dictionary: [String: Any]?) -> Hotkey? {
         guard let dictionary,

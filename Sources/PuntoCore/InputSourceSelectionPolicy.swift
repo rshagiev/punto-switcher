@@ -26,10 +26,6 @@ public struct InputSourceSelection: Equatable {
 
 public enum InputSourceSelectionPolicy {
     public static let observedUndefinedSourceID = "UNDEFINED"
-    public static let observedInputSourceEnabledSelector = "inputSourceEnabled:"
-    public static let observedHandleInputSourcesEnabledSelector = "handleInputSourcesEnabled"
-    public static let observedPromptUserToInstallLayoutsSelector = "promptUserToInstallLayouts"
-    public static let observedFailedToEnableLayoutLogFormat = "Failed to enable layout %@! Error code: %d"
 
     public static func selection(
         from candidates: [InputSourceCandidate],
@@ -102,7 +98,7 @@ public enum InputSourceSelectionPolicy {
         guard !missing.isEmpty else {
             return nil
         }
-        return "\(observedPromptUserToInstallLayoutsSelector): missing \(missing.joined(separator: "/")) input source"
+        return "\(PuntoSwitcherObservedSurface.InputSources.promptUserToInstallLayoutsSelector): missing \(missing.joined(separator: "/")) input source"
     }
 
     public static func normalizedSourceID(_ sourceID: String?) -> String? {

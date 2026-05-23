@@ -5,17 +5,6 @@ public enum StatusIconState: String, Equatable {
 }
 
 public enum StatusIconPolicy {
-    public static let observedUpdateMenubarIconSelector = "updateMenubarIcon:"
-
-    public static let observedResourceNames = [
-        "icon_active",
-        "icon_inactive",
-        "icon_disabled",
-        "icon_active_w",
-        "icon_inactive_w",
-        "icon_disabled_w"
-    ]
-
     public static func state(isEnabled: Bool, isCurrentApplicationDisabled: Bool) -> StatusIconState {
         if !isEnabled {
             return .inactive
