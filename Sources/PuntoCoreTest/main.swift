@@ -3243,6 +3243,86 @@ private func runUndoLearningSettingsPolicyTests() throws {
         ),
         "undo learning policy mirrors observed Punto Switcher defaults"
     )
+    try expect(
+        UndoLearningSettingsPolicy.observedSetUndoCollectionEnabledSelector,
+        "setUndoCollectionEnabled:",
+        "undo learning policy preserves observed collection setter"
+    )
+    try expect(
+        UndoLearningSettingsPolicy.observedSetMustShowUndoWindowSelector,
+        "setMustShowUndoWindow:",
+        "undo learning policy preserves observed undo-window setter"
+    )
+    try expect(
+        UndoLearningSettingsPolicy.observedSetUndoDictionarySelector,
+        "setUndoDictionary:",
+        "undo learning policy preserves observed undo dictionary setter"
+    )
+    try expect(
+        UndoLearningSettingsPolicy.observedUndoWindowControllerClassName,
+        "UndoWindowController",
+        "undo learning policy preserves observed undo window controller name"
+    )
+    try expect(
+        UndoLearningSettingsPolicy.observedUndoWindowDelegateProtocolName,
+        "UndoWindowDelegate",
+        "undo learning policy preserves observed undo window delegate name"
+    )
+    try expect(
+        UndoLearningSettingsPolicy.observedUndoWindowResourceName,
+        "UndoWindow",
+        "undo learning policy preserves observed undo window resource name"
+    )
+    try expect(
+        UndoLearningSettingsPolicy.observedUndoAlertFormatKey,
+        "PMUserRuleUndoAlertFormat",
+        "undo learning policy preserves observed undo alert format key"
+    )
+    try expect(
+        UndoLearningSettingsPolicy.observedShowUndoLearningWindowCheckboxChangedSelector,
+        "showUndoLearningWindowCheckboxChanged:",
+        "undo learning policy preserves observed show-window checkbox selector"
+    )
+    try expect(
+        UndoLearningSettingsPolicy.observedUndoLearningCheckboxChangedSelector,
+        "undoLearningCheckboxChanged:",
+        "undo learning policy preserves observed learning checkbox selector"
+    )
+    try expect(
+        UndoLearningSettingsPolicy.observedUndoLearningCheckboxKey,
+        "undoLearningCheckbox",
+        "undo learning policy preserves observed learning checkbox key"
+    )
+    try expect(
+        UndoLearningSettingsPolicy.observedShowUndoLearningWindowCheckboxKey,
+        "showUndoLearningWindowCheckbox",
+        "undo learning policy preserves observed show-window checkbox key"
+    )
+    try expect(
+        UndoLearningSettingsPolicy.observedUndoTriesKey,
+        "undoTries",
+        "undo learning policy preserves observed undo tries key"
+    )
+    try expect(
+        UndoLearningSettingsPolicy.observedUndoPersistsKey,
+        "undoPersists",
+        "undo learning policy preserves observed undo persistence key"
+    )
+    try expect(
+        UndoLearningSettingsPolicy.observedUndoWasDoneKey,
+        "undoWasDone",
+        "undo learning policy preserves observed undo completion key"
+    )
+    try expect(
+        UndoLearningSettingsPolicy.observedUndoConvertionSelector,
+        "undoConvertion",
+        "undo learning policy preserves observed legacy undo selector spelling"
+    )
+    try expect(
+        UndoLearningSettingsPolicy.observedResetUndoBufferSelector,
+        "resetUndoBuffer",
+        "undo learning policy preserves observed undo-buffer reset selector"
+    )
     try expectNil(
         UndoLearningSettingsPolicy.snapshot(from: nil),
         "undo learning policy rejects missing dictionary"
