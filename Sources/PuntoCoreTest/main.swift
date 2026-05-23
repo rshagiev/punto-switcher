@@ -6993,6 +6993,91 @@ private func runHotkeyPolicyTests() throws {
         Hotkey.defaultCancelLayoutChange,
         "legacy hotkey policy writes Punto Switcher shortcut dictionaries"
     )
+    try expect(
+        LegacyHotkeyPolicy.observedShortcutChangeLayoutKey,
+        "shortcutChangeLayout",
+        "legacy hotkey policy preserves observed change-layout key"
+    )
+    try expect(
+        LegacyHotkeyPolicy.observedShortcutChangeCaseKey,
+        "shortcutChangeCase",
+        "legacy hotkey policy preserves observed change-case key"
+    )
+    try expect(
+        LegacyHotkeyPolicy.observedShortcutSwitchAutocorrectionKey,
+        "shortcutSwitchAutocorrection",
+        "legacy hotkey policy preserves observed switch-autocorrection key"
+    )
+    try expect(
+        LegacyHotkeyPolicy.observedShortcutCancelLayoutChangeKey,
+        "shortcutCancelLayoutChange",
+        "legacy hotkey policy preserves observed cancel-layout-change key"
+    )
+    try expect(
+        LegacyHotkeyPolicy.observedShortcutFindInYandexKey,
+        "shortcutFindInYandex",
+        "legacy hotkey policy preserves observed find-in-Yandex key"
+    )
+    try expect(
+        LegacyHotkeyPolicy.observedShortcutFindInSlovariKey,
+        "shortcutFindInSlovari",
+        "legacy hotkey policy preserves observed find-in-Slovari key"
+    )
+    try expect(
+        LegacyHotkeyPolicy.observedSetShortcutSelector,
+        "setShortcut:",
+        "legacy hotkey policy preserves observed generic shortcut setter"
+    )
+    try expect(
+        LegacyHotkeyPolicy.observedShortcutWithDictionarySelector,
+        "shortcutWithDictionary:",
+        "legacy hotkey policy preserves observed dictionary importer selector"
+    )
+    try expect(
+        LegacyHotkeyPolicy.observedResetShortcutsToDefaultsSelector,
+        "resetShortcutsToDefaults:",
+        "legacy hotkey policy preserves observed reset-shortcuts selector"
+    )
+    try expect(
+        LegacyHotkeyPolicy.observedSetShortcutChangeLayoutSelector,
+        "setShortcutChangeLayout:",
+        "legacy hotkey policy preserves observed change-layout setter"
+    )
+    try expect(
+        LegacyHotkeyPolicy.observedSetShortcutChangeCaseSelector,
+        "setShortcutChangeCase:",
+        "legacy hotkey policy preserves observed change-case setter"
+    )
+    try expect(
+        LegacyHotkeyPolicy.observedSetShortcutSwitchAutocorrectionSelector,
+        "setShortcutSwitchAutocorrection:",
+        "legacy hotkey policy preserves observed switch-autocorrection setter"
+    )
+    try expect(
+        LegacyHotkeyPolicy.observedSetShortcutCancelLayoutChangeSelector,
+        "setShortcutCancelLayoutChange:",
+        "legacy hotkey policy preserves observed cancel-layout-change setter"
+    )
+    try expect(
+        LegacyHotkeyPolicy.observedSetShortcutFindInYandexSelector,
+        "setShortcutFindInYandex:",
+        "legacy hotkey policy preserves observed find-in-Yandex setter"
+    )
+    try expect(
+        LegacyHotkeyPolicy.observedSetShortcutFindInSlovariSelector,
+        "setShortcutFindInSlovari:",
+        "legacy hotkey policy preserves observed find-in-Slovari setter"
+    )
+    try expect(
+        LegacyHotkeyPolicy.observedShortcutsPreferencesControllerKey,
+        "shortcutsPreferencesController",
+        "legacy hotkey policy preserves observed shortcuts preferences controller key"
+    )
+    try expect(
+        LegacyHotkeyPolicy.observedSetShortcutsPreferencesControllerSelector,
+        "setShortcutsPreferencesController:",
+        "legacy hotkey policy preserves observed shortcuts preferences controller setter"
+    )
 
     try expect(
         HotkeyCollisionPolicy.observedDoesCollideSelector,
