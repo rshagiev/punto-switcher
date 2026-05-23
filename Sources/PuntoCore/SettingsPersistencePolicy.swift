@@ -27,6 +27,7 @@ public enum SettingsPersistencePolicy {
     public static let defaultCompletelyDisableInExceptionApplications = false
     public static let observedCompletelyDisableInExceptionApplicationsKey = "CompletelyDisableInExceptionApps"
     public static let defaultAutoCorrectionEnabled = false
+    public static let observedIsAutocorrectionActiveKey = "isAutocorrectionActive"
     public static let defaultAutoCorrectionStarterRulesEnabled = true
     public static let defaultAutoCorrectOnEnterAndTab = true
     public static let observedShouldNotAutoconvertWithTabOrEnterKey = "shouldNotAutoconvertWithTabOrEnter"

@@ -2817,6 +2817,11 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings defaults keep auto-correction off"
     )
     try expect(
+        SettingsPersistencePolicy.observedIsAutocorrectionActiveKey,
+        "isAutocorrectionActive",
+        "settings persistence preserves observed auto-correction active key"
+    )
+    try expect(
         SettingsPersistencePolicy.defaultAutoCorrectionUndoLearningEnabled,
         false,
         "settings defaults keep auto-correction undo learning off"
@@ -3823,6 +3828,56 @@ private func runProductStatisticsPolicyTests() throws {
 }
 
 private func runApplicationUpdateSettingsPolicyTests() throws {
+    try expect(
+        ApplicationUpdateSettingsPolicy.configVersionKey,
+        "configVersion",
+        "update settings policy preserves observed config-version key"
+    )
+    try expect(
+        ApplicationUpdateSettingsPolicy.isFirstInstallationKey,
+        "isFirstInstallation",
+        "update settings policy preserves observed first-install key"
+    )
+    try expect(
+        ApplicationUpdateSettingsPolicy.isJustInstalledKey,
+        "isJustInstalled",
+        "update settings policy preserves observed just-installed key"
+    )
+    try expect(
+        ApplicationUpdateSettingsPolicy.isJustUpdatedKey,
+        "isJustUpdated",
+        "update settings policy preserves observed just-updated key"
+    )
+    try expect(
+        ApplicationUpdateSettingsPolicy.isUpdatingKey,
+        "isUpdating",
+        "update settings policy preserves observed updating key"
+    )
+    try expect(
+        ApplicationUpdateSettingsPolicy.shouldCheckForUpdatesAutomaticallyKey,
+        "shouldCheckForUpdatesAutomatically",
+        "update settings policy preserves observed automatic-update-check key"
+    )
+    try expect(
+        ApplicationUpdateSettingsPolicy.updateRequestRateInDaysKey,
+        "updateRequestRateInDays",
+        "update settings policy preserves observed update-request-rate key"
+    )
+    try expect(
+        ApplicationUpdateSettingsPolicy.lastStatisticsRequestDateKey,
+        "lastStatisticsRequestDate",
+        "update settings policy preserves observed statistics-request date key"
+    )
+    try expect(
+        ApplicationUpdateSettingsPolicy.lastUpdateRequestDateKey,
+        "lastUpdateRequestDate",
+        "update settings policy preserves observed update-request date key"
+    )
+    try expect(
+        ApplicationUpdateSettingsPolicy.lastUpdateShownDateKey,
+        "lastUpdateShownDate",
+        "update settings policy preserves observed update-shown date key"
+    )
     try expect(
         ApplicationUpdateSettingsPolicy.defaultSnapshot.configVersion,
         8,

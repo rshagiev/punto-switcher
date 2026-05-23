@@ -54,7 +54,7 @@ final class SettingsManager {
         static let resetOnReturnBundleComponents = "resetOnReturnBundleComponents"
         static let switcherResetOnReturn = "switcher.reset_on_return"
         static let autoCorrectionEnabled = "autoCorrectionEnabled"
-        static let isAutocorrectionActive = "isAutocorrectionActive"
+        static let isAutocorrectionActive = SettingsPersistencePolicy.observedIsAutocorrectionActiveKey
         static let autoCorrectionStarterRulesEnabled = "autoCorrectionStarterRulesEnabled"
         static let switcherUseOldRulesDefaultConf = AutoCorrectionRuleSourcePolicy.observedUseOldRulesDefaultConfPath
         static let switcherUseOldRulesAccessor = AutoCorrectionRuleSourcePolicy.observedUseOldRulesAccessor
