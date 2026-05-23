@@ -746,12 +746,6 @@ final class SettingsManager {
                 return
             }
             defaults.set(data, forKey: Keys.productStatistics)
-            defaults.set(normalized.typedWords, forKey: Keys.typedWords)
-            defaults.set(normalized.typedSymbols, forKey: Keys.typedSymbols)
-            defaults.set(normalized.automaticSwitches, forKey: Keys.automaticSwitches)
-            defaults.set(normalized.manualSwitches, forKey: Keys.manualSwitches)
-            defaults.set(normalized.reverts, forKey: Keys.reverts)
-            defaults.set(ProductStatisticsPolicy.dayuseSettings(from: normalized), forKey: Keys.dayuseSettings)
         }
     }
 
