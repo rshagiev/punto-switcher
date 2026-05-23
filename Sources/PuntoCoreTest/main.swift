@@ -2413,6 +2413,31 @@ private func runUndoRuntimePolicyTests() throws {
         )),
         "undo runtime plans layout undo with layout switch and manual redo origin"
     )
+    if case .replacement(let layoutUndoPlan) = UndoRuntimePolicy.plan(
+        record: layoutRecord,
+        autoCorrectionRules: [],
+        isUndoLearningEnabled: true
+    ) {
+        let commitPlan = UndoRuntimePolicy.appliedCommitPlan(for: layoutUndoPlan)
+        try expect(commitPlan.layoutSwitchTarget, .english, "undo commit plan switches back to original text layout")
+        try expectNil(commitPlan.skippedLayoutSwitchLogMessage, "undo commit plan has no skip log when layout switch is planned")
+        try expect(commitPlan.soundFeedbackEvent, .undo, "undo commit plan plays undo sound")
+        try expect(commitPlan.productStatisticsEvent, .revert, "undo commit plan records revert statistics")
+        try expectNil(commitPlan.trackedTailCommit, "undo commit plan has no tail replay for ordinary keyboard replacement")
+        try expectNil(commitPlan.learnedAutoCorrectionRules, "undo commit plan has no learned rules for manual layout undo")
+        try expect(
+            commitPlan.conversionRecordCommit,
+            ConversionRecordCommit(
+                originalText: "привет",
+                convertedText: "ghbdtn",
+                replacementMethod: .keyboardBackspacePaste,
+                origin: .manualRedo
+            ),
+            "undo commit plan records manual redo candidate after layout undo"
+        )
+    } else {
+        throw TestFailure(description: "undo runtime commit plan for layout undo: expected replacement plan")
+    }
 
     let terminalRecord = ConversionRecord(
         originalText: "ghbdtn",
@@ -2447,6 +2472,31 @@ private func runUndoRuntimePolicyTests() throws {
         )),
         "undo runtime plans terminal-tail undo with rewritten redo tail"
     )
+    if case .replacement(let terminalUndoPlan) = UndoRuntimePolicy.plan(
+        record: terminalRecord,
+        autoCorrectionRules: [],
+        isUndoLearningEnabled: true
+    ) {
+        let commitPlan = UndoRuntimePolicy.appliedCommitPlan(for: terminalUndoPlan)
+        try expect(commitPlan.layoutSwitchTarget, .english, "terminal undo commit plan switches back to original text layout")
+        try expect(
+            commitPlan.trackedTailCommit,
+            TrackedTailCommit(text: "git commit ghbdtn", reason: "undo completed"),
+            "terminal undo commit plan replays rewritten command tail"
+        )
+        try expect(
+            commitPlan.conversionRecordCommit,
+            ConversionRecordCommit(
+                originalText: "привет",
+                convertedText: "ghbdtn",
+                replacementMethod: .keyboardRewriteTail(originalTail: "git commit ghbdtn"),
+                origin: .layoutConversion
+            ),
+            "terminal undo commit plan records tail-aware redo candidate"
+        )
+    } else {
+        throw TestFailure(description: "undo runtime commit plan for terminal undo: expected replacement plan")
+    }
 
     let badTailRecord = ConversionRecord(
         originalText: "ghbdtn",
@@ -2497,6 +2547,37 @@ private func runUndoRuntimePolicyTests() throws {
         )),
         "undo runtime plans auto-correction undo learning and redo origin"
     )
+    if case .replacement(let autoCorrectionUndoPlan) = UndoRuntimePolicy.plan(
+        record: autoCorrectionRecord,
+        autoCorrectionRules: [undoneRule, otherRule],
+        isUndoLearningEnabled: true
+    ) {
+        let commitPlan = UndoRuntimePolicy.appliedCommitPlan(for: autoCorrectionUndoPlan)
+        try expectNil(commitPlan.layoutSwitchTarget, "auto-correction undo commit plan skips layout switching")
+        try expect(
+            commitPlan.skippedLayoutSwitchLogMessage?.hasPrefix("Undo: skipped layout switch for origin autoCorrection"),
+            true,
+            "auto-correction undo commit plan preserves skipped layout-switch log"
+        )
+        try expect(commitPlan.learnedAutoCorrectionRules, [otherRule], "auto-correction undo commit plan learns by removing undone rule")
+        try expect(
+            commitPlan.learnedRuleLogMessage,
+            "Auto-correction undo learned exception for 'teh'",
+            "auto-correction undo commit plan trims learned-rule log text"
+        )
+        try expect(
+            commitPlan.conversionRecordCommit,
+            ConversionRecordCommit(
+                originalText: "the ",
+                convertedText: "teh ",
+                replacementMethod: .keyboardBackspacePaste,
+                origin: .autoCorrectionRedo(rule: undoneRule)
+            ),
+            "auto-correction undo commit plan records auto-correction redo origin"
+        )
+    } else {
+        throw TestFailure(description: "undo runtime commit plan for auto-correction undo: expected replacement plan")
+    }
 
     if case .replacement(let disabledLearningPlan) = UndoRuntimePolicy.plan(
         record: autoCorrectionRecord,

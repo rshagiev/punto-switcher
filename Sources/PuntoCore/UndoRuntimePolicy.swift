@@ -22,6 +22,37 @@ public struct UndoRuntimeReplacement: Equatable {
     }
 }
 
+public struct UndoAppliedCommitPlan: Equatable {
+    public let layoutSwitchTarget: LayoutConverter.DetectedLayout?
+    public let skippedLayoutSwitchLogMessage: String?
+    public let soundFeedbackEvent: SoundFeedbackEvent
+    public let productStatisticsEvent: ProductStatisticsEvent
+    public let trackedTailCommit: TrackedTailCommit?
+    public let learnedAutoCorrectionRules: [AutoCorrectionRule]?
+    public let learnedRuleLogMessage: String?
+    public let conversionRecordCommit: ConversionRecordCommit
+
+    public init(
+        layoutSwitchTarget: LayoutConverter.DetectedLayout?,
+        skippedLayoutSwitchLogMessage: String?,
+        soundFeedbackEvent: SoundFeedbackEvent,
+        productStatisticsEvent: ProductStatisticsEvent,
+        trackedTailCommit: TrackedTailCommit?,
+        learnedAutoCorrectionRules: [AutoCorrectionRule]?,
+        learnedRuleLogMessage: String?,
+        conversionRecordCommit: ConversionRecordCommit
+    ) {
+        self.layoutSwitchTarget = layoutSwitchTarget
+        self.skippedLayoutSwitchLogMessage = skippedLayoutSwitchLogMessage
+        self.soundFeedbackEvent = soundFeedbackEvent
+        self.productStatisticsEvent = productStatisticsEvent
+        self.trackedTailCommit = trackedTailCommit
+        self.learnedAutoCorrectionRules = learnedAutoCorrectionRules
+        self.learnedRuleLogMessage = learnedRuleLogMessage
+        self.conversionRecordCommit = conversionRecordCommit
+    }
+}
+
 public enum UndoRuntimePlan: Equatable {
     case noCandidate
     case planFailure(record: ConversionRecord)
@@ -53,5 +84,38 @@ public enum UndoRuntimePolicy {
                 isUndoLearningEnabled: isUndoLearningEnabled
             )
         ))
+    }
+
+    public static func appliedCommitPlan(
+        for plan: UndoRuntimeReplacement,
+        converter: LayoutConverter = LayoutConverter()
+    ) -> UndoAppliedCommitPlan {
+        let record = plan.record
+        let undoReplacement = plan.undoReplacement
+        let layoutSwitchTarget = plan.shouldSwitchLayoutAfterUndo
+            ? converter.detectLayout(record.originalText)
+            : nil
+
+        return UndoAppliedCommitPlan(
+            layoutSwitchTarget: layoutSwitchTarget,
+            skippedLayoutSwitchLogMessage: plan.shouldSwitchLayoutAfterUndo
+                ? nil
+                : "Undo: skipped layout switch for origin \(record.origin)",
+            soundFeedbackEvent: .undo,
+            productStatisticsEvent: .revert,
+            trackedTailCommit: undoReplacement.trackedTailAfterUndo.map {
+                TrackedTailCommit(text: $0, reason: "undo completed")
+            },
+            learnedAutoCorrectionRules: plan.learnedAutoCorrectionRules,
+            learnedRuleLogMessage: plan.learnedAutoCorrectionRules == nil
+                ? nil
+                : "Auto-correction undo learned exception for '\(record.originalText.trimmingCharacters(in: .whitespacesAndNewlines))'",
+            conversionRecordCommit: ConversionRecordCommit(
+                originalText: record.convertedText,
+                convertedText: record.originalText,
+                replacementMethod: undoReplacement.nextReplacementMethod,
+                origin: plan.redoOrigin
+            )
+        )
     }
 }

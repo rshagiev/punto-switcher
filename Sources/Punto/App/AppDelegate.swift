@@ -709,37 +709,40 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 return true
             }
 
-            if plan.shouldSwitchLayoutAfterUndo {
-                let originalLayout = layoutConverter!.detectLayout(last.originalText)
-                switchLayoutIfEnabled(originalLayout, surface: .undo)
-            } else {
-                PuntoLog.info("Undo: skipped layout switch for origin \(last.origin)")
+            let commitPlan = UndoRuntimePolicy.appliedCommitPlan(for: plan, converter: layoutConverter!)
+            if let layoutSwitchTarget = commitPlan.layoutSwitchTarget {
+                switchLayoutIfEnabled(layoutSwitchTarget, surface: .undo)
+            } else if let skippedLayoutSwitchLogMessage = commitPlan.skippedLayoutSwitchLogMessage {
+                PuntoLog.info(skippedLayoutSwitchLogMessage)
             }
 
             statusBarController?.flashIcon()
-            soundFeedbackController?.play(.undo)
-            settingsManager?.recordProductStatisticsEvent(.revert)
-            if let undoneTail = undoReplacement.trackedTailAfterUndo {
+            soundFeedbackController?.play(commitPlan.soundFeedbackEvent)
+            settingsManager?.recordProductStatisticsEvent(commitPlan.productStatisticsEvent)
+            if let trackedTailCommit = commitPlan.trackedTailCommit {
                 wordTracker?.replaceTrackedTail(
-                    with: undoneTail,
-                    reason: "undo completed",
+                    with: trackedTailCommit.text,
+                    reason: trackedTailCommit.reason,
+                    suppressAutoCorrectionForCurrentToken: trackedTailCommit.suppressAutoCorrectionForCurrentToken,
                     russianLayoutType: settingsManager?.russianKeyboardLayoutType
                         ?? KeyboardLayoutTypePolicy.defaultRussianLayoutType
                 )
             }
 
-            if let learnedRules = plan.learnedAutoCorrectionRules {
+            if let learnedRules = commitPlan.learnedAutoCorrectionRules {
                 settingsManager?.autoCorrectionRules = learnedRules
                 reloadAutoCorrectionRules()
-                PuntoLog.info("Auto-correction undo learned exception for '\(last.originalText.trimmingCharacters(in: .whitespacesAndNewlines))'")
+                if let learnedRuleLogMessage = commitPlan.learnedRuleLogMessage {
+                    PuntoLog.info(learnedRuleLogMessage)
+                }
             }
 
             conversionSession.record(
-                originalText: last.convertedText,
-                convertedText: last.originalText,
-                replacementMethod: undoReplacement.nextReplacementMethod,
+                originalText: commitPlan.conversionRecordCommit.originalText,
+                convertedText: commitPlan.conversionRecordCommit.convertedText,
+                replacementMethod: commitPlan.conversionRecordCommit.replacementMethod,
                 contextID: contextID,
-                origin: plan.redoOrigin
+                origin: commitPlan.conversionRecordCommit.origin
             )
 
             return true
