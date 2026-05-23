@@ -2638,6 +2638,16 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings defaults keep Punto enabled"
     )
     try expect(
+        SettingsPersistencePolicy.observedIsEnabledKey,
+        "isEnabled",
+        "settings persistence preserves observed global enable key"
+    )
+    try expect(
+        SettingsPersistencePolicy.observedSetEnabledSelector,
+        "setEnabled:",
+        "settings persistence preserves observed global enable setter"
+    )
+    try expect(
         SettingsPersistencePolicy.defaultIsFirstLaunch,
         true,
         "settings defaults treat missing first-launch marker as first launch"
@@ -4401,6 +4411,11 @@ private func runApplicationDisablePolicyTests() throws {
 }
 
 private func runStatusIconPolicyTests() throws {
+    try expect(
+        StatusIconPolicy.observedUpdateMenubarIconSelector,
+        "updateMenubarIcon:",
+        "status icon policy preserves observed Punto Switcher menu bar update selector"
+    )
     try expect(
         StatusIconPolicy.observedResourceNames,
         [

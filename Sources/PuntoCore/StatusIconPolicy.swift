@@ -5,6 +5,8 @@ public enum StatusIconState: String, Equatable {
 }
 
 public enum StatusIconPolicy {
+    public static let observedUpdateMenubarIconSelector = "updateMenubarIcon:"
+
     public static let observedResourceNames = [
         "icon_active",
         "icon_inactive",

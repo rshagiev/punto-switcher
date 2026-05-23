@@ -2,6 +2,8 @@ import Foundation
 
 public enum SettingsPersistencePolicy {
     public static let defaultIsEnabled = true
+    public static let observedIsEnabledKey = "isEnabled"
+    public static let observedSetEnabledSelector = "setEnabled:"
     public static let defaultShowInMenuBar = true
     public static let defaultShowAdvancedSettings = false
     public static let observedShowAdvancedSettingsKey = "showAdvancedSettings"

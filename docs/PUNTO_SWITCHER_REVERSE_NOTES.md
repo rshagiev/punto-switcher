@@ -87,7 +87,7 @@ The binary also exposes a `shouldSkipNextLanguageChangeSound` state around layou
 
 ## Menu Bar Icon Signals
 
-Punto Switcher bundles status item icon variants `icon_active.tiff`, `icon_inactive.tiff`, `icon_disabled.tiff`, plus `_w` white variants, and exposes `updateMenubarIcon:` near `isEnabled` and current-application-disabled checks. Native Punto mirrors the same state split as `StatusIconPolicy`: globally enabled/external app is active, globally disabled is inactive, and enabled-in-general-but-disabled-for-current-app is disabled. The native app keeps its own template menu bar artwork and applies state tint/tooltip rather than copying proprietary icon files.
+Punto Switcher bundles status item icon variants `icon_active.tiff`, `icon_inactive.tiff`, `icon_disabled.tiff`, plus `_w` white variants, and exposes `updateMenubarIcon:` near `isEnabled` / `setEnabled:` and current-application-disabled checks. Native Punto mirrors the same state split as `StatusIconPolicy`: globally enabled/external app is active, globally disabled is inactive, and enabled-in-general-but-disabled-for-current-app is disabled. The observed global enable key/setter and menu-bar update selector are pinned in policy/tests/audit. The native app keeps its own template menu bar artwork and applies state tint/tooltip rather than copying proprietary icon files.
 
 ## Logging Signals
 

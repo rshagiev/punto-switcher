@@ -13,7 +13,7 @@ final class SettingsManager {
     // MARK: - Keys
 
     private enum Keys {
-        static let isEnabled = "isEnabled"
+        static let isEnabled = SettingsPersistencePolicy.observedIsEnabledKey
         static let isFirstLaunch = "isFirstLaunch"
         static let isFirstInstallation = "isFirstInstallation"
         static let showInMenuBar = "showInMenuBar"
