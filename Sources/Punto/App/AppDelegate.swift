@@ -442,33 +442,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             },
             onKeyPress: { [weak self, weak wordTracker] keyCode, characters in
                 self?.lastKeyPressTime = Date()
-                guard HotkeyRoutingPolicy.shouldTrackKeyState(
+                let keyTrackingPreflight = KeyTrackingRuntimePolicy.preflightPlan(
                     isEnabled: self?.settingsManager?.isEnabled == true,
-                    isCurrentApplicationDisabled: self?.isCurrentApplicationDisabled() == true
-                ) else {
-                    PuntoLog.info("Key tracking skipped by routing policy")
-                    return
-                }
+                    isCurrentApplicationDisabled: self?.isCurrentApplicationDisabled() == true,
+                    isSecureInputEnabled: self?.textAccessor?.isSecureInputEnabled() == true,
+                    isPasswordField: self?.textAccessor?.isPasswordField() == true
+                )
 
-                let isSecureInputEnabled = self?.textAccessor?.isSecureInputEnabled() == true
-                let isPasswordField = self?.textAccessor?.isPasswordField() == true
-                guard TextTrackingSecurityPolicy.shouldTrackTextInput(
-                    isSecureInputEnabled: isSecureInputEnabled,
-                    isPasswordField: isPasswordField
-                ) else {
-                    if TextTrackingSecurityPolicy.shouldWriteSecureInputDiagnostics(
-                        isSecureInputEnabled: isSecureInputEnabled,
-                        isPasswordField: isPasswordField
-                    ) {
-                        self?.clearTextStateForSecureInput(
-                            context: TextTrackingSecurityPolicy.diagnosticContext(
-                                isSecureInputEnabled: isSecureInputEnabled,
-                                isPasswordField: isPasswordField
-                            ) ?? "secure input"
-                        )
-                    }
-                    PuntoLog.info("Key tracking skipped for secure/password input")
+                switch keyTrackingPreflight {
+                case .skipRouting(let logMessage):
+                    PuntoLog.info(logMessage)
                     return
+
+                case .blockSecureInput(let context, let logMessage):
+                    self?.clearTextStateForSecureInput(context: context)
+                    PuntoLog.info(logMessage)
+                    return
+
+                case .track:
+                    break
                 }
 
                 wordTracker?.trackKeyPress(
@@ -481,25 +473,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 )
                 self?.settingsManager?.recordProductStatisticsEvent(.typedText(characters))
                 self?.playTextInputSound(characters: characters)
-                if ApplicationReturnKeyPolicy.shouldResetTextStateOnReturn(
+
+                switch KeyTrackingRuntimePolicy.postTrackRoute(
                     bundleID: self?.activeApplicationBundleID ?? NSWorkspace.shared.frontmostApplication?.bundleIdentifier,
                     keyCode: keyCode,
                     resetBundleComponents: self?.settingsManager?.resetOnReturnBundleComponents
                         ?? ApplicationReturnKeyPolicy.defaultResetBundleComponents
                 ) {
+                case .resetOnReturn:
                     let consumedCompletedToken = wordTracker?.consumeCompletedToken() != nil
-                    if let statisticsEvent = ProductStatisticsPolicy.eventAfterCompletedTokenConsumption(consumedCompletedToken) {
+                    let resetPlan = KeyTrackingRuntimePolicy.resetOnReturnPlan(
+                        consumedCompletedToken: consumedCompletedToken,
+                        bundleID: self?.activeApplicationBundleID
+                    )
+                    if let statisticsEvent = resetPlan.completedTokenStatisticsEvent {
                         self?.settingsManager?.recordProductStatisticsEvent(statisticsEvent)
                     }
-                    self?.conversionSession.clear(reason: "return in reset-on-return app")
-                    PuntoLog.info("Auto-correction skipped and text state reset on Return for app '\(self?.activeApplicationBundleID ?? "?")'")
+                    self?.conversionSession.clear(reason: resetPlan.conversionSessionClearReason)
+                    PuntoLog.info(resetPlan.logMessage)
                     return
+
+                case .runAutoCorrection:
+                    self?.handleAutoCorrectionIfNeeded()
                 }
-                self?.handleAutoCorrectionIfNeeded()
-                // Clear undo on any key press, but only if we're not in the middle of a conversion
-                // This prevents race condition where async key event clears undo right after hotkey
-                if self?.isConversionInProgress == false {
-                    self?.conversionSession.clear(reason: "key press")
+
+                if let clearReason = KeyTrackingRuntimePolicy.conversionSessionClearReasonAfterAutoCorrection(
+                    isConversionInProgress: self?.isConversionInProgress == true
+                ) {
+                    self?.conversionSession.clear(reason: clearReason)
                 }
             },
             isCurrentApplicationDisabled: { [weak self] in
