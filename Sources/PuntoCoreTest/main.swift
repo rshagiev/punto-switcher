@@ -933,6 +933,15 @@ private func runTextCapturePolicyTests() throws {
         TextCapturePolicy.TailRewrite(selectedText: "ghbdtn", originalTail: "--ghbdtn"),
         "terminal rewrite accepts suffix after shell option boundary"
     )
+    try expect(
+        TextCapturePolicy.terminalTailRewrite(selectedText: "user@host % commit", lastTrackedTail: "commit"),
+        TextCapturePolicy.TailRewrite(selectedText: "commit", originalTail: "commit"),
+        "terminal rewrite accepts single-word AX command tail"
+    )
+    try expectNil(
+        TextCapturePolicy.terminalTailRewrite(selectedText: "git commit old prompt", lastTrackedTail: "git commit"),
+        "terminal rewrite rejects non-current command tail selection"
+    )
 
     try expect(
         TextCapturePolicy.passiveClipboardTailSelection(
@@ -942,6 +951,38 @@ private func runTextCapturePolicyTests() throws {
         ),
         "git commit",
         "passive clipboard accepts exact typed tail"
+    )
+    try expectNil(
+        TextCapturePolicy.passiveClipboardTailSelection(
+            clipboardText: nil,
+            lastTrackedWord: "commit",
+            lastTrackedTail: "git commit"
+        ),
+        "passive clipboard rejects missing clipboard text"
+    )
+    try expectNil(
+        TextCapturePolicy.passiveClipboardTailSelection(
+            clipboardText: "git commit",
+            lastTrackedWord: nil,
+            lastTrackedTail: "git commit"
+        ),
+        "passive clipboard rejects missing tracked word"
+    )
+    try expectNil(
+        TextCapturePolicy.passiveClipboardTailSelection(
+            clipboardText: "git commit",
+            lastTrackedWord: "commit",
+            lastTrackedTail: nil
+        ),
+        "passive clipboard rejects missing tracked tail"
+    )
+    try expectNil(
+        TextCapturePolicy.passiveClipboardTailSelection(
+            clipboardText: "old clipboard",
+            lastTrackedWord: "commit",
+            lastTrackedTail: "git commit"
+        ),
+        "passive clipboard rejects unrelated clipboard text"
     )
     try expectNil(
         TextCapturePolicy.passiveClipboardTailSelection(
@@ -960,6 +1001,15 @@ private func runTextCapturePolicyTests() throws {
         "commit",
         "passive clipboard accepts exact single-word typed tail"
     )
+    try expect(
+        TextCapturePolicy.passiveClipboardTailSelection(
+            clipboardText: "git commit\n",
+            lastTrackedWord: "commit",
+            lastTrackedTail: "git commit"
+        ),
+        "git commit",
+        "passive clipboard trims trailing newline from exact typed tail"
+    )
     try expectNil(
         TextCapturePolicy.passiveClipboardTailSelection(
             clipboardText: "commit",
@@ -967,6 +1017,22 @@ private func runTextCapturePolicyTests() throws {
             lastTrackedTail: "commit"
         ),
         "passive clipboard rejects tail that does not end with tracked last word"
+    )
+    try expectNil(
+        TextCapturePolicy.passiveClipboardTailSelection(
+            clipboardText: "old clipboard commit",
+            lastTrackedWord: "commit",
+            lastTrackedTail: "git commit"
+        ),
+        "passive clipboard rejects stale clipboard ending with last word"
+    )
+    try expectNil(
+        TextCapturePolicy.passiveClipboardTailSelection(
+            clipboardText: "last command\ngit commit",
+            lastTrackedWord: "commit",
+            lastTrackedTail: "git commit"
+        ),
+        "passive clipboard rejects multiline terminal garbage"
     )
     try expect(
         TextCapturePolicy.shouldAttemptActiveClipboardFallbackForNonSettableSelection(
@@ -1049,6 +1115,24 @@ private func runTextCapturePolicyTests() throws {
         TextReplacementPolicy.rewriteTail("git commit ghbdtn", replacing: "ghbdtn", with: "привет"),
         "git commit привет",
         "rewrite tail replaces selected suffix"
+    )
+    try expect(
+        TextReplacementPolicy.rewriteTail("лол лол", replacing: "лол лол", with: "kjk kjk"),
+        "kjk kjk",
+        "rewrite tail replaces whole terminal tail"
+    )
+    try expect(
+        TextReplacementPolicy.rewriteTail("лол лол", replacing: "лол", with: "kjk"),
+        "лол kjk",
+        "rewrite tail replaces repeated selected suffix only"
+    )
+    try expectNil(
+        TextReplacementPolicy.rewriteTail("abc def", replacing: "abc", with: "фис"),
+        "rewrite tail rejects selected first word in tail"
+    )
+    try expectNil(
+        TextReplacementPolicy.rewriteTail("abc def", replacing: "xyz", with: "чнп"),
+        "rewrite tail rejects selection outside tail"
     )
     try expectNil(
         TextReplacementPolicy.rewriteTail("ghbdtn && echo done", replacing: "ghbdtn", with: "привет"),

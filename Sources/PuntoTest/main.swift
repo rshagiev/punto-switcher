@@ -419,115 +419,6 @@ func runSelectionTests() {
     reportResults(passed: passed, failed: failed)
 }
 
-struct TestPassiveClipboardTailPolicy {
-    static func extractTrackedTail(selectedText: String, lastTrackedWord: String?, lastTrackedTail: String?) -> String? {
-        TextCapturePolicy.terminalTailRewrite(
-            selectedText: selectedText,
-            lastTrackedTail: lastTrackedTail
-        )?.selectedText
-    }
-
-    static func acceptedTailSelection(clipboardText: String?, lastTrackedWord: String?, lastTrackedTail: String?) -> String? {
-        TextCapturePolicy.passiveClipboardTailSelection(
-            clipboardText: clipboardText,
-            lastTrackedWord: lastTrackedWord,
-            lastTrackedTail: lastTrackedTail
-        )
-    }
-
-    static func rewriteTail(_ originalTail: String, replacing selectedText: String, with replacement: String) -> String? {
-        TextReplacementPolicy.rewriteTail(originalTail, replacing: selectedText, with: replacement)
-    }
-}
-
-func runTextAccessStrategyTests() {
-    print("\n" + String(repeating: "=", count: 50))
-    print("  TEXT ACCESS STRATEGY TESTS")
-    print(String(repeating: "=", count: 50))
-
-    var passed = 0
-    var failed = 0
-
-    let cases: [(name: String, clipboard: String?, lastWord: String?, lastTail: String?, expected: String?)] = [
-        ("rejects empty clipboard", nil, "world", "hello world", nil),
-        ("rejects missing tracked word", "hello world", nil, "hello world", nil),
-        ("rejects missing typed tail", "hello world", "world", nil, nil),
-        ("rejects unrelated clipboard", "old clipboard", "world", "hello world", nil),
-        ("accepts exact single-word typed tail", "world", "world", "world", "world"),
-        ("accepts exact selected tail phrase", "hello world", "world", "hello world", "hello world"),
-        ("trims newline from terminal selection", "hello world\n", "world", "hello world", "hello world"),
-        ("rejects middle match that is not tail", "world hello", "world", "hello world", nil),
-        ("rejects prompt-prefixed terminal garbage", "user@host % hello world", "world", "hello world", nil),
-        ("rejects stale clipboard with same last word", "old clipboard world", "world", "hello world", nil),
-        ("rejects multiline terminal garbage", "last command\nhello world", "world", "hello world", nil),
-    ]
-
-    for test in cases {
-        let result = TestPassiveClipboardTailPolicy.acceptedTailSelection(
-            clipboardText: test.clipboard,
-            lastTrackedWord: test.lastWord,
-            lastTrackedTail: test.lastTail
-        )
-
-        if result == test.expected {
-            print("✅ \(test.name)")
-            passed += 1
-        } else {
-            print("❌ \(test.name)")
-            print("   Expected: \(test.expected ?? "nil")")
-            print("   Got:      \(result ?? "nil")")
-            failed += 1
-        }
-    }
-
-    let axCases: [(name: String, selectedText: String, lastWord: String?, lastTail: String?, expected: String?)] = [
-        ("accepts prompt-prefixed AX selection but extracts only typed tail", "user@host % hello world", "world", "hello world", "hello world"),
-        ("accepts multiline AX selection ending with typed tail", "Last login\nuser@host % hello world\n", "world", "hello world", "hello world"),
-        ("rejects non-settable AX selection that is not current command tail", "hello world old prompt", "world", "hello world", nil),
-        ("accepts single-word AX command tail", "user@host % world", "world", "world", "world"),
-    ]
-
-    for test in axCases {
-        let result = TestPassiveClipboardTailPolicy.extractTrackedTail(
-            selectedText: test.selectedText,
-            lastTrackedWord: test.lastWord,
-            lastTrackedTail: test.lastTail
-        )
-
-        if result == test.expected {
-            print("✅ \(test.name)")
-            passed += 1
-        } else {
-            print("❌ \(test.name)")
-            print("   Expected: \(test.expected ?? "nil")")
-            print("   Got:      \(result ?? "nil")")
-            failed += 1
-        }
-    }
-
-    let rewriteCases: [(name: String, tail: String, selected: String, replacement: String, expected: String?)] = [
-        ("rewrites selected terminal tail phrase", "лол лол", "лол лол", "kjk kjk", "kjk kjk"),
-        ("rewrites selected last word in terminal tail", "лол лол", "лол", "kjk", "лол kjk"),
-        ("rejects selected first word in terminal tail", "abc def", "abc", "фис", nil),
-        ("rejects selection outside terminal tail", "abc def", "xyz", "чнп", nil),
-    ]
-
-    for test in rewriteCases {
-        let result = TestPassiveClipboardTailPolicy.rewriteTail(test.tail, replacing: test.selected, with: test.replacement)
-        if result == test.expected {
-            print("✅ \(test.name)")
-            passed += 1
-        } else {
-            print("❌ \(test.name)")
-            print("   Expected: \(test.expected ?? "nil")")
-            print("   Got:      \(result ?? "nil")")
-            failed += 1
-        }
-    }
-
-    reportResults(passed: passed, failed: failed)
-}
-
 func runDoubleConversionTests() {
     print("\n" + String(repeating: "=", count: 50))
     print("  DOUBLE CONVERSION TESTS (IDEMPOTENCE)")
@@ -2955,8 +2846,6 @@ if args.count > 1 {
         runBugHunt()
     case "selection", "select":
         runSelectionTests()
-    case "strategy", "textaccess":
-        runTextAccessStrategyTests()
     // NEW test commands
     case "hotkey", "hotkeys":
         runHotkeyTests()
@@ -2996,7 +2885,6 @@ if args.count > 1 {
         runDoubleConversionTests()
         runLongStringTests()
         runSelectionTests()
-        runTextAccessStrategyTests()
         runEdgeCaseTests()
         // NEW tests
         runHotkeyTests()
@@ -3021,13 +2909,13 @@ if args.count > 1 {
         runBugHunt()
     default:
         print("Unknown command: \(args[1])")
-        print("Usage: PuntoTest [convert|track|sim|stress|mass|double|long|edge|selection|strategy|bugs|all]")
+        print("Usage: PuntoTest [convert|track|sim|stress|mass|double|long|edge|selection|bugs|all]")
         print("       New: [hotkey|shift|layout|realtracker|result|unicode|multi|mixed|toggle|rapid|clipboard]")
         print("       Weakness: [weakness|trackerweak|direction|allweak]")
         exit(2)
     }
 } else {
-    print("Usage: PuntoTest [convert|track|sim|stress|mass|double|long|edge|selection|strategy|bugs|all]")
+    print("Usage: PuntoTest [convert|track|sim|stress|mass|double|long|edge|selection|bugs|all]")
     print("       New: [hotkey|shift|layout|realtracker|result|unicode|multi|mixed|toggle|rapid|clipboard]")
     print("\nRunning all tests by default...\n")
     runConversionTests()
@@ -3035,7 +2923,6 @@ if args.count > 1 {
     runDoubleConversionTests()
     runLongStringTests()
     runSelectionTests()
-    runTextAccessStrategyTests()
     runEdgeCaseTests()
     // NEW tests
     runHotkeyTests()
