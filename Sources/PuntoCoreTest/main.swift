@@ -438,6 +438,36 @@ private func runWordTrackerTests() throws {
             "auto-correction cancelling key policy preserves observed setter selector"
         )
         try expect(
+            AutoCorrectionCancellingKeyPolicy.observedBackspaceSelector,
+            "dontAutoconvertWordWithBackspace:",
+            "auto-correction cancelling key policy preserves observed backspace selector"
+        )
+        try expect(
+            AutoCorrectionCancellingKeyPolicy.observedDeleteSelector,
+            "dontAutoconvertWordWithDelete:",
+            "auto-correction cancelling key policy preserves observed delete selector"
+        )
+        try expect(
+            AutoCorrectionCancellingKeyPolicy.observedLeftArrowSelector,
+            "dontAutoconvertWordWithLeftArrow:",
+            "auto-correction cancelling key policy preserves observed left-arrow selector"
+        )
+        try expect(
+            AutoCorrectionCancellingKeyPolicy.observedRightArrowSelector,
+            "dontAutoconvertWordWithRightArrow:",
+            "auto-correction cancelling key policy preserves observed right-arrow selector"
+        )
+        try expect(
+            AutoCorrectionCancellingKeyPolicy.observedUpArrowSelector,
+            "dontAutoconvertWordWithUpArrow:",
+            "auto-correction cancelling key policy preserves observed up-arrow selector"
+        )
+        try expect(
+            AutoCorrectionCancellingKeyPolicy.observedDownArrowSelector,
+            "dontAutoconvertWordWithDownArrow:",
+            "auto-correction cancelling key policy preserves observed down-arrow selector"
+        )
+        try expect(
             AutoCorrectionCancellingKeyPolicy.normalizedEnabledKeyNames([
                 " dontAutoconvertWordWithBackspace ",
                 "dontAutoconvertWordWithDelete",
@@ -448,6 +478,18 @@ private func runWordTrackerTests() throws {
             ]),
             AutoCorrectionCancellingKeyPolicy.supportedKeyNames,
             "auto-correction cancelling key policy accepts observed Punto Switcher per-key names"
+        )
+        try expect(
+            AutoCorrectionCancellingKeyPolicy.normalizedEnabledKeyNames([
+                " dontAutoconvertWordWithBackspace: ",
+                "dontAutoconvertWordWithDelete:",
+                "dontAutoconvertWordWithLeftArrow:",
+                "dontAutoconvertWordWithRightArrow:",
+                "dontAutoconvertWordWithUpArrow:",
+                "dontAutoconvertWordWithDownArrow:"
+            ]),
+            AutoCorrectionCancellingKeyPolicy.supportedKeyNames,
+            "auto-correction cancelling key policy accepts observed Punto Switcher selector names"
         )
         try expect(
             AutoCorrectionCancellingKeyPolicy.shouldSuppressAutoCorrection(keyCode: 51, enabledKeyNames: ["backspace"]),

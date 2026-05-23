@@ -8,6 +8,12 @@ public enum AutoCorrectionCancellingKeyPolicy {
     public static let observedRightArrowName = "dontAutoconvertWordWithRightArrow"
     public static let observedUpArrowName = "dontAutoconvertWordWithUpArrow"
     public static let observedDownArrowName = "dontAutoconvertWordWithDownArrow"
+    public static let observedBackspaceSelector = "dontAutoconvertWordWithBackspace:"
+    public static let observedDeleteSelector = "dontAutoconvertWordWithDelete:"
+    public static let observedLeftArrowSelector = "dontAutoconvertWordWithLeftArrow:"
+    public static let observedRightArrowSelector = "dontAutoconvertWordWithRightArrow:"
+    public static let observedUpArrowSelector = "dontAutoconvertWordWithUpArrow:"
+    public static let observedDownArrowSelector = "dontAutoconvertWordWithDownArrow:"
 
     public static let backspace = "backspace"
     public static let delete = "delete"
@@ -42,7 +48,13 @@ public enum AutoCorrectionCancellingKeyPolicy {
         observedLeftArrowName: leftArrow,
         observedRightArrowName: rightArrow,
         observedUpArrowName: upArrow,
-        observedDownArrowName: downArrow
+        observedDownArrowName: downArrow,
+        observedBackspaceSelector: backspace,
+        observedDeleteSelector: delete,
+        observedLeftArrowSelector: leftArrow,
+        observedRightArrowSelector: rightArrow,
+        observedUpArrowSelector: upArrow,
+        observedDownArrowSelector: downArrow
     ]
 
     private static let canonicalNamesByLowercaseName: [String: String] = {
