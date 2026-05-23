@@ -33,6 +33,13 @@ public enum AccessibilityRolePolicy {
         case click
     }
 
+    public static let observedMailFullWordReplacementSelector = "applyMailBehaviourForFullWords:withEvent:withCharsToSelect:withForceWordEndingCharPresent:"
+    public static let observedMailPartialWordReplacementSelector = "applyMailBehaviourForPartialWords:"
+    public static let observedMailDeletionCounterKey = "numberOfDeletionsInMail"
+    public static let observedMailApplicationToken = "Mail"
+    public static let observedParallelsBundleID = "com.parallels.desktop"
+    public static let observedScrollAreaRole = "AXScrollArea"
+
     public static let observedSearchbarExceptionRoles: [String: [String]] = [
         "*": ["AXTextField", "AXTextArea", "AXComboBox", "AXWindow", "AXUnknown", "AXStaticText", "AXPopUpButton", "AXApplication"],
         "com.adobe.acc.AdobeCreativeCloud": [],
@@ -68,7 +75,7 @@ public enum AccessibilityRolePolicy {
         "com.google.chrome": ["AXGroup", "AXList"],
         "com.microsoft": [],
         "com.mojang": [],
-        "com.parallels.desktop": [],
+        observedParallelsBundleID: [],
         "com.teamviewer.TeamViewer": [],
         "com.wunderkinder.wunderlistdesktop": [],
         "it.bloop.airmail": [],
@@ -113,7 +120,7 @@ public enum AccessibilityRolePolicy {
         "com.bohemiancoding.sketch3": [],
         "com.google.chrome": ["AXGroup", "AXList"],
         "com.microsoft": [],
-        "com.parallels.desktop": [],
+        observedParallelsBundleID: [],
         "com.teamviewer.TeamViewer": [],
         "com.wunderkinder.wunderlistdesktop": [],
         "it.bloop.airmail": [],
@@ -144,7 +151,7 @@ public enum AccessibilityRolePolicy {
         "axcell",
         "axgroup",
         "axwindow",
-        "axscrollarea"
+        normalizedRole(observedScrollAreaRole) ?? "axscrollarea"
     ]
 
     private static let globalSearchbarExceptionRoles = normalizedGlobalRoles(from: observedSearchbarExceptionRoles)

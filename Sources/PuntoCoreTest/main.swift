@@ -5753,6 +5753,36 @@ private func runAccessibilityRolePolicyTests() throws {
         "accessibility role policy rejects static ancestry without AXWebArea"
     )
     try expect(
+        AccessibilityRolePolicy.observedMailFullWordReplacementSelector,
+        "applyMailBehaviourForFullWords:withEvent:withCharsToSelect:withForceWordEndingCharPresent:",
+        "accessibility role policy pins observed Punto Switcher Mail full-word helper selector"
+    )
+    try expect(
+        AccessibilityRolePolicy.observedMailPartialWordReplacementSelector,
+        "applyMailBehaviourForPartialWords:",
+        "accessibility role policy pins observed Punto Switcher Mail partial-word helper selector"
+    )
+    try expect(
+        AccessibilityRolePolicy.observedMailDeletionCounterKey,
+        "numberOfDeletionsInMail",
+        "accessibility role policy pins observed Punto Switcher Mail deletion counter"
+    )
+    try expect(
+        AccessibilityRolePolicy.observedMailApplicationToken,
+        "Mail",
+        "accessibility role policy pins observed Punto Switcher Mail app token"
+    )
+    try expect(
+        AccessibilityRolePolicy.observedParallelsBundleID,
+        "com.parallels.desktop",
+        "accessibility role policy pins observed Punto Switcher Parallels bundle id"
+    )
+    try expect(
+        AccessibilityRolePolicy.observedScrollAreaRole,
+        "AXScrollArea",
+        "accessibility role policy pins observed Punto Switcher scroll-area role"
+    )
+    try expect(
         AccessibilityRolePolicy.isObservedClipboardReplaceableContentRole("AXScrollArea"),
         true,
         "accessibility role policy mirrors observed Punto Switcher AXScrollArea content surface"
