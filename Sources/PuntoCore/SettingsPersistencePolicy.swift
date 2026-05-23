@@ -25,6 +25,8 @@ public enum SettingsPersistencePolicy {
     public static let defaultAutoCorrectionEnabled = false
     public static let defaultAutoCorrectionStarterRulesEnabled = true
     public static let defaultAutoCorrectOnEnterAndTab = true
+    public static let observedShouldNotAutoconvertWithTabOrEnterKey = "shouldNotAutoconvertWithTabOrEnter"
+    public static let observedSetDontAutoconvertWithEnterOrTabSelector = "setDontAutoconvertWithEnterOrTab:"
     public static let defaultAutoCorrectionUndoLearningEnabled = false
     public static let defaultSuppressAutoCorrectionAfterManualConversion = true
     public static let observedShouldNotAutoconvertAfterConvertionKey = "shouldNotAutoconvertAfterConvertion"

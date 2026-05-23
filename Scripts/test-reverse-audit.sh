@@ -263,6 +263,8 @@ required_strings=(
     "product.switch.auto"
     "product.switch.manual"
     "product.switch.reverse"
+    "shouldNotAutoconvertWithTabOrEnter"
+    "setDontAutoconvertWithEnterOrTab:"
     "shouldNotAutoconvertAfterConvertion"
     "dontAutoconvertWordAfterConvertion:"
     "AXFocusedUIElementChanged"

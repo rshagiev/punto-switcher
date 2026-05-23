@@ -3078,6 +3078,38 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings persistence defaults to auto-correction on Enter and Tab"
     )
     try expect(
+        SettingsPersistencePolicy.observedShouldNotAutoconvertWithTabOrEnterKey,
+        "shouldNotAutoconvertWithTabOrEnter",
+        "settings persistence preserves observed Enter/Tab suppression key"
+    )
+    try expect(
+        SettingsPersistencePolicy.observedSetDontAutoconvertWithEnterOrTabSelector,
+        "setDontAutoconvertWithEnterOrTab:",
+        "settings persistence preserves observed Enter/Tab suppression selector"
+    )
+    try expect(
+        SettingsPersistencePolicy.effectiveBoolWithInvertedLegacyAlias(
+            hasPersistedValue: false,
+            persistedValue: nil,
+            hasLegacyValue: true,
+            invertedLegacyValue: false,
+            defaultValue: SettingsPersistencePolicy.defaultAutoCorrectOnEnterAndTab
+        ),
+        true,
+        "settings persistence reads observed shouldNotAutoconvertWithTabOrEnter=false as Enter/Tab auto-correction enabled"
+    )
+    try expect(
+        SettingsPersistencePolicy.effectiveBoolWithInvertedLegacyAlias(
+            hasPersistedValue: false,
+            persistedValue: nil,
+            hasLegacyValue: true,
+            invertedLegacyValue: true,
+            defaultValue: SettingsPersistencePolicy.defaultAutoCorrectOnEnterAndTab
+        ),
+        false,
+        "settings persistence reads observed shouldNotAutoconvertWithTabOrEnter=true as Enter/Tab auto-correction disabled"
+    )
+    try expect(
         SettingsPersistencePolicy.defaultAutoCorrectionStarterRulesEnabled,
         true,
         "settings persistence defaults to Punto Switcher old-rules starter catalog"
