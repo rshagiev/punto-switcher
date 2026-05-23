@@ -15,6 +15,10 @@ for ((i = 1; i <= ITERATIONS; i++)); do
     ./Scripts/test-reverse-audit.sh
 
     echo
+    echo "=== iteration $i/$ITERATIONS: Legacy boundary audit ==="
+    ./Scripts/test-legacy-boundary.sh
+
+    echo
     echo "=== iteration $i/$ITERATIONS: Native bundle audit ==="
     ./Scripts/test-native-bundle-audit.sh
 

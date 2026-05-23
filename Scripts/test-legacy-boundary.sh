@@ -1,0 +1,112 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+cd "$ROOT_DIR"
+
+echo "Legacy boundary audit"
+
+removed_symbols=(
+    "LegacyHotkeyPolicy.dictionary"
+    "LegacyUserRulePolicy.dictionaries"
+    "SearchbarSettingsPolicy.dictionary"
+    "SettingsPersistencePolicy.undoLearningDictionary"
+    "ProductStatisticsPolicy.dayuseSettings("
+    "SoundFeedbackPolicy.legacyBitmask(fromEnabledResourceNames"
+    "SoundFeedbackPolicy.legacyToggleValues(fromEnabledResourceNames"
+    "UndoLearningSettingsPolicy.dictionary"
+)
+
+for symbol in "${removed_symbols[@]}"; do
+    if rg --fixed-strings --quiet "$symbol" Sources Tests; then
+        echo "legacy boundary failed: removed export helper still referenced: $symbol" >&2
+        exit 1
+    fi
+    echo "PASS removed helper absent: $symbol"
+done
+
+/usr/bin/python3 - "$ROOT_DIR/Sources/Punto/Settings/SettingsManager.swift" <<'PY'
+import re
+import sys
+
+path = sys.argv[1]
+
+forbidden_legacy_write_keys = {
+    "shortcutChangeLayout",
+    "shortcutChangeCase",
+    "shortcutSwitchAutocorrection",
+    "shortcutCancelLayoutChange",
+    "shortcutFindInYandex",
+    "shortcutFindInSlovari",
+    "searchbarSettings",
+    "switchLayoutOnSelectedTextSwitch",
+    "kbdLayoutType",
+    "englishLayoutID",
+    "russianLayoutID",
+    "isManualConversionDisabled",
+    "shouldRememberInputSourceForEachApp",
+    "disabledApps",
+    "completelyDisableInExceptionApps",
+    "switcherResetOnReturn",
+    "isAutocorrectionActive",
+    "switcherUseOldRulesDefaultConf",
+    "switcherUseOldRulesAccessor",
+    "shouldNotAutoconvertWithTabOrEnter",
+    "undoLearning",
+    "shouldNotAutoconvertAfterConvertion",
+    "cancellingKeys",
+    "userRulesDictionary",
+    "isSoundOn",
+    "enabledSounds",
+    "useSoundLayoutSwitchToRussian",
+    "useSoundLayoutSwitchToEnglish",
+    "useSoundConvertation",
+    "useSoundMisprint",
+    "useSoundAutocorrection",
+    "useSoundUndo",
+    "useSoundKeystrokes",
+    "shouldRestorePasteboard",
+    "typedWords",
+    "typedSymbols",
+    "automaticSwitches",
+    "manualSwitches",
+    "reverts",
+    "dayuseSettings",
+}
+
+with open(path, "r", encoding="utf-8") as handle:
+    lines = handle.readlines()
+
+violations = []
+for index, line in enumerate(lines):
+    if "defaults.set" not in line and "defaults.removeObject" not in line:
+        continue
+
+    call_lines = []
+    depth = 0
+    started = False
+    for offset, call_line in enumerate(lines[index:], start=index + 1):
+        call_lines.append(call_line.rstrip("\n"))
+        depth += call_line.count("(") - call_line.count(")")
+        if "(" in call_line:
+            started = True
+        if started and depth <= 0:
+            break
+
+    call = "\n".join(call_lines)
+    for key in sorted(forbidden_legacy_write_keys):
+        if re.search(rf"\bKeys\.{re.escape(key)}\b", call):
+            violations.append((index + 1, key, call))
+
+if violations:
+    print("legacy boundary failed: SettingsManager writes native-owned legacy keys", file=sys.stderr)
+    for line_number, key, call in violations:
+        compact = " ".join(part.strip() for part in call.splitlines())
+        print(f"{path}:{line_number}: writes Keys.{key}: {compact}", file=sys.stderr)
+    sys.exit(1)
+
+print("PASS SettingsManager has no native-owned legacy key writes")
+PY
+
+echo "Legacy boundary audit passed"

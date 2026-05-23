@@ -59,6 +59,14 @@ installer/update presentation consumes old state, Punto still clears the observe
 legacy booleans as well as the native state so imported `isFirstInstallation`,
 `isJustInstalled`, or `isJustUpdated` values cannot reopen one-shot UI.
 
+## Enforced Boundary
+
+`Scripts/test-legacy-boundary.sh` keeps the cut from regressing. It fails if
+removed legacy export helpers return, and it scans `SettingsManager` writes so
+native-owned settings cannot start writing Punto Switcher plist keys again by
+accident. The script is part of `Scripts/test-cycle.sh`, alongside the reverse
+audit that still pins observed Punto Switcher evidence.
+
 ## Next Candidates
 
 - Split reverse-audit constants from behavior policies where the constants are
