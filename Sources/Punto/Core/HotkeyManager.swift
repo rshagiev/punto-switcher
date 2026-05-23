@@ -228,16 +228,19 @@ final class HotkeyManager {
             let convertHotkey = settingsManager.convertLayoutHotkey
 
             if modifierOnlyStateMachine.handleFlagsChanged(flags: modifierFlags, hotkey: convertHotkey) {
-                guard HotkeyRoutingPolicy.shouldHandleHotkey(
+                switch HotkeyRoutingPolicy.action(
+                    kind: .modifierOnlyConvertLayout,
                     isEnabled: settingsManager.isEnabled,
-                    isCurrentApplicationDisabled: isCurrentApplicationDisabled()
-                ) else {
-                    PuntoLog.info("Modifier-only hotkey ignored by routing policy")
-                    return Unmanaged.passUnretained(event)
-                }
-                PuntoLog.info("Modifier-only hotkey triggered: \(convertHotkey.displayString)")
-                DispatchQueue.main.asyncAfter(deadline: .now() + ModifierOnlyHotkeyStateMachine.actionDelay) { [weak self] in
-                    self?.onConvertLayout()
+                    isCurrentApplicationDisabled: isCurrentApplicationDisabled(),
+                    displayString: convertHotkey.displayString
+                ) {
+                case .passThrough(let logMessage):
+                    PuntoLog.info(logMessage)
+                case .handle(let logMessage):
+                    PuntoLog.info(logMessage)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + ModifierOnlyHotkeyStateMachine.actionDelay) { [weak self] in
+                        self?.onConvertLayout()
+                    }
                 }
             }
 
@@ -266,88 +269,34 @@ final class HotkeyManager {
             findInSlovariHotkey: settingsManager.findInSlovariHotkey
         ) {
         case .convertLayoutHotkey:
-            guard HotkeyRoutingPolicy.shouldHandleHotkey(
-                isEnabled: settingsManager.isEnabled,
-                isCurrentApplicationDisabled: isCurrentApplicationDisabled()
-            ) else {
-                PuntoLog.info("Convert layout hotkey passed through by routing policy")
-                return Unmanaged.passUnretained(event)
-            }
-            PuntoLog.info("Convert layout hotkey matched! keyCode=\(keyCode)")
-            scheduleKeyBasedHotkeyAction { [weak self] in
+            return routeKeyBasedHotkey(kind: .convertLayout, keyCode: keyCode, event: event) { [weak self] in
                 self?.onConvertLayout()
             }
-            return nil
 
         case .toggleCaseHotkey:
-            guard HotkeyRoutingPolicy.shouldHandleHotkey(
-                isEnabled: settingsManager.isEnabled,
-                isCurrentApplicationDisabled: isCurrentApplicationDisabled()
-            ) else {
-                PuntoLog.info("Toggle case hotkey passed through by routing policy")
-                return Unmanaged.passUnretained(event)
-            }
-            PuntoLog.info("Toggle case hotkey matched! keyCode=\(keyCode)")
-            scheduleKeyBasedHotkeyAction { [weak self] in
+            return routeKeyBasedHotkey(kind: .toggleCase, keyCode: keyCode, event: event) { [weak self] in
                 self?.onToggleCase()
             }
-            return nil
 
         case .toggleAutoCorrectionHotkey:
-            guard HotkeyRoutingPolicy.shouldHandleHotkey(
-                isEnabled: settingsManager.isEnabled,
-                isCurrentApplicationDisabled: isCurrentApplicationDisabled()
-            ) else {
-                PuntoLog.info("Toggle auto-correction hotkey passed through by routing policy")
-                return Unmanaged.passUnretained(event)
-            }
-            PuntoLog.info("Toggle auto-correction hotkey matched! keyCode=\(keyCode)")
-            scheduleKeyBasedHotkeyAction { [weak self] in
+            return routeKeyBasedHotkey(kind: .toggleAutoCorrection, keyCode: keyCode, event: event) { [weak self] in
                 self?.onToggleAutoCorrection()
             }
-            return nil
 
         case .cancelLayoutChangeHotkey:
-            guard HotkeyRoutingPolicy.shouldHandleHotkey(
-                isEnabled: settingsManager.isEnabled,
-                isCurrentApplicationDisabled: isCurrentApplicationDisabled()
-            ) else {
-                PuntoLog.info("Cancel layout change hotkey passed through by routing policy")
-                return Unmanaged.passUnretained(event)
-            }
-            PuntoLog.info("Cancel layout change hotkey matched! keyCode=\(keyCode)")
-            scheduleKeyBasedHotkeyAction { [weak self] in
+            return routeKeyBasedHotkey(kind: .cancelLayoutChange, keyCode: keyCode, event: event) { [weak self] in
                 self?.onCancelLayoutChange()
             }
-            return nil
 
         case .findInYandexHotkey:
-            guard HotkeyRoutingPolicy.shouldHandleHotkey(
-                isEnabled: settingsManager.isEnabled,
-                isCurrentApplicationDisabled: isCurrentApplicationDisabled()
-            ) else {
-                PuntoLog.info("Find in Yandex hotkey passed through by routing policy")
-                return Unmanaged.passUnretained(event)
-            }
-            PuntoLog.info("Find in Yandex hotkey matched! keyCode=\(keyCode)")
-            scheduleKeyBasedHotkeyAction { [weak self] in
+            return routeKeyBasedHotkey(kind: .findInYandex, keyCode: keyCode, event: event) { [weak self] in
                 self?.onFindInYandex()
             }
-            return nil
 
         case .findInSlovariHotkey:
-            guard HotkeyRoutingPolicy.shouldHandleHotkey(
-                isEnabled: settingsManager.isEnabled,
-                isCurrentApplicationDisabled: isCurrentApplicationDisabled()
-            ) else {
-                PuntoLog.info("Find in Slovari hotkey passed through by routing policy")
-                return Unmanaged.passUnretained(event)
-            }
-            PuntoLog.info("Find in Slovari hotkey matched! keyCode=\(keyCode)")
-            scheduleKeyBasedHotkeyAction { [weak self] in
+            return routeKeyBasedHotkey(kind: .findInSlovari, keyCode: keyCode, event: event) { [weak self] in
                 self?.onFindInSlovari()
             }
-            return nil
 
         case .clearTrackedText(let reason):
             PuntoLog.info("\(Self.clearTrackedTextLabel(for: reason)) detected - will clear WordTracker (\(reason))")
@@ -385,6 +334,28 @@ final class HotkeyManager {
     private func scheduleKeyBasedHotkeyAction(_ action: @escaping () -> Void) {
         DispatchQueue.main.asyncAfter(deadline: .now() + KeyDownEventPolicy.keyBasedHotkeyActionDelay) {
             action()
+        }
+    }
+
+    private func routeKeyBasedHotkey(
+        kind: HotkeyRoutingKind,
+        keyCode: UInt16,
+        event: CGEvent,
+        action: @escaping () -> Void
+    ) -> Unmanaged<CGEvent>? {
+        switch HotkeyRoutingPolicy.action(
+            kind: kind,
+            isEnabled: settingsManager.isEnabled,
+            isCurrentApplicationDisabled: isCurrentApplicationDisabled(),
+            keyCode: keyCode
+        ) {
+        case .passThrough(let logMessage):
+            PuntoLog.info(logMessage)
+            return Unmanaged.passUnretained(event)
+        case .handle(let logMessage):
+            PuntoLog.info(logMessage)
+            scheduleKeyBasedHotkeyAction(action)
+            return nil
         }
     }
 

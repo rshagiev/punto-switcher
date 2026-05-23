@@ -5955,6 +5955,86 @@ private func runHotkeyRoutingPolicyTests() throws {
         HotkeyRoutingStateClearAction(clearTrackedText: false, clearConversionSession: false),
         "hotkey routing keeps state when enabled state does not transition to disabled"
     )
+    try expect(
+        HotkeyRoutingPolicy.action(
+            kind: .modifierOnlyConvertLayout,
+            isEnabled: true,
+            isCurrentApplicationDisabled: false,
+            displayString: "Cmd+Opt+Shift"
+        ),
+        .handle(logMessage: "Modifier-only hotkey triggered: Cmd+Opt+Shift"),
+        "hotkey routing owns modifier-only matched log"
+    )
+    try expect(
+        HotkeyRoutingPolicy.action(
+            kind: .modifierOnlyConvertLayout,
+            isEnabled: false,
+            isCurrentApplicationDisabled: false,
+            displayString: "Cmd+Opt+Shift"
+        ),
+        .passThrough(logMessage: "Modifier-only hotkey ignored by routing policy"),
+        "hotkey routing owns modifier-only pass-through log"
+    )
+    try expect(
+        HotkeyRoutingPolicy.action(
+            kind: .convertLayout,
+            isEnabled: true,
+            isCurrentApplicationDisabled: false,
+            keyCode: 6
+        ),
+        .handle(logMessage: "Convert layout hotkey matched! keyCode=6"),
+        "hotkey routing owns convert hotkey matched log"
+    )
+    try expect(
+        HotkeyRoutingPolicy.action(
+            kind: .toggleCase,
+            isEnabled: false,
+            isCurrentApplicationDisabled: false,
+            keyCode: 6
+        ),
+        .passThrough(logMessage: "Toggle case hotkey passed through by routing policy"),
+        "hotkey routing owns toggle-case pass-through log"
+    )
+    try expect(
+        HotkeyRoutingPolicy.action(
+            kind: .toggleAutoCorrection,
+            isEnabled: true,
+            isCurrentApplicationDisabled: true,
+            keyCode: 0
+        ),
+        .passThrough(logMessage: "Toggle auto-correction hotkey passed through by routing policy"),
+        "hotkey routing owns auto-correction toggle pass-through log"
+    )
+    try expect(
+        HotkeyRoutingPolicy.action(
+            kind: .cancelLayoutChange,
+            isEnabled: true,
+            isCurrentApplicationDisabled: false,
+            keyCode: 51
+        ),
+        .handle(logMessage: "Cancel layout change hotkey matched! keyCode=51"),
+        "hotkey routing owns cancel-layout matched log"
+    )
+    try expect(
+        HotkeyRoutingPolicy.action(
+            kind: .findInYandex,
+            isEnabled: false,
+            isCurrentApplicationDisabled: true,
+            keyCode: 3
+        ),
+        .passThrough(logMessage: "Find in Yandex hotkey passed through by routing policy"),
+        "hotkey routing owns Yandex search pass-through log"
+    )
+    try expect(
+        HotkeyRoutingPolicy.action(
+            kind: .findInSlovari,
+            isEnabled: true,
+            isCurrentApplicationDisabled: false,
+            keyCode: 5
+        ),
+        .handle(logMessage: "Find in Slovari hotkey matched! keyCode=5"),
+        "hotkey routing owns Slovari hotkey matched log"
+    )
 }
 
 private func runKeyTrackingRuntimePolicyTests() throws {
