@@ -67,6 +67,25 @@ private func runWordBoundaryPolicyTests() throws {
         false,
         "keyboard layout mapping policy keeps unchanged Mac slash out of mapped punctuation"
     )
+    try expect(
+        KeyboardLayoutMappingPolicy.isLayoutMappedPunctuation(
+            "-",
+            englishLayoutVariant: .dvorak,
+            russianLayoutType: .windows
+        ),
+        true,
+        "keyboard layout mapping policy exposes Dvorak punctuation as physical-key text"
+    )
+    try expect(
+        WordBoundaryPolicy.isTypedWordBoundary(
+            "-",
+            keyCode: 0,
+            englishLayoutVariant: .dvorak,
+            russianLayoutType: .windows
+        ),
+        false,
+        "word boundary policy keeps Dvorak apostrophe-key output inside wrong-layout word"
+    )
 
     for character in ["\\", "|", "@", "#", "$", "%", "^", "&", "*"] as [Character] {
         try expect(
@@ -281,6 +300,33 @@ private func runLayoutConverterTests() throws {
         converter.convertToEnglish("%:,.;", russianLayoutType: .mac),
         "$%^&*",
         "Mac Russian layout reverses Apple punctuation row"
+    )
+    try expect(
+        converter.convert(
+            "idxeyb",
+            englishLayoutVariant: .dvorak,
+            russianLayoutType: .windows
+        ),
+        "привет",
+        "Dvorak English layout converts wrong-layout Russian word"
+    )
+    try expect(
+        converter.convert(
+            "руддщ",
+            englishLayoutVariant: .dvorak,
+            russianLayoutType: .windows
+        ),
+        "d.nnr",
+        "Dvorak English layout reverses Russian word to Dvorak output"
+    )
+    try expect(
+        converter.convertToRussian(
+            "-",
+            englishLayoutVariant: .dvorak,
+            russianLayoutType: .windows
+        ),
+        "э",
+        "Dvorak English layout maps apostrophe physical key output to Russian e"
     )
     let macPunctuation = converter.convertWithResult("\\", russianLayoutType: .mac)
     try expect(macPunctuation.text, "ё", "Mac Russian convertWithResult converts backslash to yo")
@@ -777,6 +823,21 @@ private func runWordTrackerTests() throws {
 
     do {
         let tracker = WordTracker()
+        tracker.trackKeyPress(
+            keyCode: 0,
+            characters: "idxeyb-",
+            englishLayoutVariant: .dvorak,
+            russianLayoutType: .windows
+        )
+        try expect(
+            tracker.getLastWord(),
+            "idxeyb-",
+            "word tracker keeps Dvorak punctuation mapped to Russian letters in last word"
+        )
+    }
+
+    do {
+        let tracker = WordTracker()
         tracker.replaceTrackedTail(with: "\\|", reason: "Mac tail replacement test", russianLayoutType: .mac)
         try expect(tracker.getLastWord(), "\\|", "replaceTrackedTail keeps Mac backslash and pipe in last word")
         try expect(tracker.getTypedTail(), "\\|", "replaceTrackedTail keeps Mac backslash and pipe in typed tail")
@@ -787,6 +848,21 @@ private func runWordTrackerTests() throws {
         tracker.replaceTrackedTail(with: "\\|", reason: "Windows tail replacement compatibility test")
         try expectNil(tracker.getLastWord(), "replaceTrackedTail keeps Windows default boundary behavior")
         try expect(tracker.getTypedTail(), "\\|", "replaceTrackedTail preserves typed tail even when Windows word is cleared")
+    }
+
+    do {
+        let tracker = WordTracker()
+        tracker.replaceTrackedTail(
+            with: "idxeyb-",
+            reason: "Dvorak tail replacement test",
+            englishLayoutVariant: .dvorak,
+            russianLayoutType: .windows
+        )
+        try expect(
+            tracker.getLastWord(),
+            "idxeyb-",
+            "replaceTrackedTail keeps Dvorak punctuation mapped to Russian letters in last word"
+        )
     }
 
     do {
@@ -6005,6 +6081,16 @@ private func runInputSourceLanguagePolicyTests() throws {
         KeyboardLayoutVariantPolicy.isDvorakEnglishSource("com.example.dvorakish"),
         false,
         "keyboard layout variant policy rejects glued Dvorak token"
+    )
+    try expect(
+        KeyboardLayoutVariantPolicy.englishLayoutVariant(for: " COM.APPLE.KEYLAYOUT.DVORAK "),
+        .dvorak,
+        "keyboard layout variant policy resolves Dvorak English variant"
+    )
+    try expect(
+        KeyboardLayoutVariantPolicy.englishLayoutVariant(for: " com.apple.keylayout.ABC "),
+        .qwerty,
+        "keyboard layout variant policy resolves default English variant"
     )
     try expect(
         KeyboardLayoutVariantPolicy.isAppleRussianSource(" com.apple.keylayout.Russian "),

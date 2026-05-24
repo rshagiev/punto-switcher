@@ -14,6 +14,7 @@ public enum ManualLayoutConversionPolicy {
         capturedText: CapturedText?,
         lastWord: String?,
         lastTrackedTail: String?,
+        englishLayoutVariant: KeyboardLayoutVariant = .qwerty,
         russianLayoutType: KeyboardLayoutType = .windows,
         converter: LayoutConverter = LayoutConverter()
     ) -> ManualLayoutConversionPlan {
@@ -22,7 +23,11 @@ public enum ManualLayoutConversionPolicy {
         }
 
         if let capturedText, !capturedText.text.isEmpty {
-            let result = converter.convertWithResult(capturedText.text, russianLayoutType: russianLayoutType)
+            let result = converter.convertWithResult(
+                capturedText.text,
+                englishLayoutVariant: englishLayoutVariant,
+                russianLayoutType: russianLayoutType
+            )
             guard let replacement = LayoutConversionReplacementPolicy.replacement(
                 for: capturedText,
                 conversionResult: result
@@ -36,7 +41,11 @@ public enum ManualLayoutConversionPolicy {
             return .noText
         }
 
-        let result = converter.convertWithResult(lastWord, russianLayoutType: russianLayoutType)
+        let result = converter.convertWithResult(
+            lastWord,
+            englishLayoutVariant: englishLayoutVariant,
+            russianLayoutType: russianLayoutType
+        )
         guard let replacement = LayoutConversionReplacementPolicy.lastWordReplacement(
             lastWord: lastWord,
             conversionResult: result,

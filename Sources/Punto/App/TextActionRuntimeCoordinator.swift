@@ -56,6 +56,13 @@ final class TextActionRuntimeCoordinator {
         textState.finishReplacementWindow()
     }
 
+    func currentEnglishLayoutVariant() -> KeyboardLayoutVariant {
+        KeyboardLayoutVariantPolicy.englishLayoutVariant(
+            for: inputSourceManager.languageLayoutID(.english)
+                ?? settingsManager.preferredEnglishInputSourceID
+        )
+    }
+
     func preflightTextAction(_ kind: TextActionKind) -> Bool {
         func handle(_ action: TextActionPreflightAction) -> Bool {
             switch action {
@@ -117,6 +124,7 @@ final class TextActionRuntimeCoordinator {
                 with: trackedTailCommit.text,
                 reason: trackedTailCommit.reason,
                 suppressAutoCorrectionForCurrentToken: trackedTailCommit.suppressAutoCorrectionForCurrentToken,
+                englishLayoutVariant: currentEnglishLayoutVariant(),
                 russianLayoutType: settingsManager.russianKeyboardLayoutType
             )
         }
@@ -218,6 +226,7 @@ final class TextActionRuntimeCoordinator {
                 with: trackedTailCommit.text,
                 reason: trackedTailCommit.reason,
                 suppressAutoCorrectionForCurrentToken: trackedTailCommit.suppressAutoCorrectionForCurrentToken,
+                englishLayoutVariant: currentEnglishLayoutVariant(),
                 russianLayoutType: settingsManager.russianKeyboardLayoutType
             )
         }

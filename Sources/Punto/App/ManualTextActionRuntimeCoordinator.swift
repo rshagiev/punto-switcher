@@ -74,6 +74,7 @@ final class ManualTextActionRuntimeCoordinator {
             capturedText: capturedText,
             lastWord: lastTrackedWord,
             lastTrackedTail: lastTrackedTail,
+            englishLayoutVariant: textActionRuntime.currentEnglishLayoutVariant(),
             russianLayoutType: settingsManager.russianKeyboardLayoutType,
             converter: layoutConverter
         )

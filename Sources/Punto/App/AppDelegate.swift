@@ -157,6 +157,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             textAccessor: textAccessor!,
             layoutConverter: layoutConverter!,
             soundFeedbackController: soundFeedbackController!,
+            currentEnglishLayoutVariant: { [weak self] in
+                self?.textActionRuntime?.currentEnglishLayoutVariant()
+                    ?? KeyboardLayoutVariantPolicy.defaultEnglishLayoutVariant
+            },
             currentApplicationBundleID: { [weak self] in
                 self?.activeApplicationBundleID ?? NSWorkspace.shared.frontmostApplication?.bundleIdentifier
             },

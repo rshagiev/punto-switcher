@@ -45,6 +45,7 @@ public final class WordTracker {
         keyCode: UInt16,
         characters: String?,
         autoCorrectionCancellingKeyNames: Set<String> = AutoCorrectionCancellingKeyPolicy.defaultEnabledKeyNames,
+        englishLayoutVariant: KeyboardLayoutVariant = .qwerty,
         russianLayoutType: KeyboardLayoutType = .windows
     ) {
         switch WordTrackingPolicy.action(keyCode: keyCode, characters: characters) {
@@ -79,18 +80,29 @@ public final class WordTracker {
         }
 
         for char in characters ?? "" {
-            trackProducedCharacter(char, keyCode: keyCode, russianLayoutType: russianLayoutType)
+            trackProducedCharacter(
+                char,
+                keyCode: keyCode,
+                englishLayoutVariant: englishLayoutVariant,
+                russianLayoutType: russianLayoutType
+            )
         }
     }
 
     private func trackProducedCharacter(
         _ char: Character,
         keyCode: UInt16,
+        englishLayoutVariant: KeyboardLayoutVariant,
         russianLayoutType: KeyboardLayoutType
     ) {
         // Space and other word boundaries clear the word buffer. The broader
         // typed tail remains available for terminal-like passive selections.
-        if WordBoundaryPolicy.isTypedWordBoundary(char, keyCode: keyCode, russianLayoutType: russianLayoutType) {
+        if WordBoundaryPolicy.isTypedWordBoundary(
+            char,
+            keyCode: keyCode,
+            englishLayoutVariant: englishLayoutVariant,
+            russianLayoutType: russianLayoutType
+        ) {
             rememberCompletedToken(separator: String(char))
             addTailCharacter(char)
             clearWord(reason: "word boundary '\(char)'")
@@ -258,12 +270,18 @@ public final class WordTracker {
         with text: String,
         reason: String = "replacement",
         suppressAutoCorrectionForCurrentToken: Bool = false,
+        englishLayoutVariant: KeyboardLayoutVariant = .qwerty,
         russianLayoutType: KeyboardLayoutType = .windows
     ) {
         clear(reason: reason)
         for char in text {
             addTailCharacter(char)
-            if WordBoundaryPolicy.isTypedWordBoundary(char, keyCode: 0, russianLayoutType: russianLayoutType) {
+            if WordBoundaryPolicy.isTypedWordBoundary(
+                char,
+                keyCode: 0,
+                englishLayoutVariant: englishLayoutVariant,
+                russianLayoutType: russianLayoutType
+            ) {
                 clearWord(reason: "tail replacement boundary '\(char)'")
             } else {
                 addCharacter(char)

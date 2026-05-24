@@ -34,11 +34,29 @@ public enum WordBoundaryPolicy {
         keyCode: UInt16,
         russianLayoutType: KeyboardLayoutType
     ) -> Bool {
+        isTypedWordBoundary(
+            character,
+            keyCode: keyCode,
+            englishLayoutVariant: .qwerty,
+            russianLayoutType: russianLayoutType
+        )
+    }
+
+    public static func isTypedWordBoundary(
+        _ character: Character,
+        keyCode: UInt16,
+        englishLayoutVariant: KeyboardLayoutVariant,
+        russianLayoutType: KeyboardLayoutType
+    ) -> Bool {
         if keyCode == spaceKeyCode {
             return true
         }
 
-        if isLayoutMappedPunctuation(character, russianLayoutType: russianLayoutType) {
+        if isLayoutMappedPunctuation(
+            character,
+            englishLayoutVariant: englishLayoutVariant,
+            russianLayoutType: russianLayoutType
+        ) {
             return false
         }
 
@@ -55,6 +73,18 @@ public enum WordBoundaryPolicy {
     ) -> Bool {
         KeyboardLayoutMappingPolicy.isLayoutMappedPunctuation(
             character,
+            russianLayoutType: russianLayoutType
+        )
+    }
+
+    public static func isLayoutMappedPunctuation(
+        _ character: Character,
+        englishLayoutVariant: KeyboardLayoutVariant,
+        russianLayoutType: KeyboardLayoutType
+    ) -> Bool {
+        KeyboardLayoutMappingPolicy.isLayoutMappedPunctuation(
+            character,
+            englishLayoutVariant: englishLayoutVariant,
             russianLayoutType: russianLayoutType
         )
     }

@@ -15,6 +15,7 @@ final class KeyPressRuntimeCoordinator {
     private let textAccessor: TextAccessor
     private let layoutConverter: LayoutConverter
     private let soundFeedbackController: SoundFeedbackController
+    private let currentEnglishLayoutVariant: () -> KeyboardLayoutVariant
     private let currentApplicationBundleID: () -> String?
     private let isCurrentApplicationDisabled: () -> Bool
     private let clearTextStateForSecureInput: (String) -> Void
@@ -27,6 +28,7 @@ final class KeyPressRuntimeCoordinator {
         textAccessor: TextAccessor,
         layoutConverter: LayoutConverter,
         soundFeedbackController: SoundFeedbackController,
+        currentEnglishLayoutVariant: @escaping () -> KeyboardLayoutVariant,
         currentApplicationBundleID: @escaping () -> String?,
         isCurrentApplicationDisabled: @escaping () -> Bool,
         clearTextStateForSecureInput: @escaping (String) -> Void,
@@ -38,6 +40,7 @@ final class KeyPressRuntimeCoordinator {
         self.textAccessor = textAccessor
         self.layoutConverter = layoutConverter
         self.soundFeedbackController = soundFeedbackController
+        self.currentEnglishLayoutVariant = currentEnglishLayoutVariant
         self.currentApplicationBundleID = currentApplicationBundleID
         self.isCurrentApplicationDisabled = isCurrentApplicationDisabled
         self.clearTextStateForSecureInput = clearTextStateForSecureInput
@@ -70,6 +73,7 @@ final class KeyPressRuntimeCoordinator {
             keyCode: keyCode,
             characters: characters,
             autoCorrectionCancellingKeyNames: settingsManager.autoCorrectionCancellingKeyNames,
+            englishLayoutVariant: currentEnglishLayoutVariant(),
             russianLayoutType: settingsManager.russianKeyboardLayoutType
         )
         settingsManager.recordProductStatisticsEvent(.typedText(characters))
