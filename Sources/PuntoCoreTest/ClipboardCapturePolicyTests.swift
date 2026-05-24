@@ -53,6 +53,44 @@ func runClipboardCapturePolicyTests() throws {
         "clipboard capture continues polling while pasteboard is unchanged"
     )
     try expect(
+        ClipboardCapturePolicy.shouldAttemptActiveClipboardCapture(
+            focusEvidence: .focusedElement(
+                appName: "TextEdit",
+                role: "AXTextArea",
+                isEnabled: true,
+                isFocused: true
+            )
+        ),
+        true,
+        "clipboard capture accepts a verified focused application and enabled element"
+    )
+    try expect(
+        ClipboardCapturePolicy.shouldAttemptActiveClipboardCapture(
+            focusEvidence: .noFocusedElement(appName: "Safari", errorCode: -25205)
+        ),
+        true,
+        "clipboard capture allows browser/content fallbacks with focused app but no focused element"
+    )
+    try expect(
+        ClipboardCapturePolicy.shouldAttemptActiveClipboardCapture(
+            focusEvidence: .noFocusedApplication(errorCode: -25212)
+        ),
+        false,
+        "clipboard capture rejects NO_FOCUSED_APP evidence before sending Cmd+C"
+    )
+    try expect(
+        ClipboardCapturePolicy.shouldAttemptActiveClipboardCapture(
+            focusEvidence: .focusedElement(
+                appName: "TextEdit",
+                role: "AXTextArea",
+                isEnabled: false,
+                isFocused: true
+            )
+        ),
+        false,
+        "clipboard capture rejects disabled focused elements"
+    )
+    try expect(
         ClipboardCapturePolicy.capturedTextAfterCopy(
             pasteboardText: "browser selection",
             pasteboardChanged: true,

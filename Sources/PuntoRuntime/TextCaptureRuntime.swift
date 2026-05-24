@@ -41,7 +41,7 @@ final class TextCaptureRuntime {
                     lastTrackedTail: lastTrackedTail
                 ) {
                     PuntoLog.info("captureSelectedText: trying active clipboard copy for non-settable AX selection")
-                    activeClipboardText = clipboard.captureSelectedText()
+                    activeClipboardText = captureSelectedTextViaClipboardIfFocused()
                     passiveClipboardText = clipboard.currentText()
                     overrideCapturedText = TextCapturePolicy.activeClipboardFallbackForNonSettableContentSelection(
                         selectedText: text,
@@ -56,11 +56,11 @@ final class TextCaptureRuntime {
 
         case .noFocus:
             PuntoLog.info("captureSelectedText: noFocus, trying active clipboard fallback")
-            activeClipboardText = clipboard.captureSelectedText()
+            activeClipboardText = captureSelectedTextViaClipboardIfFocused()
 
         case .failed:
             passiveClipboardText = clipboard.currentText()
-            activeClipboardText = clipboard.captureSelectedText()
+            activeClipboardText = captureSelectedTextViaClipboardIfFocused()
         }
 
         let captured = overrideCapturedText ?? TextCapturePolicy.captureDecision(
@@ -80,5 +80,18 @@ final class TextCaptureRuntime {
         }
 
         return captured
+    }
+
+    private func captureSelectedTextViaClipboardIfFocused() -> String? {
+        let focusEvidence = accessibilityElements.keyboardFocusEvidence()
+        PuntoLog.info("getSelectedTextViaClipboard: AX focus check: \(focusEvidence.logDescription)")
+        guard ClipboardCapturePolicy.shouldAttemptActiveClipboardCapture(
+            focusEvidence: focusEvidence
+        ) else {
+            PuntoLog.info("getSelectedTextViaClipboard: aborting because focused copy target is not verifiable")
+            return nil
+        }
+
+        return clipboard.captureSelectedText()
     }
 }
