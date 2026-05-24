@@ -186,6 +186,22 @@ for pattern in "${app_delegate_auto_correction_runtime_patterns[@]}"; do
     echo "PASS AppDelegate auto-correction runtime coordination absent: $pattern"
 done
 
+app_delegate_undo_runtime_patterns=(
+    "UndoRuntimePolicy."
+    "undoCandidate("
+    "clearStateAfterFailedUndoReplacement("
+    "switchLayoutIfEnabled(layoutSwitchTarget, surface: .undo)"
+    "record(commitPlan.conversionRecordCommit"
+)
+
+for pattern in "${app_delegate_undo_runtime_patterns[@]}"; do
+    if rg --fixed-strings --quiet "$pattern" Sources/Punto/App/AppDelegate.swift; then
+        echo "legacy boundary failed: AppDelegate reopened undo runtime coordination: $pattern" >&2
+        exit 1
+    fi
+    echo "PASS AppDelegate undo runtime coordination absent: $pattern"
+done
+
 if rg --fixed-strings --quiet "Placeholder - actual tests" Tests 2>/dev/null; then
     echo "legacy boundary failed: placeholder SwiftPM test target returned" >&2
     exit 1

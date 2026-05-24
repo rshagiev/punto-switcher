@@ -22,13 +22,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var keyPressRuntime: KeyPressRuntimeCoordinator?
     private var textActionRuntime: TextActionRuntimeCoordinator?
     private var autoCorrectionRuntime: AutoCorrectionRuntimeCoordinator?
-
-    private var conversionSession: ConversionSession {
-        guard let textState else {
-            fatalError("Text runtime state used before initialization")
-        }
-        return textState.conversionSession
-    }
+    private var undoRuntime: UndoRuntimeCoordinator?
 
     private var isConversionInProgress: Bool {
         textState?.isConversionInProgress == true
@@ -126,6 +120,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             },
             isCurrentApplicationDisabled: { [weak self] in
                 self?.isCurrentApplicationDisabled() ?? false
+            }
+        )
+        undoRuntime = UndoRuntimeCoordinator(
+            settingsManager: settingsManager!,
+            textState: textState!,
+            textAccessor: textAccessor!,
+            textActionRuntime: textActionRuntime!,
+            layoutConverter: layoutConverter!,
+            reloadAutoCorrectionRules: { [weak self] in
+                self?.autoCorrectionRuntime?.reloadRules()
             }
         )
         keyPressRuntime = KeyPressRuntimeCoordinator(
@@ -418,7 +422,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.handleToggleAutoCorrection()
             },
             onCancelLayoutChange: { [weak self] in
-                self?.handleCancelLayoutChange()
+                let contextID = self?.activeApplicationBundleID
+                    ?? NSWorkspace.shared.frontmostApplication?.bundleIdentifier
+                self?.undoRuntime?.handleCancelLayoutChange(contextID: contextID)
             },
             onFindInYandex: { [weak self] in
                 self?.handleSelectedTextSearch(destination: .yandexSearch)
@@ -520,7 +526,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         // Check for undo possibility
-        if performUndoIfAvailable(contextID: conversionContextID) {
+        if undoRuntime?.performUndoIfAvailable(contextID: conversionContextID) == true {
             return
         }
 
@@ -588,99 +594,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .noText(let logMessage):
             PuntoLog.info(logMessage)
             return
-        }
-    }
-
-    private func handleCancelLayoutChange() {
-        let conversionContextID = activeApplicationBundleID ?? NSWorkspace.shared.frontmostApplication?.bundleIdentifier
-        PuntoLog.info(">>> Cancel layout change triggered <<<")
-
-        guard textActionRuntime?.preflightTextAction(.layoutConversion) == true else {
-            return
-        }
-
-        _ = textActionRuntime?.beginReplacementWindow()
-        defer {
-            textActionRuntime?.finishReplacementWindow()
-        }
-
-        guard performUndoIfAvailable(contextID: conversionContextID) else {
-            PuntoLog.info("Cancel layout change: no recent conversion to undo")
-            return
-        }
-    }
-
-    @discardableResult
-    private func performUndoIfAvailable(contextID: String?) -> Bool {
-        let plan = UndoRuntimePolicy.plan(
-            record: conversionSession.undoCandidate(contextID: contextID),
-            autoCorrectionRules: settingsManager?.autoCorrectionRules ?? [],
-            isUndoLearningEnabled: settingsManager?.autoCorrectionUndoLearningEnabled
-                ?? SettingsPersistencePolicy.defaultAutoCorrectionUndoLearningEnabled
-        )
-
-        switch plan {
-        case .noCandidate:
-            return false
-
-        case .planFailure(let record):
-            let action = UndoRuntimePolicy.planFailureAction(record: record)
-            if let logMessage = action.logMessage {
-                PuntoLog.info(logMessage)
-            }
-            if action.clearConversionSession,
-               let reason = action.clearConversionSessionReason {
-                textState?.clearConversionSession(reason: reason)
-            }
-            return true
-
-        case .replacement(let plan):
-            let last = plan.record
-            let undoReplacement = plan.undoReplacement
-            PuntoLog.info("Undo: reverting '\(last.convertedText)' back to '\(last.originalText)'")
-
-            let undoApplied = textAccessor?.replaceCapturedText(
-                undoReplacement.capturedText,
-                with: undoReplacement.replacementText,
-                keepSelection: undoReplacement.keepSelection
-            ) ?? false
-            guard undoApplied else {
-                PuntoLog.info("Undo aborted: replacement was not applied")
-                textActionRuntime?.clearStateAfterFailedUndoReplacement(method: undoReplacement.capturedText.replacementMethod)
-                return true
-            }
-
-            let commitPlan = UndoRuntimePolicy.appliedCommitPlan(for: plan, converter: layoutConverter!)
-            if let layoutSwitchTarget = commitPlan.layoutSwitchTarget {
-                textActionRuntime?.switchLayoutIfEnabled(layoutSwitchTarget, surface: .undo)
-            } else if let skippedLayoutSwitchLogMessage = commitPlan.skippedLayoutSwitchLogMessage {
-                PuntoLog.info(skippedLayoutSwitchLogMessage)
-            }
-
-            statusBarController?.flashIcon()
-            soundFeedbackController?.play(commitPlan.soundFeedbackEvent)
-            settingsManager?.recordProductStatisticsEvent(commitPlan.productStatisticsEvent)
-            if let trackedTailCommit = commitPlan.trackedTailCommit {
-                wordTracker?.replaceTrackedTail(
-                    with: trackedTailCommit.text,
-                    reason: trackedTailCommit.reason,
-                    suppressAutoCorrectionForCurrentToken: trackedTailCommit.suppressAutoCorrectionForCurrentToken,
-                    russianLayoutType: settingsManager?.russianKeyboardLayoutType
-                        ?? KeyboardLayoutTypePolicy.defaultRussianLayoutType
-                )
-            }
-
-            if let learnedRules = commitPlan.learnedAutoCorrectionRules {
-                settingsManager?.autoCorrectionRules = learnedRules
-                autoCorrectionRuntime?.reloadRules()
-                if let learnedRuleLogMessage = commitPlan.learnedRuleLogMessage {
-                    PuntoLog.info(learnedRuleLogMessage)
-                }
-            }
-
-            conversionSession.record(commitPlan.conversionRecordCommit, contextID: contextID)
-
-            return true
         }
     }
 

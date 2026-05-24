@@ -197,6 +197,40 @@ final class TextActionRuntimeCoordinator {
         textState.apply(action)
     }
 
+    func commitSuccessfulUndo(
+        _ plan: UndoAppliedCommitPlan,
+        contextID: String?,
+        reloadAutoCorrectionRules: () -> Void
+    ) {
+        if let layoutSwitchTarget = plan.layoutSwitchTarget {
+            switchLayoutIfEnabled(layoutSwitchTarget, surface: .undo)
+        } else if let skippedLayoutSwitchLogMessage = plan.skippedLayoutSwitchLogMessage {
+            PuntoLog.info(skippedLayoutSwitchLogMessage)
+        }
+
+        flashStatusIcon()
+        soundFeedbackController.play(plan.soundFeedbackEvent)
+        settingsManager.recordProductStatisticsEvent(plan.productStatisticsEvent)
+        if let trackedTailCommit = plan.trackedTailCommit {
+            wordTracker.replaceTrackedTail(
+                with: trackedTailCommit.text,
+                reason: trackedTailCommit.reason,
+                suppressAutoCorrectionForCurrentToken: trackedTailCommit.suppressAutoCorrectionForCurrentToken,
+                russianLayoutType: settingsManager.russianKeyboardLayoutType
+            )
+        }
+
+        if let learnedRules = plan.learnedAutoCorrectionRules {
+            settingsManager.autoCorrectionRules = learnedRules
+            reloadAutoCorrectionRules()
+            if let learnedRuleLogMessage = plan.learnedRuleLogMessage {
+                PuntoLog.info(learnedRuleLogMessage)
+            }
+        }
+
+        textState.conversionSession.record(plan.conversionRecordCommit, contextID: contextID)
+    }
+
     private func keyboardLanguage(for language: LayoutSwitchTargetLanguage) -> KeyboardLanguage {
         switch language {
         case .english:
