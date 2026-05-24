@@ -8652,34 +8652,34 @@ private func runHotkeyPolicyTests() throws {
         "legacy hotkey policy normalizes invalid single-modifier shortcuts"
     )
     try expect(
-        LegacyHotkeyPolicy.observedShortcutChangeLayoutKey,
-        "shortcutChangeLayout",
-        "legacy hotkey policy preserves observed change-layout key"
+        LegacyHotkeyPolicy.legacyShortcutChangeLayoutKey,
+        PuntoSwitcherObservedSurface.Hotkeys.shortcutChangeLayoutKey,
+        "legacy hotkey policy keeps change-layout import key aligned with reverse-audit anchor"
     )
     try expect(
-        LegacyHotkeyPolicy.observedShortcutChangeCaseKey,
-        "shortcutChangeCase",
-        "legacy hotkey policy preserves observed change-case key"
+        LegacyHotkeyPolicy.legacyShortcutChangeCaseKey,
+        PuntoSwitcherObservedSurface.Hotkeys.shortcutChangeCaseKey,
+        "legacy hotkey policy keeps change-case import key aligned with reverse-audit anchor"
     )
     try expect(
-        LegacyHotkeyPolicy.observedShortcutSwitchAutocorrectionKey,
-        "shortcutSwitchAutocorrection",
-        "legacy hotkey policy preserves observed switch-autocorrection key"
+        LegacyHotkeyPolicy.legacyShortcutSwitchAutocorrectionKey,
+        PuntoSwitcherObservedSurface.Hotkeys.shortcutSwitchAutocorrectionKey,
+        "legacy hotkey policy keeps switch-autocorrection import key aligned with reverse-audit anchor"
     )
     try expect(
-        LegacyHotkeyPolicy.observedShortcutCancelLayoutChangeKey,
-        "shortcutCancelLayoutChange",
-        "legacy hotkey policy preserves observed cancel-layout-change key"
+        LegacyHotkeyPolicy.legacyShortcutCancelLayoutChangeKey,
+        PuntoSwitcherObservedSurface.Hotkeys.shortcutCancelLayoutChangeKey,
+        "legacy hotkey policy keeps cancel-layout-change import key aligned with reverse-audit anchor"
     )
     try expect(
-        LegacyHotkeyPolicy.observedShortcutFindInYandexKey,
-        "shortcutFindInYandex",
-        "legacy hotkey policy preserves observed find-in-Yandex key"
+        LegacyHotkeyPolicy.legacyShortcutFindInYandexKey,
+        PuntoSwitcherObservedSurface.Hotkeys.shortcutFindInYandexKey,
+        "legacy hotkey policy keeps find-in-Yandex import key aligned with reverse-audit anchor"
     )
     try expect(
-        LegacyHotkeyPolicy.observedShortcutFindInSlovariKey,
-        "shortcutFindInSlovari",
-        "legacy hotkey policy preserves observed find-in-Slovari key"
+        LegacyHotkeyPolicy.legacyShortcutFindInSlovariKey,
+        PuntoSwitcherObservedSurface.Hotkeys.shortcutFindInSlovariKey,
+        "legacy hotkey policy keeps find-in-Slovari import key aligned with reverse-audit anchor"
     )
     try expect(
         PuntoSwitcherObservedSurface.Hotkeys.setShortcutSelector,
@@ -8742,19 +8742,19 @@ private func runHotkeyPolicyTests() throws {
         "legacy hotkey policy preserves observed switch-autocorrection action selector"
     )
     try expect(
-        LegacyHotkeyPolicy.observedCancelLayoutChangeShortcutKey,
-        "cancelLayoutChangeShortcut",
-        "legacy hotkey policy preserves observed cancel-layout-change shortcut field key"
+        LegacyHotkeyPolicy.legacyCancelLayoutChangeShortcutKey,
+        PuntoSwitcherObservedSurface.Hotkeys.cancelLayoutChangeShortcutKey,
+        "legacy hotkey policy keeps cancel-layout-change shortcut field key aligned with reverse-audit anchor"
     )
     try expect(
-        LegacyHotkeyPolicy.observedSwitchAutocorrectionShortcutKey,
-        "switchAutocorrectionShortcut",
-        "legacy hotkey policy preserves observed switch-autocorrection shortcut field key"
+        LegacyHotkeyPolicy.legacySwitchAutocorrectionShortcutKey,
+        PuntoSwitcherObservedSurface.Hotkeys.switchAutocorrectionShortcutKey,
+        "legacy hotkey policy keeps switch-autocorrection shortcut field key aligned with reverse-audit anchor"
     )
     try expect(
-        LegacyHotkeyPolicy.observedChangeCaseShortcutKey,
-        "changeCaseShortcut",
-        "legacy hotkey policy preserves observed change-case shortcut field key"
+        LegacyHotkeyPolicy.legacyChangeCaseShortcutKey,
+        PuntoSwitcherObservedSurface.Hotkeys.changeCaseShortcutKey,
+        "legacy hotkey policy keeps change-case shortcut field key aligned with reverse-audit anchor"
     )
     try expect(
         PuntoSwitcherObservedSurface.Hotkeys.setChangeCaseShortcutSelector,

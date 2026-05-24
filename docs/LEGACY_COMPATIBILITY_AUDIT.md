@@ -124,6 +124,12 @@ uses `legacy*Name` / `legacy*SelectorAlias`, while
 Tests align the two surfaces without making behavior policies depend on the
 reverse-audit namespace.
 
+Hotkey import aliases follow the same rule. `LegacyHotkeyPolicy` exposes
+`legacy*Key` constants for Punto Switcher shortcut dictionaries and shortcut
+field keys, while `PuntoSwitcherObservedSurface.Hotkeys` owns the observed keys
+and selector/class boundary. The boundary audit rejects `observed*Key` inside
+selected behavior-policy files.
+
 The repository also no longer carries a placeholder SwiftPM `Tests/` file that
 claims tests live elsewhere. This toolchain cannot import XCTest, so placeholder
 test targets create a false green surface; the boundary script now fails if that

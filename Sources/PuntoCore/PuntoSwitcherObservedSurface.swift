@@ -39,6 +39,12 @@ public enum PuntoSwitcherObservedSurface {
     }
 
     public enum Hotkeys {
+        public static let shortcutChangeLayoutKey = "shortcutChangeLayout"
+        public static let shortcutChangeCaseKey = "shortcutChangeCase"
+        public static let shortcutSwitchAutocorrectionKey = "shortcutSwitchAutocorrection"
+        public static let shortcutCancelLayoutChangeKey = "shortcutCancelLayoutChange"
+        public static let shortcutFindInYandexKey = "shortcutFindInYandex"
+        public static let shortcutFindInSlovariKey = "shortcutFindInSlovari"
         public static let setShortcutSelector = "setShortcut:"
         public static let shortcutWithDictionarySelector = "shortcutWithDictionary:"
         public static let resetShortcutsToDefaultsSelector = "resetShortcutsToDefaults:"
@@ -51,6 +57,9 @@ public enum PuntoSwitcherObservedSurface {
         public static let shortcutsPreferencesControllerKey = "shortcutsPreferencesController"
         public static let setShortcutsPreferencesControllerSelector = "setShortcutsPreferencesController:"
         public static let switchAutocorrectionSelector = "switchAutocorrection:"
+        public static let cancelLayoutChangeShortcutKey = "cancelLayoutChangeShortcut"
+        public static let switchAutocorrectionShortcutKey = "switchAutocorrectionShortcut"
+        public static let changeCaseShortcutKey = "changeCaseShortcut"
         public static let setChangeCaseShortcutSelector = "setChangeCaseShortcut:"
         public static let shortcutFieldClassName = "ShortcutField"
     }

@@ -53,12 +53,12 @@ public final class SettingsManager {
     private enum ImportKeys {
         static let isFirstInstallation = "isFirstInstallation"
         static let launchesOnStartup = SettingsPersistencePolicy.legacyLaunchesOnStartupKey
-        static let shortcutChangeLayout = "shortcutChangeLayout"
-        static let shortcutChangeCase = "shortcutChangeCase"
-        static let shortcutSwitchAutocorrection = "shortcutSwitchAutocorrection"
-        static let shortcutCancelLayoutChange = "shortcutCancelLayoutChange"
-        static let shortcutFindInYandex = "shortcutFindInYandex"
-        static let shortcutFindInSlovari = "shortcutFindInSlovari"
+        static let shortcutChangeLayout = LegacyHotkeyPolicy.legacyShortcutChangeLayoutKey
+        static let shortcutChangeCase = LegacyHotkeyPolicy.legacyShortcutChangeCaseKey
+        static let shortcutSwitchAutocorrection = LegacyHotkeyPolicy.legacyShortcutSwitchAutocorrectionKey
+        static let shortcutCancelLayoutChange = LegacyHotkeyPolicy.legacyShortcutCancelLayoutChangeKey
+        static let shortcutFindInYandex = LegacyHotkeyPolicy.legacyShortcutFindInYandexKey
+        static let shortcutFindInSlovari = LegacyHotkeyPolicy.legacyShortcutFindInSlovariKey
         static let searchbarSettings = SearchbarSettingsPolicy.settingsKey
         static let switchLayoutOnSelectedTextSwitch = SettingsPersistencePolicy.legacySwitchLayoutOnSelectedTextSwitchKey
         static let isManualConversionDisabled = SettingsPersistencePolicy.legacyIsManualConversionDisabledKey
