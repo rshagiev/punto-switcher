@@ -9,93 +9,6 @@ public extension Notification.Name {
 /// Composes application settings from native storage, import fallbacks, and policy-provided base values.
 public final class SettingsManager {
 
-    // MARK: - Keys
-
-    private enum Keys {
-        static let isEnabled = SettingsPersistencePolicy.nativeIsEnabledKey
-        static let isFirstLaunch = "isFirstLaunch"
-        static let showInMenuBar = "showInMenuBar"
-        static let showAdvancedSettings = SettingsPersistencePolicy.nativeShowAdvancedSettingsKey
-        static let launchAtLogin = "launchAtLogin"
-        static let convertLayoutHotkey = "convertLayoutHotkey"
-        static let toggleCaseHotkey = "toggleCaseHotkey"
-        static let toggleAutoCorrectionHotkey = "toggleAutoCorrectionHotkey"
-        static let cancelLayoutChangeHotkey = "cancelLayoutChangeHotkey"
-        static let findInYandexHotkey = "findInYandexHotkey"
-        static let findInSlovariHotkey = "findInSlovariHotkey"
-        static let searchSelectedTextByDoubleClick = "searchSelectedTextByDoubleClick"
-        static let switchLayoutAfterConversion = "switchLayoutAfterConversion"
-        static let switchLayoutAfterSelectedTextConversion = "switchLayoutAfterSelectedTextConversion"
-        static let russianKeyboardLayoutType = "russianKeyboardLayoutType"
-        static let preferredEnglishInputSourceID = "preferredEnglishInputSourceID"
-        static let preferredRussianInputSourceID = "preferredRussianInputSourceID"
-        static let manualConversionDisabled = "manualConversionDisabled"
-        static let rememberInputSourceForEachApp = "rememberInputSourceForEachApp"
-        static let rememberedApplicationLayouts = "rememberedApplicationLayouts"
-        static let disabledApplicationBundleIDs = "disabledApplicationBundleIDs"
-        static let completelyDisableInExceptionApplications = "completelyDisableInExceptionApplications"
-        static let resetOnReturnBundleComponents = "resetOnReturnBundleComponents"
-        static let autoCorrectionEnabled = "autoCorrectionEnabled"
-        static let autoCorrectionStarterRulesEnabled = "autoCorrectionStarterRulesEnabled"
-        static let autoCorrectOnEnterAndTab = "autoCorrectOnEnterAndTab"
-        static let autoCorrectionUndoLearningEnabled = "autoCorrectionUndoLearningEnabled"
-        static let suppressAutoCorrectionAfterManualConversion = "suppressAutoCorrectionAfterManualConversion"
-        static let autoCorrectionCancellingKeyNames = "autoCorrectionCancellingKeyNames"
-        static let autoCorrectionRules = "autoCorrectionRules"
-        static let soundEffectsEnabled = "soundEffectsEnabled"
-        static let enabledSoundResourceNames = "enabledSoundResourceNames"
-        static let restorePasteboardAfterConversion = "restorePasteboardAfterConversion"
-        static let productStatistics = "productStatistics"
-        static let applicationUpdateSettings = "applicationUpdateSettings"
-    }
-
-    private enum ImportKeys {
-        static let isFirstInstallation = ApplicationUpdateSettingsPolicy.isFirstInstallationKey
-        static let launchesOnStartup = LoginItemPolicy.legacyLaunchesOnStartupKey
-        static let shortcutChangeLayout = LegacyHotkeyPolicy.legacyShortcutChangeLayoutKey
-        static let shortcutChangeCase = LegacyHotkeyPolicy.legacyShortcutChangeCaseKey
-        static let shortcutSwitchAutocorrection = LegacyHotkeyPolicy.legacyShortcutSwitchAutocorrectionKey
-        static let shortcutCancelLayoutChange = LegacyHotkeyPolicy.legacyShortcutCancelLayoutChangeKey
-        static let shortcutFindInYandex = LegacyHotkeyPolicy.legacyShortcutFindInYandexKey
-        static let shortcutFindInSlovari = LegacyHotkeyPolicy.legacyShortcutFindInSlovariKey
-        static let searchbarSettings = SearchbarSettingsPolicy.settingsKey
-        static let switchLayoutOnSelectedTextSwitch = LayoutSwitchPolicy.legacySwitchLayoutOnSelectedTextSwitchKey
-        static let isManualConversionDisabled = TextActionPreflightPolicy.legacyIsManualConversionDisabledKey
-        static let kbdLayoutType = KeyboardLayoutTypePolicy.legacyRussianKeyboardLayoutTypeKey
-        static let englishLayoutID = InputSourceSelectionPolicy.legacyEnglishInputSourceIDKey
-        static let russianLayoutID = InputSourceSelectionPolicy.legacyRussianInputSourceIDKey
-        static let shouldRememberInputSourceForEachApp = ApplicationLayoutPolicy.legacyShouldRememberInputSourceForEachAppKey
-        static let disabledApps = ApplicationDisablePolicy.legacyDisabledAppsKey
-        static let completelyDisableInExceptionApps = ApplicationDisablePolicy.legacyCompletelyDisableInExceptionApplicationsKey
-        static let switcherResetOnReturn = ApplicationReturnKeyPolicy.legacyResetOnReturnKey
-        static let isAutocorrectionActive = AutoCorrectionPreflightPolicy.legacyIsAutocorrectionActiveKey
-        static let switcherUseOldRulesDefaultConf = AutoCorrectionRuleSourcePolicy.useOldRulesDefaultConfPath
-        static let switcherUseOldRulesAccessor = AutoCorrectionRuleSourcePolicy.useOldRulesAccessor
-        static let shouldNotAutoconvertWithTabOrEnter = AutoCorrectionPreflightPolicy.legacyShouldNotAutoconvertWithTabOrEnterKey
-        static let undoLearning = UndoLearningSettingsPolicy.settingsKey
-        static let shouldNotAutoconvertAfterConvertion = TextReplacementCommitPolicy.legacyShouldNotAutoconvertAfterConvertionKey
-        static let cancellingKeys = AutoCorrectionCancellingKeyPolicy.legacyCancellingKeysBitmaskKey
-        static let userRulesDictionary = LegacyUserRulePolicy.userRulesDictionaryKey
-        static let isSoundOn = SoundFeedbackPolicy.legacyIsSoundOnKey
-        static let enabledSounds = SoundFeedbackPolicy.legacyEnabledSoundsKey
-        static let shouldRestorePasteboard = ClipboardReplacementPolicy.legacyShouldRestorePasteboardKey
-        static let typedWords = ProductStatisticsPolicy.legacyTypedWordsKey
-        static let typedSymbols = ProductStatisticsPolicy.legacyTypedSymbolsKey
-        static let automaticSwitches = ProductStatisticsPolicy.legacyAutomaticSwitchesKey
-        static let manualSwitches = ProductStatisticsPolicy.legacyManualSwitchesKey
-        static let reverts = ProductStatisticsPolicy.legacyRevertsKey
-        static let dayuseSettings = ProductStatisticsPolicy.dayuseSettingsKey
-        static let configVersion = ApplicationUpdateSettingsPolicy.configVersionKey
-        static let isJustInstalled = ApplicationUpdateSettingsPolicy.isJustInstalledKey
-        static let isJustUpdated = ApplicationUpdateSettingsPolicy.isJustUpdatedKey
-        static let isUpdating = ApplicationUpdateSettingsPolicy.isUpdatingKey
-        static let shouldCheckForUpdatesAutomatically = ApplicationUpdateSettingsPolicy.shouldCheckForUpdatesAutomaticallyKey
-        static let updateRequestRateInDays = ApplicationUpdateSettingsPolicy.updateRequestRateInDaysKey
-        static let lastStatisticsRequestDate = ApplicationUpdateSettingsPolicy.lastStatisticsRequestDateKey
-        static let lastUpdateRequestDate = ApplicationUpdateSettingsPolicy.lastUpdateRequestDateKey
-        static let lastUpdateShownDate = ApplicationUpdateSettingsPolicy.lastUpdateShownDateKey
-    }
-
     // MARK: - Properties
 
     private let store: SettingsDefaultsStore
@@ -103,46 +16,46 @@ public final class SettingsManager {
 
     /// Whether the app functionality is enabled
     public var isEnabled: Bool {
-        get { resolver.bool(nativeKey: Keys.isEnabled, defaultValue: SettingsPersistencePolicy.defaultIsEnabled) }
-        set { store.set(newValue, forKey: Keys.isEnabled) }
+        get { resolver.bool(nativeKey: SettingsStorageKeys.isEnabled, defaultValue: SettingsPersistencePolicy.defaultIsEnabled) }
+        set { store.set(newValue, forKey: SettingsStorageKeys.isEnabled) }
     }
 
     /// Whether this is the first launch
     public var isFirstLaunch: Bool {
-        get { resolver.bool(nativeKey: Keys.isFirstLaunch, legacyKey: ImportKeys.isFirstInstallation, defaultValue: StartupPresentationPolicy.defaultIsFirstLaunch) }
-        set { store.set(newValue, forKey: Keys.isFirstLaunch) }
+        get { resolver.bool(nativeKey: SettingsStorageKeys.isFirstLaunch, legacyKey: SettingsImportKeys.isFirstInstallation, defaultValue: StartupPresentationPolicy.defaultIsFirstLaunch) }
+        set { store.set(newValue, forKey: SettingsStorageKeys.isFirstLaunch) }
     }
 
     /// Consumes native and imported Punto Switcher first-run flags after onboarding.
     public func consumeFirstLaunchPresentationFlags() {
-        store.set(false, forKey: Keys.isFirstLaunch)
-        store.set(false, forKey: ImportKeys.isFirstInstallation)
-        store.set(false, forKey: ImportKeys.isJustInstalled)
+        store.set(false, forKey: SettingsStorageKeys.isFirstLaunch)
+        store.set(false, forKey: SettingsImportKeys.isFirstInstallation)
+        store.set(false, forKey: SettingsImportKeys.isJustInstalled)
     }
 
     /// Consumes imported Punto Switcher update flags after native update presentation.
     public func consumeUpdatePresentationImportFlags() {
-        store.set(false, forKey: ImportKeys.isJustUpdated)
-        store.set(false, forKey: ImportKeys.isUpdating)
+        store.set(false, forKey: SettingsImportKeys.isJustUpdated)
+        store.set(false, forKey: SettingsImportKeys.isUpdating)
     }
 
     /// Whether to show the icon in the menu bar
     public var showInMenuBar: Bool {
-        get { resolver.bool(nativeKey: Keys.showInMenuBar, defaultValue: SettingsPersistencePolicy.defaultShowInMenuBar) }
-        set { store.set(newValue, forKey: Keys.showInMenuBar) }
+        get { resolver.bool(nativeKey: SettingsStorageKeys.showInMenuBar, defaultValue: SettingsPersistencePolicy.defaultShowInMenuBar) }
+        set { store.set(newValue, forKey: SettingsStorageKeys.showInMenuBar) }
     }
 
     /// Whether advanced settings are visible in the preferences window
     public var showAdvancedSettings: Bool {
-        get { resolver.bool(nativeKey: Keys.showAdvancedSettings, defaultValue: SettingsPersistencePolicy.defaultShowAdvancedSettings) }
-        set { store.set(newValue, forKey: Keys.showAdvancedSettings) }
+        get { resolver.bool(nativeKey: SettingsStorageKeys.showAdvancedSettings, defaultValue: SettingsPersistencePolicy.defaultShowAdvancedSettings) }
+        set { store.set(newValue, forKey: SettingsStorageKeys.showAdvancedSettings) }
     }
 
     /// Whether to launch at login
     public var launchAtLogin: Bool {
-        get { resolver.bool(nativeKey: Keys.launchAtLogin, legacyKey: ImportKeys.launchesOnStartup, defaultValue: LoginItemPolicy.defaultLaunchAtLogin) }
+        get { resolver.bool(nativeKey: SettingsStorageKeys.launchAtLogin, legacyKey: SettingsImportKeys.launchesOnStartup, defaultValue: LoginItemPolicy.defaultLaunchAtLogin) }
         set {
-            store.set(newValue, forKey: Keys.launchAtLogin)
+            store.set(newValue, forKey: SettingsStorageKeys.launchAtLogin)
         }
     }
 
@@ -150,14 +63,14 @@ public final class SettingsManager {
     public var convertLayoutHotkey: Hotkey {
         get {
             resolver.hotkey(
-                nativeKey: Keys.convertLayoutHotkey,
-                legacyKey: ImportKeys.shortcutChangeLayout,
+                nativeKey: SettingsStorageKeys.convertLayoutHotkey,
+                legacyKey: SettingsImportKeys.shortcutChangeLayout,
                 fallback: Hotkey.defaultConvertLayout
             )
         }
         set {
             let normalized = HotkeyValidationPolicy.normalized(newValue, fallback: Hotkey.defaultConvertLayout)
-            store.encodeAndSet(normalized, forKey: Keys.convertLayoutHotkey)
+            store.encodeAndSet(normalized, forKey: SettingsStorageKeys.convertLayoutHotkey)
         }
     }
 
@@ -165,14 +78,14 @@ public final class SettingsManager {
     public var toggleCaseHotkey: Hotkey {
         get {
             resolver.hotkey(
-                nativeKey: Keys.toggleCaseHotkey,
-                legacyKey: ImportKeys.shortcutChangeCase,
+                nativeKey: SettingsStorageKeys.toggleCaseHotkey,
+                legacyKey: SettingsImportKeys.shortcutChangeCase,
                 fallback: Hotkey.defaultToggleCase
             )
         }
         set {
             let normalized = HotkeyValidationPolicy.normalized(newValue, fallback: Hotkey.defaultToggleCase)
-            store.encodeAndSet(normalized, forKey: Keys.toggleCaseHotkey)
+            store.encodeAndSet(normalized, forKey: SettingsStorageKeys.toggleCaseHotkey)
         }
     }
 
@@ -180,14 +93,14 @@ public final class SettingsManager {
     public var toggleAutoCorrectionHotkey: Hotkey {
         get {
             resolver.hotkey(
-                nativeKey: Keys.toggleAutoCorrectionHotkey,
-                legacyKey: ImportKeys.shortcutSwitchAutocorrection,
+                nativeKey: SettingsStorageKeys.toggleAutoCorrectionHotkey,
+                legacyKey: SettingsImportKeys.shortcutSwitchAutocorrection,
                 fallback: Hotkey.defaultToggleAutoCorrection
             )
         }
         set {
             let normalized = HotkeyValidationPolicy.normalized(newValue, fallback: Hotkey.defaultToggleAutoCorrection)
-            store.encodeAndSet(normalized, forKey: Keys.toggleAutoCorrectionHotkey)
+            store.encodeAndSet(normalized, forKey: SettingsStorageKeys.toggleAutoCorrectionHotkey)
         }
     }
 
@@ -195,14 +108,14 @@ public final class SettingsManager {
     public var cancelLayoutChangeHotkey: Hotkey {
         get {
             resolver.hotkey(
-                nativeKey: Keys.cancelLayoutChangeHotkey,
-                legacyKey: ImportKeys.shortcutCancelLayoutChange,
+                nativeKey: SettingsStorageKeys.cancelLayoutChangeHotkey,
+                legacyKey: SettingsImportKeys.shortcutCancelLayoutChange,
                 fallback: Hotkey.defaultCancelLayoutChange
             )
         }
         set {
             let normalized = HotkeyValidationPolicy.normalized(newValue, fallback: Hotkey.defaultCancelLayoutChange)
-            store.encodeAndSet(normalized, forKey: Keys.cancelLayoutChangeHotkey)
+            store.encodeAndSet(normalized, forKey: SettingsStorageKeys.cancelLayoutChangeHotkey)
         }
     }
 
@@ -210,14 +123,14 @@ public final class SettingsManager {
     public var findInYandexHotkey: Hotkey {
         get {
             resolver.hotkey(
-                nativeKey: Keys.findInYandexHotkey,
-                legacyKey: ImportKeys.shortcutFindInYandex,
+                nativeKey: SettingsStorageKeys.findInYandexHotkey,
+                legacyKey: SettingsImportKeys.shortcutFindInYandex,
                 fallback: Hotkey.defaultFindInYandex
             )
         }
         set {
             let normalized = HotkeyValidationPolicy.normalized(newValue, fallback: Hotkey.defaultFindInYandex)
-            store.encodeAndSet(normalized, forKey: Keys.findInYandexHotkey)
+            store.encodeAndSet(normalized, forKey: SettingsStorageKeys.findInYandexHotkey)
         }
     }
 
@@ -225,99 +138,99 @@ public final class SettingsManager {
     public var findInSlovariHotkey: Hotkey {
         get {
             resolver.hotkey(
-                nativeKey: Keys.findInSlovariHotkey,
-                legacyKey: ImportKeys.shortcutFindInSlovari,
+                nativeKey: SettingsStorageKeys.findInSlovariHotkey,
+                legacyKey: SettingsImportKeys.shortcutFindInSlovari,
                 fallback: Hotkey.defaultFindInSlovari
             )
         }
         set {
             let normalized = HotkeyValidationPolicy.normalized(newValue, fallback: Hotkey.defaultFindInSlovari)
-            store.encodeAndSet(normalized, forKey: Keys.findInSlovariHotkey)
+            store.encodeAndSet(normalized, forKey: SettingsStorageKeys.findInSlovariHotkey)
         }
     }
 
     public var searchSelectedTextByDoubleClick: Bool {
         get {
             resolver.searchSelectedTextByDoubleClick(
-                nativeKey: Keys.searchSelectedTextByDoubleClick,
-                legacyKey: ImportKeys.searchbarSettings
+                nativeKey: SettingsStorageKeys.searchSelectedTextByDoubleClick,
+                legacyKey: SettingsImportKeys.searchbarSettings
             )
         }
         set {
-            store.set(newValue, forKey: Keys.searchSelectedTextByDoubleClick)
+            store.set(newValue, forKey: SettingsStorageKeys.searchSelectedTextByDoubleClick)
         }
     }
 
     /// Переключать раскладку после конвертации
     public var switchLayoutAfterConversion: Bool {
-        get { resolver.bool(nativeKey: Keys.switchLayoutAfterConversion, defaultValue: LayoutSwitchPolicy.defaultSwitchLayoutAfterConversion) }
-        set { store.set(newValue, forKey: Keys.switchLayoutAfterConversion) }
+        get { resolver.bool(nativeKey: SettingsStorageKeys.switchLayoutAfterConversion, defaultValue: LayoutSwitchPolicy.defaultSwitchLayoutAfterConversion) }
+        set { store.set(newValue, forKey: SettingsStorageKeys.switchLayoutAfterConversion) }
     }
 
     public var switchLayoutAfterSelectedTextConversion: Bool {
-        get { resolver.bool(nativeKey: Keys.switchLayoutAfterSelectedTextConversion, legacyKey: ImportKeys.switchLayoutOnSelectedTextSwitch, defaultValue: LayoutSwitchPolicy.defaultSwitchLayoutAfterSelectedTextConversion) }
+        get { resolver.bool(nativeKey: SettingsStorageKeys.switchLayoutAfterSelectedTextConversion, legacyKey: SettingsImportKeys.switchLayoutOnSelectedTextSwitch, defaultValue: LayoutSwitchPolicy.defaultSwitchLayoutAfterSelectedTextConversion) }
         set {
-            store.set(newValue, forKey: Keys.switchLayoutAfterSelectedTextConversion)
+            store.set(newValue, forKey: SettingsStorageKeys.switchLayoutAfterSelectedTextConversion)
         }
     }
 
     public var manualConversionDisabled: Bool {
-        get { resolver.bool(nativeKey: Keys.manualConversionDisabled, legacyKey: ImportKeys.isManualConversionDisabled, defaultValue: TextActionPreflightPolicy.defaultManualConversionDisabled) }
+        get { resolver.bool(nativeKey: SettingsStorageKeys.manualConversionDisabled, legacyKey: SettingsImportKeys.isManualConversionDisabled, defaultValue: TextActionPreflightPolicy.defaultManualConversionDisabled) }
         set {
-            store.set(newValue, forKey: Keys.manualConversionDisabled)
+            store.set(newValue, forKey: SettingsStorageKeys.manualConversionDisabled)
         }
     }
 
     public var russianKeyboardLayoutType: KeyboardLayoutType {
-        get { resolver.russianKeyboardLayoutType(nativeKey: Keys.russianKeyboardLayoutType, legacyKey: ImportKeys.kbdLayoutType) }
+        get { resolver.russianKeyboardLayoutType(nativeKey: SettingsStorageKeys.russianKeyboardLayoutType, legacyKey: SettingsImportKeys.kbdLayoutType) }
         set {
-            store.set(newValue.rawValue, forKey: Keys.russianKeyboardLayoutType)
+            store.set(newValue.rawValue, forKey: SettingsStorageKeys.russianKeyboardLayoutType)
             NotificationCenter.default.post(name: .puntoRussianKeyboardLayoutTypeChanged, object: self)
             NotificationCenter.default.post(name: .puntoInputSourcePreferencesChanged, object: self)
         }
     }
 
     public var preferredEnglishInputSourceID: String? {
-        get { resolver.inputSourceID(nativeKey: Keys.preferredEnglishInputSourceID, legacyKey: ImportKeys.englishLayoutID) }
+        get { resolver.inputSourceID(nativeKey: SettingsStorageKeys.preferredEnglishInputSourceID, legacyKey: SettingsImportKeys.englishLayoutID) }
         set {
-            setPreferredInputSourceID(newValue, nativeKey: Keys.preferredEnglishInputSourceID)
+            setPreferredInputSourceID(newValue, nativeKey: SettingsStorageKeys.preferredEnglishInputSourceID)
         }
     }
 
     public var preferredRussianInputSourceID: String? {
-        get { resolver.inputSourceID(nativeKey: Keys.preferredRussianInputSourceID, legacyKey: ImportKeys.russianLayoutID) }
+        get { resolver.inputSourceID(nativeKey: SettingsStorageKeys.preferredRussianInputSourceID, legacyKey: SettingsImportKeys.russianLayoutID) }
         set {
-            setPreferredInputSourceID(newValue, nativeKey: Keys.preferredRussianInputSourceID)
+            setPreferredInputSourceID(newValue, nativeKey: SettingsStorageKeys.preferredRussianInputSourceID)
         }
     }
 
     /// Punto Switcher-style per-application layout memory.
     public var rememberInputSourceForEachApp: Bool {
-        get { resolver.bool(nativeKey: Keys.rememberInputSourceForEachApp, legacyKey: ImportKeys.shouldRememberInputSourceForEachApp, defaultValue: ApplicationLayoutPolicy.defaultRememberInputSourceForEachApp) }
+        get { resolver.bool(nativeKey: SettingsStorageKeys.rememberInputSourceForEachApp, legacyKey: SettingsImportKeys.shouldRememberInputSourceForEachApp, defaultValue: ApplicationLayoutPolicy.defaultRememberInputSourceForEachApp) }
         set {
-            store.set(newValue, forKey: Keys.rememberInputSourceForEachApp)
+            store.set(newValue, forKey: SettingsStorageKeys.rememberInputSourceForEachApp)
         }
     }
 
     public var rememberedApplicationLayouts: [String: String] {
         get {
             ApplicationLayoutMemory.normalizedSnapshot(
-                store.dictionary(forKey: Keys.rememberedApplicationLayouts) as? [String: String] ?? [:]
+                store.dictionary(forKey: SettingsStorageKeys.rememberedApplicationLayouts) as? [String: String] ?? [:]
             )
         }
         set {
             store.set(
                 ApplicationLayoutMemory.normalizedSnapshot(newValue),
-                forKey: Keys.rememberedApplicationLayouts
+                forKey: SettingsStorageKeys.rememberedApplicationLayouts
             )
         }
     }
 
     public var disabledApplicationBundleIDs: Set<String> {
-        get { resolver.disabledApplicationBundleIDs(nativeKey: Keys.disabledApplicationBundleIDs, legacyKey: ImportKeys.disabledApps) }
+        get { resolver.disabledApplicationBundleIDs(nativeKey: SettingsStorageKeys.disabledApplicationBundleIDs, legacyKey: SettingsImportKeys.disabledApps) }
         set {
             let normalized = Array(ApplicationDisablePolicy.normalizedSet(newValue)).sorted()
-            store.set(normalized, forKey: Keys.disabledApplicationBundleIDs)
+            store.set(normalized, forKey: SettingsStorageKeys.disabledApplicationBundleIDs)
         }
     }
 
@@ -329,9 +242,9 @@ public final class SettingsManager {
     }
 
     public var completelyDisableInExceptionApplications: Bool {
-        get { resolver.bool(nativeKey: Keys.completelyDisableInExceptionApplications, legacyKey: ImportKeys.completelyDisableInExceptionApps, defaultValue: ApplicationDisablePolicy.defaultCompletelyDisableInExceptionApplications) }
+        get { resolver.bool(nativeKey: SettingsStorageKeys.completelyDisableInExceptionApplications, legacyKey: SettingsImportKeys.completelyDisableInExceptionApps, defaultValue: ApplicationDisablePolicy.defaultCompletelyDisableInExceptionApplications) }
         set {
-            store.set(newValue, forKey: Keys.completelyDisableInExceptionApplications)
+            store.set(newValue, forKey: SettingsStorageKeys.completelyDisableInExceptionApplications)
         }
     }
 
@@ -352,20 +265,20 @@ public final class SettingsManager {
     }
 
     public var resetOnReturnBundleComponents: Set<String> {
-        get { resolver.resetOnReturnBundleComponents(nativeKey: Keys.resetOnReturnBundleComponents, legacyKey: ImportKeys.switcherResetOnReturn) }
+        get { resolver.resetOnReturnBundleComponents(nativeKey: SettingsStorageKeys.resetOnReturnBundleComponents, legacyKey: SettingsImportKeys.switcherResetOnReturn) }
         set {
             let normalized = Array(ApplicationReturnKeyPolicy.normalizedResetBundleComponents(newValue)).sorted()
             store.set(
                 normalized,
-                forKey: Keys.resetOnReturnBundleComponents
+                forKey: SettingsStorageKeys.resetOnReturnBundleComponents
             )
         }
     }
 
     public var autoCorrectionEnabled: Bool {
-        get { resolver.bool(nativeKey: Keys.autoCorrectionEnabled, legacyKey: ImportKeys.isAutocorrectionActive, defaultValue: AutoCorrectionPreflightPolicy.defaultAutoCorrectionEnabled) }
+        get { resolver.bool(nativeKey: SettingsStorageKeys.autoCorrectionEnabled, legacyKey: SettingsImportKeys.isAutocorrectionActive, defaultValue: AutoCorrectionPreflightPolicy.defaultAutoCorrectionEnabled) }
         set {
-            store.set(newValue, forKey: Keys.autoCorrectionEnabled)
+            store.set(newValue, forKey: SettingsStorageKeys.autoCorrectionEnabled)
         }
     }
 
@@ -373,45 +286,45 @@ public final class SettingsManager {
         get {
             resolver.firstStoredBool(
                 keys: [
-                    Keys.autoCorrectionStarterRulesEnabled,
-                    ImportKeys.switcherUseOldRulesDefaultConf,
-                    ImportKeys.switcherUseOldRulesAccessor
+                    SettingsStorageKeys.autoCorrectionStarterRulesEnabled,
+                    SettingsImportKeys.switcherUseOldRulesDefaultConf,
+                    SettingsImportKeys.switcherUseOldRulesAccessor
                 ],
                 defaultValue: AutoCorrectionRuleSourcePolicy.defaultStarterRulesEnabled
             )
         }
         set {
-            store.set(newValue, forKey: Keys.autoCorrectionStarterRulesEnabled)
+            store.set(newValue, forKey: SettingsStorageKeys.autoCorrectionStarterRulesEnabled)
         }
     }
 
     public var autoCorrectOnEnterAndTab: Bool {
-        get { resolver.invertedLegacyBool(nativeKey: Keys.autoCorrectOnEnterAndTab, legacyKey: ImportKeys.shouldNotAutoconvertWithTabOrEnter, defaultValue: AutoCorrectionPreflightPolicy.defaultAutoCorrectOnEnterAndTab) }
+        get { resolver.invertedLegacyBool(nativeKey: SettingsStorageKeys.autoCorrectOnEnterAndTab, legacyKey: SettingsImportKeys.shouldNotAutoconvertWithTabOrEnter, defaultValue: AutoCorrectionPreflightPolicy.defaultAutoCorrectOnEnterAndTab) }
         set {
-            store.set(newValue, forKey: Keys.autoCorrectOnEnterAndTab)
+            store.set(newValue, forKey: SettingsStorageKeys.autoCorrectOnEnterAndTab)
         }
     }
 
     public var autoCorrectionUndoLearningEnabled: Bool {
-        get { resolver.undoLearningEnabled(nativeKey: Keys.autoCorrectionUndoLearningEnabled, legacyKey: ImportKeys.undoLearning, defaultValue: AutoCorrectionUndoLearningPolicy.defaultUndoLearningEnabled) }
+        get { resolver.undoLearningEnabled(nativeKey: SettingsStorageKeys.autoCorrectionUndoLearningEnabled, legacyKey: SettingsImportKeys.undoLearning, defaultValue: AutoCorrectionUndoLearningPolicy.defaultUndoLearningEnabled) }
         set {
-            store.set(newValue, forKey: Keys.autoCorrectionUndoLearningEnabled)
+            store.set(newValue, forKey: SettingsStorageKeys.autoCorrectionUndoLearningEnabled)
         }
     }
 
     public var suppressAutoCorrectionAfterManualConversion: Bool {
-        get { resolver.invertedLegacyBool(nativeKey: Keys.suppressAutoCorrectionAfterManualConversion, legacyKey: ImportKeys.shouldNotAutoconvertAfterConvertion, defaultValue: TextReplacementCommitPolicy.defaultSuppressAutoCorrectionAfterManualConversion) }
+        get { resolver.invertedLegacyBool(nativeKey: SettingsStorageKeys.suppressAutoCorrectionAfterManualConversion, legacyKey: SettingsImportKeys.shouldNotAutoconvertAfterConvertion, defaultValue: TextReplacementCommitPolicy.defaultSuppressAutoCorrectionAfterManualConversion) }
         set {
-            store.set(newValue, forKey: Keys.suppressAutoCorrectionAfterManualConversion)
+            store.set(newValue, forKey: SettingsStorageKeys.suppressAutoCorrectionAfterManualConversion)
         }
     }
 
     public var autoCorrectionCancellingKeyNames: Set<String> {
-        get { resolver.autoCorrectionCancellingKeyNames(nativeKey: Keys.autoCorrectionCancellingKeyNames, legacyKey: ImportKeys.cancellingKeys) }
+        get { resolver.autoCorrectionCancellingKeyNames(nativeKey: SettingsStorageKeys.autoCorrectionCancellingKeyNames, legacyKey: SettingsImportKeys.cancellingKeys) }
         set {
             store.set(
                 Array(AutoCorrectionCancellingKeyPolicy.normalizedEnabledKeyNames(newValue)).sorted(),
-                forKey: Keys.autoCorrectionCancellingKeyNames
+                forKey: SettingsStorageKeys.autoCorrectionCancellingKeyNames
             )
         }
     }
@@ -436,23 +349,23 @@ public final class SettingsManager {
     }
 
     public var soundEffectsEnabled: Bool {
-        get { resolver.bool(nativeKey: Keys.soundEffectsEnabled, legacyKey: ImportKeys.isSoundOn, defaultValue: SoundFeedbackPolicy.defaultSoundEffectsEnabled) }
+        get { resolver.bool(nativeKey: SettingsStorageKeys.soundEffectsEnabled, legacyKey: SettingsImportKeys.isSoundOn, defaultValue: SoundFeedbackPolicy.defaultSoundEffectsEnabled) }
         set {
-            store.set(newValue, forKey: Keys.soundEffectsEnabled)
+            store.set(newValue, forKey: SettingsStorageKeys.soundEffectsEnabled)
         }
     }
 
     public var enabledSoundResourceNames: Set<String> {
         get {
             resolver.enabledSoundResourceNames(
-                nativeKey: Keys.enabledSoundResourceNames,
-                legacyBitmaskKey: ImportKeys.enabledSounds,
+                nativeKey: SettingsStorageKeys.enabledSoundResourceNames,
+                legacyBitmaskKey: SettingsImportKeys.enabledSounds,
                 legacyToggleKeys: SoundFeedbackPolicy.legacyPerResourceToggleKeys
             )
         }
         set {
             let normalized = SoundFeedbackPolicy.normalizedEnabledResourceNames(newValue)
-            store.set(Array(normalized).sorted(), forKey: Keys.enabledSoundResourceNames)
+            store.set(Array(normalized).sorted(), forKey: SettingsStorageKeys.enabledSoundResourceNames)
         }
     }
 
@@ -471,27 +384,27 @@ public final class SettingsManager {
     }
 
     public var restorePasteboardAfterConversion: Bool {
-        get { resolver.bool(nativeKey: Keys.restorePasteboardAfterConversion, legacyKey: ImportKeys.shouldRestorePasteboard, defaultValue: ClipboardReplacementPolicy.defaultRestorePasteboardAfterConversion) }
+        get { resolver.bool(nativeKey: SettingsStorageKeys.restorePasteboardAfterConversion, legacyKey: SettingsImportKeys.shouldRestorePasteboard, defaultValue: ClipboardReplacementPolicy.defaultRestorePasteboardAfterConversion) }
         set {
-            store.set(newValue, forKey: Keys.restorePasteboardAfterConversion)
+            store.set(newValue, forKey: SettingsStorageKeys.restorePasteboardAfterConversion)
         }
     }
 
     public var productStatistics: ProductStatisticsSnapshot {
         get {
             resolver.productStatistics(
-                nativeKey: Keys.productStatistics,
-                typedWordsKey: ImportKeys.typedWords,
-                typedSymbolsKey: ImportKeys.typedSymbols,
-                automaticSwitchesKey: ImportKeys.automaticSwitches,
-                manualSwitchesKey: ImportKeys.manualSwitches,
-                revertsKey: ImportKeys.reverts,
-                dayuseSettingsKey: ImportKeys.dayuseSettings
+                nativeKey: SettingsStorageKeys.productStatistics,
+                typedWordsKey: SettingsImportKeys.typedWords,
+                typedSymbolsKey: SettingsImportKeys.typedSymbols,
+                automaticSwitchesKey: SettingsImportKeys.automaticSwitches,
+                manualSwitchesKey: SettingsImportKeys.manualSwitches,
+                revertsKey: SettingsImportKeys.reverts,
+                dayuseSettingsKey: SettingsImportKeys.dayuseSettings
             )
         }
         set {
             let normalized = ProductStatisticsPolicy.normalized(newValue)
-            store.encodeAndSet(normalized, forKey: Keys.productStatistics)
+            store.encodeAndSet(normalized, forKey: SettingsStorageKeys.productStatistics)
         }
     }
 
@@ -500,24 +413,24 @@ public final class SettingsManager {
     }
 
     public var applicationUpdateSettings: ApplicationUpdateSettingsSnapshot {
-        get { resolver.applicationUpdateSettings(nativeKey: Keys.applicationUpdateSettings) }
+        get { resolver.applicationUpdateSettings(nativeKey: SettingsStorageKeys.applicationUpdateSettings) }
         set {
             let normalized = ApplicationUpdateSettingsPolicy.normalized(newValue)
-            store.encodeAndSet(normalized, forKey: Keys.applicationUpdateSettings)
+            store.encodeAndSet(normalized, forKey: SettingsStorageKeys.applicationUpdateSettings)
         }
     }
 
     public var autoCorrectionRules: [AutoCorrectionRule] {
         get {
             resolver.autoCorrectionRules(
-                nativeKey: Keys.autoCorrectionRules,
-                legacyUserRulesKey: ImportKeys.userRulesDictionary,
+                nativeKey: SettingsStorageKeys.autoCorrectionRules,
+                legacyUserRulesKey: SettingsImportKeys.userRulesDictionary,
                 useStarterRules: autoCorrectionStarterRulesEnabled
             )
         }
         set {
             guard let data = try? AutoCorrectionRuleStore.encodeRules(newValue) else { return }
-            store.set(data, forKey: Keys.autoCorrectionRules)
+            store.set(data, forKey: SettingsStorageKeys.autoCorrectionRules)
         }
     }
 
@@ -543,26 +456,26 @@ public final class SettingsManager {
         self.store = SettingsDefaultsStore(defaults: defaults, domainName: domainName)
         // Register defaults
         store.register(defaults: [
-            Keys.isEnabled: SettingsPersistencePolicy.defaultIsEnabled,
-            Keys.isFirstLaunch: StartupPresentationPolicy.defaultIsFirstLaunch,
-            Keys.showInMenuBar: SettingsPersistencePolicy.defaultShowInMenuBar,
-            Keys.showAdvancedSettings: SettingsPersistencePolicy.defaultShowAdvancedSettings,
-            Keys.launchAtLogin: LoginItemPolicy.defaultLaunchAtLogin,
-            Keys.switchLayoutAfterConversion: LayoutSwitchPolicy.defaultSwitchLayoutAfterConversion,
-            Keys.switchLayoutAfterSelectedTextConversion: LayoutSwitchPolicy.defaultSwitchLayoutAfterSelectedTextConversion,
-            Keys.russianKeyboardLayoutType: KeyboardLayoutTypePolicy.defaultRussianLayoutTypeRawValue,
-            Keys.manualConversionDisabled: TextActionPreflightPolicy.defaultManualConversionDisabled,
-            Keys.rememberInputSourceForEachApp: ApplicationLayoutPolicy.defaultRememberInputSourceForEachApp,
-            Keys.rememberedApplicationLayouts: ApplicationLayoutMemory.defaultSnapshot,
-            Keys.disabledApplicationBundleIDs: ApplicationDisablePolicy.defaultDisabledBundleIDs,
-            Keys.completelyDisableInExceptionApplications: ApplicationDisablePolicy.defaultCompletelyDisableInExceptionApplications,
-            Keys.autoCorrectionEnabled: AutoCorrectionPreflightPolicy.defaultAutoCorrectionEnabled,
-            Keys.autoCorrectOnEnterAndTab: AutoCorrectionPreflightPolicy.defaultAutoCorrectOnEnterAndTab,
-            Keys.autoCorrectionUndoLearningEnabled: AutoCorrectionUndoLearningPolicy.defaultUndoLearningEnabled,
-            Keys.suppressAutoCorrectionAfterManualConversion: TextReplacementCommitPolicy.defaultSuppressAutoCorrectionAfterManualConversion,
-            Keys.autoCorrectionCancellingKeyNames: AutoCorrectionCancellingKeyPolicy.defaultEnabledKeyNameList,
-            Keys.soundEffectsEnabled: SoundFeedbackPolicy.defaultSoundEffectsEnabled,
-            Keys.restorePasteboardAfterConversion: ClipboardReplacementPolicy.defaultRestorePasteboardAfterConversion
+            SettingsStorageKeys.isEnabled: SettingsPersistencePolicy.defaultIsEnabled,
+            SettingsStorageKeys.isFirstLaunch: StartupPresentationPolicy.defaultIsFirstLaunch,
+            SettingsStorageKeys.showInMenuBar: SettingsPersistencePolicy.defaultShowInMenuBar,
+            SettingsStorageKeys.showAdvancedSettings: SettingsPersistencePolicy.defaultShowAdvancedSettings,
+            SettingsStorageKeys.launchAtLogin: LoginItemPolicy.defaultLaunchAtLogin,
+            SettingsStorageKeys.switchLayoutAfterConversion: LayoutSwitchPolicy.defaultSwitchLayoutAfterConversion,
+            SettingsStorageKeys.switchLayoutAfterSelectedTextConversion: LayoutSwitchPolicy.defaultSwitchLayoutAfterSelectedTextConversion,
+            SettingsStorageKeys.russianKeyboardLayoutType: KeyboardLayoutTypePolicy.defaultRussianLayoutTypeRawValue,
+            SettingsStorageKeys.manualConversionDisabled: TextActionPreflightPolicy.defaultManualConversionDisabled,
+            SettingsStorageKeys.rememberInputSourceForEachApp: ApplicationLayoutPolicy.defaultRememberInputSourceForEachApp,
+            SettingsStorageKeys.rememberedApplicationLayouts: ApplicationLayoutMemory.defaultSnapshot,
+            SettingsStorageKeys.disabledApplicationBundleIDs: ApplicationDisablePolicy.defaultDisabledBundleIDs,
+            SettingsStorageKeys.completelyDisableInExceptionApplications: ApplicationDisablePolicy.defaultCompletelyDisableInExceptionApplications,
+            SettingsStorageKeys.autoCorrectionEnabled: AutoCorrectionPreflightPolicy.defaultAutoCorrectionEnabled,
+            SettingsStorageKeys.autoCorrectOnEnterAndTab: AutoCorrectionPreflightPolicy.defaultAutoCorrectOnEnterAndTab,
+            SettingsStorageKeys.autoCorrectionUndoLearningEnabled: AutoCorrectionUndoLearningPolicy.defaultUndoLearningEnabled,
+            SettingsStorageKeys.suppressAutoCorrectionAfterManualConversion: TextReplacementCommitPolicy.defaultSuppressAutoCorrectionAfterManualConversion,
+            SettingsStorageKeys.autoCorrectionCancellingKeyNames: AutoCorrectionCancellingKeyPolicy.defaultEnabledKeyNameList,
+            SettingsStorageKeys.soundEffectsEnabled: SoundFeedbackPolicy.defaultSoundEffectsEnabled,
+            SettingsStorageKeys.restorePasteboardAfterConversion: ClipboardReplacementPolicy.defaultRestorePasteboardAfterConversion
         ])
     }
 
