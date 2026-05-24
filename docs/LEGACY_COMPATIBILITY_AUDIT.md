@@ -86,6 +86,13 @@ claims tests live elsewhere. This toolchain cannot import XCTest, so placeholder
 test targets create a false green surface; the boundary script now fails if that
 placeholder comes back.
 
+`SettingsManager` now keeps native primary keys and Punto Switcher import aliases
+in separate namespaces. `Keys` is the native write surface; `ImportKeys` is
+read-only import evidence, with the only writer exception still being
+first-run consumption of the imported `isFirstInstallation` flag. The boundary
+script fails if imported aliases leak back into the routine key namespace or if
+routine code starts writing import-only keys again.
+
 ## Next Candidates
 
 - Continue splitting only the remaining constants where the policy currently

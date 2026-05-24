@@ -102,6 +102,61 @@ for pattern in "${text_accessor_ax_selection_transport_patterns[@]}"; do
     echo "PASS TextAccessor AX selected-text transport absent: $pattern"
 done
 
+settings_import_alias_patterns=(
+    "\\bKeys\\.isFirstInstallation"
+    "\\bKeys\\.launchesOnStartup"
+    "\\bKeys\\.shortcutChangeLayout"
+    "\\bKeys\\.shortcutChangeCase"
+    "\\bKeys\\.shortcutSwitchAutocorrection"
+    "\\bKeys\\.shortcutCancelLayoutChange"
+    "\\bKeys\\.shortcutFindInYandex"
+    "\\bKeys\\.shortcutFindInSlovari"
+    "\\bKeys\\.searchbarSettings"
+    "\\bKeys\\.switchLayoutOnSelectedTextSwitch"
+    "\\bKeys\\.isManualConversionDisabled"
+    "\\bKeys\\.kbdLayoutType"
+    "\\bKeys\\.englishLayoutID"
+    "\\bKeys\\.russianLayoutID"
+    "\\bKeys\\.shouldRememberInputSourceForEachApp"
+    "\\bKeys\\.disabledApps"
+    "\\bKeys\\.completelyDisableInExceptionApps"
+    "\\bKeys\\.switcherResetOnReturn"
+    "\\bKeys\\.isAutocorrectionActive"
+    "\\bKeys\\.switcherUseOldRulesDefaultConf"
+    "\\bKeys\\.switcherUseOldRulesAccessor"
+    "\\bKeys\\.shouldNotAutoconvertWithTabOrEnter"
+    "\\bKeys\\.undoLearning"
+    "\\bKeys\\.shouldNotAutoconvertAfterConvertion"
+    "\\bKeys\\.cancellingKeys"
+    "\\bKeys\\.userRulesDictionary"
+    "\\bKeys\\.isSoundOn"
+    "\\bKeys\\.enabledSounds"
+    "\\bKeys\\.shouldRestorePasteboard"
+    "\\bKeys\\.typedWords"
+    "\\bKeys\\.typedSymbols"
+    "\\bKeys\\.automaticSwitches"
+    "\\bKeys\\.manualSwitches"
+    "\\bKeys\\.reverts"
+    "\\bKeys\\.dayuseSettings"
+)
+
+for pattern in "${settings_import_alias_patterns[@]}"; do
+    if rg --quiet "$pattern" Sources/Punto/Settings/SettingsManager.swift; then
+        echo "legacy boundary failed: SettingsManager routine key namespace contains import alias: $pattern" >&2
+        exit 1
+    fi
+    echo "PASS SettingsManager import alias separated: $pattern"
+done
+
+settings_import_writes="$(rg "defaults\\.(set|removeObject)\\([^\\n]*forKey: ImportKeys\\." Sources/Punto/Settings/SettingsManager.swift || true)"
+unexpected_import_writes="$(printf '%s\n' "$settings_import_writes" | rg -v --fixed-strings "ImportKeys.isFirstInstallation" || true)"
+if [[ -n "$unexpected_import_writes" ]]; then
+    echo "legacy boundary failed: routine write to import-only key:" >&2
+    printf '%s\n' "$unexpected_import_writes" >&2
+    exit 1
+fi
+echo "PASS SettingsManager import-only writes limited to first-run consumption"
+
 app_delegate_runtime_state_patterns=(
     "private let conversionSession = ConversionSession()"
     "private var isConversionInProgress ="
