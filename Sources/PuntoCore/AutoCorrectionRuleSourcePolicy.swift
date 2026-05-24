@@ -1,6 +1,7 @@
 import Foundation
 
 public enum AutoCorrectionRuleSourcePolicy {
+    public static let defaultStarterRulesEnabled = true
     public static let useOldRulesDefaultConfPath = "switcher.use_old_rules"
     public static let useOldRulesAccessor = "switcherUseOldRules"
 
@@ -9,7 +10,7 @@ public enum AutoCorrectionRuleSourcePolicy {
         persistedRules: [AutoCorrectionRule]?,
         legacyUserRules: [AutoCorrectionRule]? = nil,
         starterRules: [AutoCorrectionRule] = AutoCorrectionStarterCatalog.rules,
-        useStarterRules: Bool = SettingsPersistencePolicy.defaultAutoCorrectionStarterRulesEnabled
+        useStarterRules: Bool = defaultStarterRulesEnabled
     ) -> [AutoCorrectionRule] {
         guard hasPersistedRules else {
             let starterRules = useStarterRules ? starterRules : []

@@ -35,6 +35,8 @@ public struct ApplicationDisableMenuState: Equatable {
 }
 
 public enum ApplicationDisablePolicy {
+    public static let defaultDisabledBundleIDs: [String] = []
+    public static let defaultCompletelyDisableInExceptionApplications = false
     public static let legacyDisabledAppsKey = "disabledApps"
     public static let legacyCompletelyDisableInExceptionApplicationsKey = "CompletelyDisableInExceptionApps"
 

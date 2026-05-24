@@ -29,6 +29,7 @@ public enum AutoCorrectionCancellingKeyPolicy {
         upArrow,
         downArrow
     ]
+    public static let defaultEnabledKeyNameList = Array(defaultEnabledKeyNames).sorted()
 
     public static let supportedKeyNames: Set<String> = defaultEnabledKeyNames
 

@@ -3492,7 +3492,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings persistence preserves observed global enable setter"
     )
     try expect(
-        SettingsPersistencePolicy.defaultIsFirstLaunch,
+        StartupPresentationPolicy.defaultIsFirstLaunch,
         true,
         "settings defaults treat missing first-launch marker as first launch"
     )
@@ -3574,7 +3574,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings persistence prefers native selected-text layout switch over Punto Switcher alias"
     )
     try expect(
-        SettingsPersistencePolicy.defaultRussianKeyboardLayoutType,
+        KeyboardLayoutTypePolicy.defaultRussianLayoutTypeRawValue,
         "mac",
         "settings defaults use Mac Russian keyboard layout"
     )
@@ -3616,7 +3616,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings persistence prefers native manual conversion setting over Punto Switcher alias"
     )
     try expect(
-        SettingsPersistencePolicy.defaultRememberInputSourceForEachApp,
+        ApplicationLayoutPolicy.defaultRememberInputSourceForEachApp,
         false,
         "settings defaults keep per-app layout memory off"
     )
@@ -3626,12 +3626,12 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings persistence preserves observed per-app layout memory key"
     )
     try expect(
-        SettingsPersistencePolicy.defaultRememberedApplicationLayouts,
+        ApplicationLayoutMemory.defaultSnapshot,
         [:],
         "settings defaults start with empty remembered layout snapshot"
     )
     try expect(
-        SettingsPersistencePolicy.defaultDisabledApplicationBundleIDs,
+        ApplicationDisablePolicy.defaultDisabledBundleIDs,
         [],
         "settings defaults start with no disabled applications"
     )
@@ -3656,7 +3656,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings persistence preserves observed disabled-apps preferences controller setter"
     )
     try expect(
-        SettingsPersistencePolicy.defaultCompletelyDisableInExceptionApplications,
+        ApplicationDisablePolicy.defaultCompletelyDisableInExceptionApplications,
         false,
         "settings defaults keep exception apps partially disabled"
     )
@@ -3676,7 +3676,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings persistence preserves observed auto-correction active key"
     )
     try expect(
-        SettingsPersistencePolicy.defaultAutoCorrectionUndoLearningEnabled,
+        AutoCorrectionUndoLearningPolicy.defaultUndoLearningEnabled,
         false,
         "settings defaults keep auto-correction undo learning off"
     )
@@ -3757,7 +3757,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings persistence prefers native cancelling-key names over legacy bitmask"
     )
     try expect(
-        SettingsPersistencePolicy.defaultSoundEffectsEnabled,
+        SoundFeedbackPolicy.defaultSoundEffectsEnabled,
         false,
         "settings defaults keep sound effects off"
     )
@@ -3772,7 +3772,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "sound feedback preserves observed sound-state setter"
     )
     try expect(
-        SettingsPersistencePolicy.defaultRestorePasteboardAfterConversion,
+        ClipboardReplacementPolicy.defaultRestorePasteboardAfterConversion,
         true,
         "settings defaults restore pasteboard after clipboard fallbacks"
     )
@@ -3822,7 +3822,7 @@ private func runSettingsPersistencePolicyTests() throws {
             persistedValue: true,
             hasLegacyValue: true,
             legacyValue: false,
-            defaultValue: SettingsPersistencePolicy.defaultRestorePasteboardAfterConversion
+            defaultValue: ClipboardReplacementPolicy.defaultRestorePasteboardAfterConversion
         ),
         false,
         "settings persistence reads Punto Switcher shouldRestorePasteboard alias"
@@ -3833,13 +3833,13 @@ private func runSettingsPersistencePolicyTests() throws {
             persistedValue: true,
             hasLegacyValue: true,
             legacyValue: false,
-            defaultValue: SettingsPersistencePolicy.defaultRestorePasteboardAfterConversion
+            defaultValue: ClipboardReplacementPolicy.defaultRestorePasteboardAfterConversion
         ),
         true,
         "settings persistence prefers native pasteboard restore setting over Punto Switcher alias"
     )
     try expect(
-        SettingsPersistencePolicy.defaultProductStatistics,
+        ProductStatisticsPolicy.defaultSnapshot,
         ProductStatisticsSnapshot(),
         "settings defaults start with empty product statistics"
     )
@@ -4030,7 +4030,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings persistence reads observed shouldNotAutoconvertWithTabOrEnter=true as Enter/Tab auto-correction disabled"
     )
     try expect(
-        SettingsPersistencePolicy.defaultAutoCorrectionStarterRulesEnabled,
+        AutoCorrectionRuleSourcePolicy.defaultStarterRulesEnabled,
         true,
         "settings persistence defaults to Punto Switcher old-rules starter catalog"
     )

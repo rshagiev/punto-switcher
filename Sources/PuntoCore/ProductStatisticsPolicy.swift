@@ -59,6 +59,7 @@ public enum ProductStatisticsEvent: Equatable {
 
 public enum ProductStatisticsPolicy {
     public static let emptySnapshot = ProductStatisticsSnapshot()
+    public static let defaultSnapshot = emptySnapshot
     public static let dayuseSettingsKey = "PSDayuseSettings"
     public static let dayuseTypedWordsKey = "TypedWords"
     public static let dayuseTypedSymbolsKey = "TypedSymbols"

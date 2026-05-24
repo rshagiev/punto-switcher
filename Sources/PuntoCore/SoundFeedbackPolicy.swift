@@ -16,6 +16,7 @@ public enum InputSourceSwitchSoundContext: Equatable {
 }
 
 public enum SoundFeedbackPolicy {
+    public static let defaultSoundEffectsEnabled = false
     public static let legacyIsSoundOnKey = "isSoundOn"
     public static let legacyEnabledSoundsKey = "enabledSounds"
     public static let legacyUseSoundLayoutSwitchToRussianKey = "useSoundLayoutSwitchToRussian"

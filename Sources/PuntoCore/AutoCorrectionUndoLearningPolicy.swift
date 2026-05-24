@@ -1,6 +1,8 @@
 import Foundation
 
 public enum AutoCorrectionUndoLearningPolicy {
+    public static let defaultUndoLearningEnabled = false
+
     public static func originAfterUndo(record: ConversionRecord) -> ConversionOrigin {
         ConversionOriginPolicy.originAfterUndo(record: record)
     }

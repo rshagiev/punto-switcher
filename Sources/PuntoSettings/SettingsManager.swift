@@ -110,7 +110,7 @@ public final class SettingsManager {
 
     /// Whether this is the first launch
     public var isFirstLaunch: Bool {
-        get { resolver.bool(nativeKey: Keys.isFirstLaunch, legacyKey: ImportKeys.isFirstInstallation, defaultValue: SettingsPersistencePolicy.defaultIsFirstLaunch) }
+        get { resolver.bool(nativeKey: Keys.isFirstLaunch, legacyKey: ImportKeys.isFirstInstallation, defaultValue: StartupPresentationPolicy.defaultIsFirstLaunch) }
         set { store.set(newValue, forKey: Keys.isFirstLaunch) }
     }
 
@@ -295,7 +295,7 @@ public final class SettingsManager {
 
     /// Punto Switcher-style per-application layout memory.
     public var rememberInputSourceForEachApp: Bool {
-        get { resolver.bool(nativeKey: Keys.rememberInputSourceForEachApp, legacyKey: ImportKeys.shouldRememberInputSourceForEachApp, defaultValue: SettingsPersistencePolicy.defaultRememberInputSourceForEachApp) }
+        get { resolver.bool(nativeKey: Keys.rememberInputSourceForEachApp, legacyKey: ImportKeys.shouldRememberInputSourceForEachApp, defaultValue: ApplicationLayoutPolicy.defaultRememberInputSourceForEachApp) }
         set {
             store.set(newValue, forKey: Keys.rememberInputSourceForEachApp)
         }
@@ -331,7 +331,7 @@ public final class SettingsManager {
     }
 
     public var completelyDisableInExceptionApplications: Bool {
-        get { resolver.bool(nativeKey: Keys.completelyDisableInExceptionApplications, legacyKey: ImportKeys.completelyDisableInExceptionApps, defaultValue: SettingsPersistencePolicy.defaultCompletelyDisableInExceptionApplications) }
+        get { resolver.bool(nativeKey: Keys.completelyDisableInExceptionApplications, legacyKey: ImportKeys.completelyDisableInExceptionApps, defaultValue: ApplicationDisablePolicy.defaultCompletelyDisableInExceptionApplications) }
         set {
             store.set(newValue, forKey: Keys.completelyDisableInExceptionApplications)
         }
@@ -379,7 +379,7 @@ public final class SettingsManager {
                     ImportKeys.switcherUseOldRulesDefaultConf,
                     ImportKeys.switcherUseOldRulesAccessor
                 ],
-                defaultValue: SettingsPersistencePolicy.defaultAutoCorrectionStarterRulesEnabled
+                defaultValue: AutoCorrectionRuleSourcePolicy.defaultStarterRulesEnabled
             )
         }
         set {
@@ -395,7 +395,7 @@ public final class SettingsManager {
     }
 
     public var autoCorrectionUndoLearningEnabled: Bool {
-        get { resolver.undoLearningEnabled(nativeKey: Keys.autoCorrectionUndoLearningEnabled, legacyKey: ImportKeys.undoLearning, defaultValue: SettingsPersistencePolicy.defaultAutoCorrectionUndoLearningEnabled) }
+        get { resolver.undoLearningEnabled(nativeKey: Keys.autoCorrectionUndoLearningEnabled, legacyKey: ImportKeys.undoLearning, defaultValue: AutoCorrectionUndoLearningPolicy.defaultUndoLearningEnabled) }
         set {
             store.set(newValue, forKey: Keys.autoCorrectionUndoLearningEnabled)
         }
@@ -438,7 +438,7 @@ public final class SettingsManager {
     }
 
     public var soundEffectsEnabled: Bool {
-        get { resolver.bool(nativeKey: Keys.soundEffectsEnabled, legacyKey: ImportKeys.isSoundOn, defaultValue: SettingsPersistencePolicy.defaultSoundEffectsEnabled) }
+        get { resolver.bool(nativeKey: Keys.soundEffectsEnabled, legacyKey: ImportKeys.isSoundOn, defaultValue: SoundFeedbackPolicy.defaultSoundEffectsEnabled) }
         set {
             store.set(newValue, forKey: Keys.soundEffectsEnabled)
         }
@@ -473,7 +473,7 @@ public final class SettingsManager {
     }
 
     public var restorePasteboardAfterConversion: Bool {
-        get { resolver.bool(nativeKey: Keys.restorePasteboardAfterConversion, legacyKey: ImportKeys.shouldRestorePasteboard, defaultValue: SettingsPersistencePolicy.defaultRestorePasteboardAfterConversion) }
+        get { resolver.bool(nativeKey: Keys.restorePasteboardAfterConversion, legacyKey: ImportKeys.shouldRestorePasteboard, defaultValue: ClipboardReplacementPolicy.defaultRestorePasteboardAfterConversion) }
         set {
             store.set(newValue, forKey: Keys.restorePasteboardAfterConversion)
         }
@@ -546,25 +546,25 @@ public final class SettingsManager {
         // Register defaults
         store.register(defaults: [
             Keys.isEnabled: SettingsPersistencePolicy.defaultIsEnabled,
-            Keys.isFirstLaunch: SettingsPersistencePolicy.defaultIsFirstLaunch,
+            Keys.isFirstLaunch: StartupPresentationPolicy.defaultIsFirstLaunch,
             Keys.showInMenuBar: SettingsPersistencePolicy.defaultShowInMenuBar,
             Keys.showAdvancedSettings: SettingsPersistencePolicy.defaultShowAdvancedSettings,
             Keys.launchAtLogin: LoginItemPolicy.defaultLaunchAtLogin,
             Keys.switchLayoutAfterConversion: LayoutSwitchPolicy.defaultSwitchLayoutAfterConversion,
             Keys.switchLayoutAfterSelectedTextConversion: LayoutSwitchPolicy.defaultSwitchLayoutAfterSelectedTextConversion,
-            Keys.russianKeyboardLayoutType: SettingsPersistencePolicy.defaultRussianKeyboardLayoutType,
+            Keys.russianKeyboardLayoutType: KeyboardLayoutTypePolicy.defaultRussianLayoutTypeRawValue,
             Keys.manualConversionDisabled: TextActionPreflightPolicy.defaultManualConversionDisabled,
-            Keys.rememberInputSourceForEachApp: SettingsPersistencePolicy.defaultRememberInputSourceForEachApp,
-            Keys.rememberedApplicationLayouts: SettingsPersistencePolicy.defaultRememberedApplicationLayouts,
-            Keys.disabledApplicationBundleIDs: SettingsPersistencePolicy.defaultDisabledApplicationBundleIDs,
-            Keys.completelyDisableInExceptionApplications: SettingsPersistencePolicy.defaultCompletelyDisableInExceptionApplications,
+            Keys.rememberInputSourceForEachApp: ApplicationLayoutPolicy.defaultRememberInputSourceForEachApp,
+            Keys.rememberedApplicationLayouts: ApplicationLayoutMemory.defaultSnapshot,
+            Keys.disabledApplicationBundleIDs: ApplicationDisablePolicy.defaultDisabledBundleIDs,
+            Keys.completelyDisableInExceptionApplications: ApplicationDisablePolicy.defaultCompletelyDisableInExceptionApplications,
             Keys.autoCorrectionEnabled: AutoCorrectionPreflightPolicy.defaultAutoCorrectionEnabled,
             Keys.autoCorrectOnEnterAndTab: AutoCorrectionPreflightPolicy.defaultAutoCorrectOnEnterAndTab,
-            Keys.autoCorrectionUndoLearningEnabled: SettingsPersistencePolicy.defaultAutoCorrectionUndoLearningEnabled,
+            Keys.autoCorrectionUndoLearningEnabled: AutoCorrectionUndoLearningPolicy.defaultUndoLearningEnabled,
             Keys.suppressAutoCorrectionAfterManualConversion: TextReplacementCommitPolicy.defaultSuppressAutoCorrectionAfterManualConversion,
-            Keys.autoCorrectionCancellingKeyNames: SettingsPersistencePolicy.defaultAutoCorrectionCancellingKeyNames,
-            Keys.soundEffectsEnabled: SettingsPersistencePolicy.defaultSoundEffectsEnabled,
-            Keys.restorePasteboardAfterConversion: SettingsPersistencePolicy.defaultRestorePasteboardAfterConversion
+            Keys.autoCorrectionCancellingKeyNames: AutoCorrectionCancellingKeyPolicy.defaultEnabledKeyNameList,
+            Keys.soundEffectsEnabled: SoundFeedbackPolicy.defaultSoundEffectsEnabled,
+            Keys.restorePasteboardAfterConversion: ClipboardReplacementPolicy.defaultRestorePasteboardAfterConversion
         ])
     }
 

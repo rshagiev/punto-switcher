@@ -58,7 +58,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         textAccessor = TextAccessor(
             shouldRestorePasteboard: { [weak settingsManager] in
                 settingsManager?.restorePasteboardAfterConversion
-                    ?? SettingsPersistencePolicy.defaultRestorePasteboardAfterConversion
+                    ?? ClipboardReplacementPolicy.defaultRestorePasteboardAfterConversion
             }
         )
         inputSourceManager = InputSourceManager(

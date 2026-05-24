@@ -1,9 +1,11 @@
 import Foundation
 
 public final class ApplicationLayoutMemory {
+    public static let defaultSnapshot: [String: String] = [:]
+
     private var layoutsByBundleID: [String: String]
 
-    public init(layoutsByBundleID: [String: String] = [:]) {
+    public init(layoutsByBundleID: [String: String] = defaultSnapshot) {
         self.layoutsByBundleID = Self.normalizedSnapshot(layoutsByBundleID)
     }
 

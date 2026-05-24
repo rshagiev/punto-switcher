@@ -6,18 +6,6 @@ public enum SettingsPersistencePolicy {
     public static let defaultShowInMenuBar = true
     public static let defaultShowAdvancedSettings = false
     public static let nativeShowAdvancedSettingsKey = "showAdvancedSettings"
-    public static let defaultRememberInputSourceForEachApp = false
-    public static let defaultRememberedApplicationLayouts: [String: String] = [:]
-    public static let defaultDisabledApplicationBundleIDs: [String] = []
-    public static let defaultCompletelyDisableInExceptionApplications = false
-    public static let defaultAutoCorrectionStarterRulesEnabled = true
-    public static let defaultAutoCorrectionUndoLearningEnabled = false
-    public static let defaultAutoCorrectionCancellingKeyNames = Array(AutoCorrectionCancellingKeyPolicy.defaultEnabledKeyNames).sorted()
-    public static let defaultSoundEffectsEnabled = false
-    public static let defaultRestorePasteboardAfterConversion = true
-    public static let defaultIsFirstLaunch = true
-    public static let defaultRussianKeyboardLayoutType = KeyboardLayoutTypePolicy.defaultRussianLayoutType.rawValue
-    public static let defaultProductStatistics = ProductStatisticsPolicy.emptySnapshot
 
     public static func normalizedProductStatistics(_ snapshot: ProductStatisticsSnapshot) -> ProductStatisticsSnapshot {
         ProductStatisticsPolicy.normalized(snapshot)

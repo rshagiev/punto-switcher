@@ -1,4 +1,5 @@
 public enum StartupPresentationPolicy {
+    public static let defaultIsFirstLaunch = true
     public static let installArgument = "--install"
     public static let installArgumentHandlerLogName = "handleInstallArgument"
     public static let updateFinishedTooltipLogName = "showUpdateFinishedTooltip"
