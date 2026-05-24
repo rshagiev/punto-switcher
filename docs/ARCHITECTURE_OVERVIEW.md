@@ -184,7 +184,7 @@ Export writes the normalized effective rule set as JSON so user-authored rules c
 
 ## Settings UI Boundaries
 
-`SettingsWindowController` owns the main preferences window shell and editor lifecycle. Hotkey recorder lifecycle, shortcut collision handling, and reset actions live in `HotkeySettingsController`; General/Advanced rows, setting toggles, count labels, and managed-row actions live in `GeneralSettingsController`; shared glass-section/header construction lives in `SettingsSectionFactory`. Repeated app-specific subwindows are split into focused controllers:
+`SettingsWindowController` owns the main preferences window shell and editor lifecycle. Hotkey recorder lifecycle, shortcut collision handling, and reset actions live in `HotkeySettingsController`; General/Advanced setting composition, setting actions, count-refresh hooks, and managed-row callbacks live in `GeneralSettingsController`; shared setting row construction lives in `SettingsRowFactory`; shared glass-section/header construction lives in `SettingsSectionFactory`. Repeated app-specific subwindows are split into focused controllers:
 
 - `DisabledApplicationsEditorController`: current-app exception editor backed by `SettingsManager.disabledApplicationBundleIDs`.
 - `ResetOnReturnEditorController`: Return-key reset bundle-component editor backed by `SettingsManager.resetOnReturnBundleComponents`.

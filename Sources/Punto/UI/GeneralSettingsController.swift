@@ -61,22 +61,25 @@ final class GeneralSettingsController: NSObject {
 
         addAdvancedTogglesBeforeInputSourceRows(to: advancedStack)
         advancedStack.addArrangedSubview(createRussianKeyboardLayoutTypeRow())
-        advancedStack.addArrangedSubview(createPreferredInputSourceIDRow(
+        let englishSourceRow = createPreferredInputSourceIDRow(
             title: "English layout ID",
             sourceID: settingsManager.preferredEnglishInputSourceID,
             systemName: "keyboard",
-            fieldStore: { [weak self] field in self?.preferredEnglishInputSourceIDField = field },
             fieldAction: #selector(changePreferredEnglishInputSourceID(_:)),
             resetAction: #selector(resetPreferredEnglishInputSourceID(_:))
-        ))
-        advancedStack.addArrangedSubview(createPreferredInputSourceIDRow(
+        )
+        preferredEnglishInputSourceIDField = englishSourceRow.field
+        advancedStack.addArrangedSubview(englishSourceRow.row)
+
+        let russianSourceRow = createPreferredInputSourceIDRow(
             title: "Russian layout ID",
             sourceID: settingsManager.preferredRussianInputSourceID,
             systemName: "keyboard.onehanded.right",
-            fieldStore: { [weak self] field in self?.preferredRussianInputSourceIDField = field },
             fieldAction: #selector(changePreferredRussianInputSourceID(_:)),
             resetAction: #selector(resetPreferredRussianInputSourceID(_:))
-        ))
+        )
+        preferredRussianInputSourceIDField = russianSourceRow.field
+        advancedStack.addArrangedSubview(russianSourceRow.row)
         addAdvancedTogglesAfterInputSourceRows(to: advancedStack)
         advancedStack.addArrangedSubview(createCancellingKeyTogglesGrid())
         advancedStack.addArrangedSubview(createSoundResourceTogglesGrid())
@@ -141,33 +144,12 @@ final class GeneralSettingsController: NSObject {
     }
 
     private func createToggleRow(_ metadata: SettingsToggleMetadata) -> NSView {
-        let icon = NSImageView()
-        icon.image = NSImage(systemSymbolName: metadata.systemName, accessibilityDescription: nil)
-        icon.contentTintColor = .secondaryLabelColor
-
-        let label = NSTextField(labelWithString: metadata.title)
-        label.font = .systemFont(ofSize: 13)
-        label.textColor = .labelColor
-
-        let toggle = NSSwitch()
-        toggle.state = settingsManager.bool(for: metadata.slot) ? .on : .off
-        toggle.identifier = NSUserInterfaceItemIdentifier(metadata.slot.rawValue)
-        toggle.target = self
-        toggle.action = #selector(toggleSetting(_:))
-
-        let spacer = NSView()
-        spacer.translatesAutoresizingMaskIntoConstraints = false
-
-        let row = NSStackView(views: [icon, label, spacer, toggle])
-        row.orientation = .horizontal
-        row.alignment = .centerY
-        row.spacing = 8
-
-        label.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        toggle.setContentHuggingPriority(.required, for: .horizontal)
-
-        return row
+        SettingsRowFactory.toggleRow(
+            metadata: metadata,
+            isOn: settingsManager.bool(for: metadata.slot),
+            target: self,
+            action: #selector(toggleSetting(_:))
+        )
     }
 
     private func createSoundResourceTogglesGrid() -> NSView {
@@ -178,20 +160,17 @@ final class GeneralSettingsController: NSObject {
 
         for row in SoundFeedbackPolicy.displayRows {
             grid.addRow(with: row.map { item in
-                let checkbox = NSButton(
-                    checkboxWithTitle: item.title,
+                SettingsRowFactory.checkbox(
+                    title: item.title,
+                    identifier: item.resourceName,
+                    isOn: settingsManager.isSoundResourceEnabled(item.resourceName),
                     target: self,
                     action: #selector(toggleSoundResource(_:))
                 )
-                checkbox.identifier = NSUserInterfaceItemIdentifier(item.resourceName)
-                checkbox.state = settingsManager.isSoundResourceEnabled(item.resourceName) ? .on : .off
-                checkbox.font = .systemFont(ofSize: 12)
-                checkbox.setContentHuggingPriority(.required, for: .horizontal)
-                return checkbox
             })
         }
 
-        return createLabeledGridRow(title: "Sound events", grid: grid)
+        return SettingsRowFactory.labeledGridRow(title: "Sound events", grid: grid)
     }
 
     private func createCancellingKeyTogglesGrid() -> NSView {
@@ -204,110 +183,42 @@ final class GeneralSettingsController: NSObject {
         for start in stride(from: 0, to: items.count, by: 3) {
             let rowItems = Array(items[start..<min(start + 3, items.count)])
             grid.addRow(with: rowItems.map { item in
-                let checkbox = NSButton(
-                    checkboxWithTitle: item.title,
+                SettingsRowFactory.checkbox(
+                    title: item.title,
+                    identifier: item.name,
+                    isOn: settingsManager.isAutoCorrectionCancellingKeyEnabled(item.name),
                     target: self,
                     action: #selector(toggleAutoCorrectionCancellingKey(_:))
                 )
-                checkbox.identifier = NSUserInterfaceItemIdentifier(item.name)
-                checkbox.state = settingsManager.isAutoCorrectionCancellingKeyEnabled(item.name) ? .on : .off
-                checkbox.font = .systemFont(ofSize: 12)
-                checkbox.setContentHuggingPriority(.required, for: .horizontal)
-                return checkbox
             })
         }
 
-        return createLabeledGridRow(title: "Cancel auto-correction after", grid: grid)
-    }
-
-    private func createLabeledGridRow(title: String, grid: NSView) -> NSView {
-        let label = NSTextField(labelWithString: title)
-        label.font = .systemFont(ofSize: 12)
-        label.textColor = .secondaryLabelColor
-        label.setContentHuggingPriority(.required, for: .horizontal)
-
-        let spacer = NSView()
-        spacer.translatesAutoresizingMaskIntoConstraints = false
-
-        let row = NSStackView(views: [label, spacer, grid])
-        row.orientation = .horizontal
-        row.alignment = .top
-        row.spacing = 8
-        spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
-
-        return row
+        return SettingsRowFactory.labeledGridRow(title: "Cancel auto-correction after", grid: grid)
     }
 
     private func createRussianKeyboardLayoutTypeRow() -> NSView {
-        let icon = NSImageView()
-        icon.image = NSImage(systemSymbolName: "keyboard.chevron.compact.down", accessibilityDescription: nil)
-        icon.contentTintColor = .secondaryLabelColor
-
-        let label = NSTextField(labelWithString: "Russian keyboard layout")
-        label.font = .systemFont(ofSize: 13)
-        label.textColor = .labelColor
-
-        let segmented = NSSegmentedControl(labels: ["Mac", "Windows"], trackingMode: .selectOne, target: self, action: #selector(changeRussianKeyboardLayoutType(_:)))
-        segmented.segmentStyle = .rounded
-        segmented.selectedSegment = settingsManager.russianKeyboardLayoutType == .windows ? 1 : 0
-
-        let spacer = NSView()
-        spacer.translatesAutoresizingMaskIntoConstraints = false
-
-        let row = NSStackView(views: [icon, label, spacer, segmented])
-        row.orientation = .horizontal
-        row.alignment = .centerY
-        row.spacing = 8
-
-        label.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        segmented.setContentHuggingPriority(.required, for: .horizontal)
-
-        return row
+        SettingsRowFactory.russianKeyboardLayoutTypeRow(
+            selectedType: settingsManager.russianKeyboardLayoutType,
+            target: self,
+            action: #selector(changeRussianKeyboardLayoutType(_:))
+        )
     }
 
     private func createPreferredInputSourceIDRow(
         title: String,
         sourceID: String?,
         systemName: String,
-        fieldStore: (NSTextField) -> Void,
         fieldAction: Selector,
         resetAction: Selector
-    ) -> NSView {
-        let icon = NSImageView()
-        icon.image = NSImage(systemSymbolName: systemName, accessibilityDescription: nil)
-        icon.contentTintColor = .secondaryLabelColor
-
-        let label = NSTextField(labelWithString: title)
-        label.font = .systemFont(ofSize: 13)
-        label.textColor = .labelColor
-
-        let field = NSTextField(string: sourceID ?? "")
-        field.placeholderString = "Auto"
-        field.font = .monospacedSystemFont(ofSize: 11, weight: .regular)
-        field.target = self
-        field.action = fieldAction
-        field.tag = -1
-        field.lineBreakMode = .byTruncatingMiddle
-        field.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-        fieldStore(field)
-
-        let resetButton = NSButton(title: "Auto", target: self, action: resetAction)
-        resetButton.bezelStyle = .rounded
-
-        let row = NSStackView(views: [icon, label, field, resetButton])
-        row.orientation = .horizontal
-        row.alignment = .centerY
-        row.spacing = 8
-
-        NSLayoutConstraint.activate([
-            field.widthAnchor.constraint(equalToConstant: 145)
-        ])
-
-        label.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        resetButton.setContentHuggingPriority(.required, for: .horizontal)
-
-        return row
+    ) -> SettingsRowFactory.PreferredInputSourceIDRow {
+        SettingsRowFactory.preferredInputSourceIDRow(
+            title: title,
+            sourceID: sourceID,
+            systemName: systemName,
+            target: self,
+            fieldAction: fieldAction,
+            resetAction: resetAction
+        )
     }
 
     private func createDisabledAppsRow() -> NSView {
@@ -358,10 +269,7 @@ final class GeneralSettingsController: NSObject {
     }
 
     private func countLabel(text: String) -> NSTextField {
-        let label = NSTextField(labelWithString: text)
-        label.font = .monospacedDigitSystemFont(ofSize: 12, weight: .regular)
-        label.textColor = .secondaryLabelColor
-        return label
+        SettingsRowFactory.countLabel(text: text)
     }
 
     private func createManagedCountRow(
@@ -370,31 +278,12 @@ final class GeneralSettingsController: NSObject {
         countLabel: NSTextField,
         buttons: [NSButton]
     ) -> NSView {
-        let icon = NSImageView()
-        icon.image = NSImage(systemSymbolName: systemName, accessibilityDescription: nil)
-        icon.contentTintColor = .secondaryLabelColor
-
-        let label = NSTextField(labelWithString: title)
-        label.font = .systemFont(ofSize: 13)
-        label.textColor = .labelColor
-
-        for button in buttons {
-            button.bezelStyle = .rounded
-            button.setContentHuggingPriority(.required, for: .horizontal)
-        }
-
-        let spacer = NSView()
-        spacer.translatesAutoresizingMaskIntoConstraints = false
-
-        let row = NSStackView(views: [icon, label, countLabel, spacer] + buttons)
-        row.orientation = .horizontal
-        row.alignment = .centerY
-        row.spacing = 8
-
-        label.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
-
-        return row
+        SettingsRowFactory.managedCountRow(
+            title: title,
+            systemName: systemName,
+            countLabel: countLabel,
+            buttons: buttons
+        )
     }
 
     @objc private func toggleSetting(_ sender: NSSwitch) {

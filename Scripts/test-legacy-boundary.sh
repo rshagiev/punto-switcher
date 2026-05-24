@@ -723,6 +723,23 @@ for pattern in "${settings_window_general_patterns[@]}"; do
     echo "PASS SettingsWindowController general setting row internals absent: $pattern"
 done
 
+general_settings_row_factory_patterns=(
+    "NSImageView()"
+    "NSSwitch()"
+    "NSSegmentedControl("
+    "checkboxWithTitle:"
+    "monospacedDigitSystemFont"
+    "bezelStyle = .rounded"
+)
+
+for pattern in "${general_settings_row_factory_patterns[@]}"; do
+    if rg --fixed-strings --quiet "$pattern" Sources/Punto/UI/GeneralSettingsController.swift; then
+        echo "legacy boundary failed: GeneralSettingsController reopened settings row factory internals: $pattern" >&2
+        exit 1
+    fi
+    echo "PASS GeneralSettingsController row factory internals absent: $pattern"
+done
+
 if rg --fixed-strings --quiet "Placeholder - actual tests" Tests 2>/dev/null; then
     echo "legacy boundary failed: placeholder SwiftPM test target returned" >&2
     exit 1
