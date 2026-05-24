@@ -62,6 +62,22 @@ func runSearchbarImportTests() throws {
     )
 }
 
+func runLaunchAtLoginImportTests() throws {
+    let fixture = try DefaultsFixture("launch-at-login")
+    fixture.defaults.set(true, forKey: LoginItemPolicy.legacyLaunchesOnStartupKey)
+
+    var settings = fixture.manager()
+    try expect(settings.launchAtLogin, "settings manager imports legacy launch-at-login")
+
+    settings.launchAtLogin = false
+    settings = fixture.manager()
+    try expect(!settings.launchAtLogin, "settings manager prefers native launch-at-login")
+    try expect(
+        fixture.defaults.bool(forKey: LoginItemPolicy.legacyLaunchesOnStartupKey),
+        "settings manager keeps legacy launch-at-login read-only"
+    )
+}
+
 func runSoundImportTests() throws {
     let fixture = try DefaultsFixture("sound")
     fixture.defaults.set(1, forKey: SoundFeedbackPolicy.legacyEnabledSoundsKey)
@@ -192,6 +208,7 @@ func runInputSourceNotificationTests() throws {
 do {
     print("PuntoSettingsTest starting")
     try runSearchbarImportTests()
+    try runLaunchAtLoginImportTests()
     try runSoundImportTests()
     try runStatisticsImportTests()
     try runUpdateImportTests()

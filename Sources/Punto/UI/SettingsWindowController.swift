@@ -7,6 +7,7 @@ final class SettingsWindowController: NSWindowController {
 
     private let settingsManager: SettingsManager
     private let currentApplication: () -> (bundleID: String, name: String?)?
+    private let setLoginItemEnabled: (Bool) -> Void
     private var convertLayoutRecorder: HotkeyRecorderView?
     private var toggleCaseRecorder: HotkeyRecorderView?
     private var toggleAutoCorrectionRecorder: HotkeyRecorderView?
@@ -23,10 +24,12 @@ final class SettingsWindowController: NSWindowController {
 
     init(
         settingsManager: SettingsManager,
-        currentApplication: @escaping () -> (bundleID: String, name: String?)? = { nil }
+        currentApplication: @escaping () -> (bundleID: String, name: String?)? = { nil },
+        setLoginItemEnabled: @escaping (Bool) -> Void = { _ in }
     ) {
         self.settingsManager = settingsManager
         self.currentApplication = currentApplication
+        self.setLoginItemEnabled = setLoginItemEnabled
 
         // Create window
         let window = NSWindow(
@@ -880,7 +883,9 @@ final class SettingsWindowController: NSWindowController {
     }
 
     @objc private func toggleLaunchAtLogin(_ sender: NSSwitch) {
-        settingsManager.launchAtLogin = sender.state == .on
+        let isEnabled = sender.state == .on
+        settingsManager.launchAtLogin = isEnabled
+        setLoginItemEnabled(isEnabled)
     }
 
     @objc private func toggleShowInMenuBar(_ sender: NSSwitch) {

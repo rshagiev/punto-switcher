@@ -357,6 +357,12 @@ for pattern in "${settings_manager_direct_resolution_patterns[@]}"; do
     echo "PASS SettingsManager direct native/import resolution absent: $pattern"
 done
 
+if rg --fixed-strings --quiet "ServiceManagement" Sources/PuntoSettings; then
+    echo "legacy boundary failed: settings module reopened live login-item side effects" >&2
+    exit 1
+fi
+echo "PASS settings module live login-item side effects absent"
+
 app_delegate_runtime_state_patterns=(
     "private let conversionSession = ConversionSession()"
     "private var isConversionInProgress ="

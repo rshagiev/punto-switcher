@@ -151,6 +151,12 @@ suites, while the boundary script fails if imported aliases leak back into the
 routine key namespace, if routine code starts writing import-only keys again, or if
 the manager reopens direct native/import resolution helpers.
 
+Launch-at-login now follows the same storage/runtime split. `SettingsManager`
+imports Punto Switcher's `launchesOnStartup` key only as a read fallback and
+writes the native `launchAtLogin` key; the live `ServiceManagement` registration
+side effect is handled by the app shell through `LoginItemController`, not by the
+importable settings module.
+
 Legacy scalar parsing is centralized in `LegacyValuePolicy` instead of being
 reimplemented per feature. Searchbar settings, update/install settings, product
 statistics, hotkeys, undo-learning, user-rule imports, and alias-sensitive

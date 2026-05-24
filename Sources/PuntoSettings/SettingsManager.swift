@@ -1,6 +1,5 @@
 import Foundation
 import PuntoCore
-import ServiceManagement
 
 public extension Notification.Name {
     static let puntoRussianKeyboardLayoutTypeChanged = Notification.Name("puntoRussianKeyboardLayoutTypeChanged")
@@ -144,7 +143,6 @@ public final class SettingsManager {
         get { resolver.bool(nativeKey: Keys.launchAtLogin, legacyKey: ImportKeys.launchesOnStartup, defaultValue: LoginItemPolicy.defaultLaunchAtLogin) }
         set {
             store.set(newValue, forKey: Keys.launchAtLogin)
-            updateLoginItem(enabled: newValue)
         }
     }
 
@@ -592,26 +590,6 @@ public final class SettingsManager {
 
     public func resetFindInSlovariHotkey() {
         findInSlovariHotkey = Hotkey.defaultFindInSlovari
-    }
-
-    // MARK: - Launch at Login
-
-    private func updateLoginItem(enabled: Bool) {
-        if #available(macOS 13.0, *) {
-            do {
-                if enabled {
-                    try SMAppService.mainApp.register()
-                } else {
-                    try SMAppService.mainApp.unregister()
-                }
-            } catch {
-                print("Failed to update login item: \(error)")
-            }
-        } else {
-            // For older macOS versions, use the deprecated API
-            let bundleIdentifier = Bundle.main.bundleIdentifier ?? "com.rshagiev.Punto"
-            SMLoginItemSetEnabled(bundleIdentifier as CFString, enabled)
-        }
     }
 
     private func setPreferredInputSourceID(_ sourceID: String?, nativeKey: String) {

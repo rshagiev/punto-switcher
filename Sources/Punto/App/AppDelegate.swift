@@ -359,6 +359,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                         return nil
                     }
                     return (bundleID: bundleID, name: self?.activeApplicationName ?? app?.localizedName)
+                },
+                setLoginItemEnabled: { isEnabled in
+                    LoginItemController.setEnabled(isEnabled, bundleIdentifier: Bundle.main.bundleIdentifier)
                 }
             )
         }
