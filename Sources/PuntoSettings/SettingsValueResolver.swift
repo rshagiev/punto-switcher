@@ -191,7 +191,7 @@ final class SettingsValueResolver {
         automaticSwitchesKey: String,
         manualSwitchesKey: String,
         revertsKey: String,
-        dayuseSettingsKey: String
+        legacyDayuseSettingsKey: String
     ) -> ProductStatisticsSnapshot {
         let persistedSnapshot = store.decode(ProductStatisticsSnapshot.self, forKey: nativeKey)
         let legacyCountersSnapshot = ProductStatisticsPolicy.snapshotFromLegacySources(
@@ -200,7 +200,7 @@ final class SettingsValueResolver {
             automaticSwitches: store.integer(forKey: automaticSwitchesKey),
             manualSwitches: store.integer(forKey: manualSwitchesKey),
             reverts: store.integer(forKey: revertsKey),
-            dayuseSettings: store.dictionary(forKey: dayuseSettingsKey)
+            dayuseSettings: store.dictionary(forKey: legacyDayuseSettingsKey)
         )
         return ProductStatisticsPolicy.effectiveSnapshot(
             persistedSnapshot: persistedSnapshot,

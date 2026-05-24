@@ -1009,6 +1009,7 @@ echo "PASS runtime accessibility policy constants use native names"
 legacy_import_key_name_files=(
     Sources/PuntoCore/ApplicationUpdateSettingsPolicy.swift
     Sources/PuntoCore/AutoCorrectionRuleSourcePolicy.swift
+    Sources/PuntoCore/ProductStatisticsPolicy.swift
     Sources/PuntoCore/SearchbarSettingsPolicy.swift
 )
 legacy_import_key_generic_names=(
@@ -1031,6 +1032,14 @@ legacy_import_key_generic_names=(
     "alertShownInKey"
     "shouldSearchByDoubleClickKey"
     "sitesearchPromptCounterKey"
+    "dayuseSettingsKey"
+    "dayuseTypedWordsKey"
+    "dayuseTypedSymbolsKey"
+    "dayuseAutoSwitchesKey"
+    "dayuseManualSwitchesKey"
+    "dayuseRevertsKey"
+    "dayuseLastDayuseDateKey"
+    "dayuseLastProductStatDateKey"
 )
 
 for name in "${legacy_import_key_generic_names[@]}"; do

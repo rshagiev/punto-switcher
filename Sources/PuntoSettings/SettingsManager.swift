@@ -314,7 +314,7 @@ public final class SettingsManager {
                 automaticSwitchesKey: SettingsImportKeys.automaticSwitches,
                 manualSwitchesKey: SettingsImportKeys.manualSwitches,
                 revertsKey: SettingsImportKeys.reverts,
-                dayuseSettingsKey: SettingsImportKeys.dayuseSettings
+                legacyDayuseSettingsKey: SettingsImportKeys.dayuseSettings
             )
         }
         set {

@@ -74,7 +74,7 @@ enum SettingsImportKeys {
     static let automaticSwitches = ProductStatisticsPolicy.legacyAutomaticSwitchesKey
     static let manualSwitches = ProductStatisticsPolicy.legacyManualSwitchesKey
     static let reverts = ProductStatisticsPolicy.legacyRevertsKey
-    static let dayuseSettings = ProductStatisticsPolicy.dayuseSettingsKey
+    static let dayuseSettings = ProductStatisticsPolicy.legacyDayuseSettingsKey
     static let configVersion = ApplicationUpdateSettingsPolicy.legacyConfigVersionKey
     static let isJustInstalled = ApplicationUpdateSettingsPolicy.legacyIsJustInstalledKey
     static let isJustUpdated = ApplicationUpdateSettingsPolicy.legacyIsJustUpdatedKey

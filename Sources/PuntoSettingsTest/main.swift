@@ -99,8 +99,8 @@ func runStatisticsImportTests() throws {
     fixture.defaults.set(7, forKey: ProductStatisticsPolicy.legacyTypedWordsKey)
     fixture.defaults.set(11, forKey: ProductStatisticsPolicy.legacyTypedSymbolsKey)
     fixture.defaults.set([
-        ProductStatisticsPolicy.dayuseManualSwitchesKey: 3
-    ], forKey: ProductStatisticsPolicy.dayuseSettingsKey)
+        ProductStatisticsPolicy.legacyDayuseManualSwitchesKey: 3
+    ], forKey: ProductStatisticsPolicy.legacyDayuseSettingsKey)
 
     var settings = fixture.manager()
     try expect(settings.productStatistics.typedWords == 7, "settings manager imports legacy typed word counter")
@@ -118,13 +118,13 @@ func runStatisticsImportTests() throws {
     let staleDayuseFixture = try DefaultsFixture("statistics-stale-dayuse")
     let previousDay = Date(timeIntervalSince1970: 1_704_067_200)
     staleDayuseFixture.defaults.set([
-        ProductStatisticsPolicy.dayuseTypedWordsKey: 5,
-        ProductStatisticsPolicy.dayuseTypedSymbolsKey: 6,
-        ProductStatisticsPolicy.dayuseAutoSwitchesKey: 7,
-        ProductStatisticsPolicy.dayuseManualSwitchesKey: 8,
-        ProductStatisticsPolicy.dayuseRevertsKey: 9,
-        ProductStatisticsPolicy.dayuseLastDayuseDateKey: previousDay
-    ], forKey: ProductStatisticsPolicy.dayuseSettingsKey)
+        ProductStatisticsPolicy.legacyDayuseTypedWordsKey: 5,
+        ProductStatisticsPolicy.legacyDayuseTypedSymbolsKey: 6,
+        ProductStatisticsPolicy.legacyDayuseAutoSwitchesKey: 7,
+        ProductStatisticsPolicy.legacyDayuseManualSwitchesKey: 8,
+        ProductStatisticsPolicy.legacyDayuseRevertsKey: 9,
+        ProductStatisticsPolicy.legacyDayuseLastDayuseDateKey: previousDay
+    ], forKey: ProductStatisticsPolicy.legacyDayuseSettingsKey)
 
     let staleDayuseSettings = staleDayuseFixture.manager()
     try expect(staleDayuseSettings.productStatistics.typedWords == 0, "settings manager rolls over stale legacy dayuse typed words")

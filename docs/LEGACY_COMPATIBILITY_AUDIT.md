@@ -130,11 +130,12 @@ field keys, while `PuntoSwitcherObservedSurface.Hotkeys` owns the observed keys
 and selector/class boundary. The boundary audit rejects `observed*Key` inside
 selected behavior-policy files.
 
-The same role naming now covers the remaining imported updater/searchbar/starter
-rule keys. `ApplicationUpdateSettingsPolicy`, `SearchbarSettingsPolicy`, and
-`AutoCorrectionRuleSourcePolicy` expose their Punto Switcher import keys as
-`legacy*` constants, and the boundary script rejects the old generic names so
-new code cannot make import-only plist evidence look like native runtime state.
+The same role naming now covers the remaining imported updater, searchbar,
+starter-rule, and nested day-use statistics keys. `ApplicationUpdateSettingsPolicy`,
+`SearchbarSettingsPolicy`, `AutoCorrectionRuleSourcePolicy`, and
+`ProductStatisticsPolicy` expose their Punto Switcher import keys as `legacy*`
+constants, and the boundary script rejects the old generic names so new code
+cannot make import-only plist evidence look like native runtime state.
 
 The repository also no longer carries a placeholder SwiftPM `Tests/` file that
 claims tests live elsewhere. This toolchain cannot import XCTest, so placeholder

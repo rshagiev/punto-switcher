@@ -260,9 +260,39 @@ func runProductStatisticsPolicyTests() throws {
         "product statistics policy lets present stale individual counters override matching dayuse fields only"
     )
     try expect(
-        ProductStatisticsPolicy.dayuseSettingsKey,
+        ProductStatisticsPolicy.legacyDayuseSettingsKey,
         "PSDayuseSettings",
         "product statistics policy preserves observed dayuse settings key"
+    )
+    try expect(
+        ProductStatisticsPolicy.legacyDayuseSettingsKey,
+        PuntoSwitcherObservedSurface.ProductStatistics.dayuseSettingsKey,
+        "product statistics policy keeps dayuse settings key aligned with reverse-audit anchor"
+    )
+    try expect(
+        ProductStatisticsPolicy.legacyDayuseTypedWordsKey,
+        PuntoSwitcherObservedSurface.ProductStatistics.dayuseTypedWordsKey,
+        "product statistics policy keeps dayuse typed-words key aligned with reverse-audit anchor"
+    )
+    try expect(
+        ProductStatisticsPolicy.legacyDayuseTypedSymbolsKey,
+        PuntoSwitcherObservedSurface.ProductStatistics.dayuseTypedSymbolsKey,
+        "product statistics policy keeps dayuse typed-symbols key aligned with reverse-audit anchor"
+    )
+    try expect(
+        ProductStatisticsPolicy.legacyDayuseAutoSwitchesKey,
+        PuntoSwitcherObservedSurface.ProductStatistics.dayuseAutoSwitchesKey,
+        "product statistics policy keeps dayuse auto-switch key aligned with reverse-audit anchor"
+    )
+    try expect(
+        ProductStatisticsPolicy.legacyDayuseManualSwitchesKey,
+        PuntoSwitcherObservedSurface.ProductStatistics.dayuseManualSwitchesKey,
+        "product statistics policy keeps dayuse manual-switch key aligned with reverse-audit anchor"
+    )
+    try expect(
+        ProductStatisticsPolicy.legacyDayuseRevertsKey,
+        PuntoSwitcherObservedSurface.ProductStatistics.dayuseRevertsKey,
+        "product statistics policy keeps dayuse revert key aligned with reverse-audit anchor"
     )
     try expect(
         ProductStatisticsPolicy.legacyTypedWordsKey,
@@ -295,14 +325,24 @@ func runProductStatisticsPolicyTests() throws {
         "product statistics policy preserves observed dayuse stat class boundary"
     )
     try expect(
-        ProductStatisticsPolicy.dayuseLastDayuseDateKey,
+        ProductStatisticsPolicy.legacyDayuseLastDayuseDateKey,
         "LastDayuseDate",
         "product statistics policy preserves observed dayuse date key"
     )
     try expect(
-        ProductStatisticsPolicy.dayuseLastProductStatDateKey,
+        ProductStatisticsPolicy.legacyDayuseLastDayuseDateKey,
+        PuntoSwitcherObservedSurface.ProductStatistics.dayuseLastDayuseDateKey,
+        "product statistics policy keeps dayuse date key aligned with reverse-audit anchor"
+    )
+    try expect(
+        ProductStatisticsPolicy.legacyDayuseLastProductStatDateKey,
         "LastProductStatDate",
         "product statistics policy preserves observed product stat date key"
+    )
+    try expect(
+        ProductStatisticsPolicy.legacyDayuseLastProductStatDateKey,
+        PuntoSwitcherObservedSurface.ProductStatistics.dayuseLastProductStatDateKey,
+        "product statistics policy keeps product-stat date key aligned with reverse-audit anchor"
     )
     try expect(
         PuntoSwitcherObservedSurface.ProductStatistics.setDayuseSelector,

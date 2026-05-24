@@ -60,14 +60,14 @@ public enum ProductStatisticsEvent: Equatable {
 public enum ProductStatisticsPolicy {
     public static let emptySnapshot = ProductStatisticsSnapshot()
     public static let defaultSnapshot = emptySnapshot
-    public static let dayuseSettingsKey = "PSDayuseSettings"
-    public static let dayuseTypedWordsKey = "TypedWords"
-    public static let dayuseTypedSymbolsKey = "TypedSymbols"
-    public static let dayuseAutoSwitchesKey = "AutoSwitches"
-    public static let dayuseManualSwitchesKey = "ManualSwitches"
-    public static let dayuseRevertsKey = "Reverts"
-    public static let dayuseLastDayuseDateKey = "LastDayuseDate"
-    public static let dayuseLastProductStatDateKey = "LastProductStatDate"
+    public static let legacyDayuseSettingsKey = "PSDayuseSettings"
+    public static let legacyDayuseTypedWordsKey = "TypedWords"
+    public static let legacyDayuseTypedSymbolsKey = "TypedSymbols"
+    public static let legacyDayuseAutoSwitchesKey = "AutoSwitches"
+    public static let legacyDayuseManualSwitchesKey = "ManualSwitches"
+    public static let legacyDayuseRevertsKey = "Reverts"
+    public static let legacyDayuseLastDayuseDateKey = "LastDayuseDate"
+    public static let legacyDayuseLastProductStatDateKey = "LastProductStatDate"
     public static let typedSymbolMetricName = "product.typed.symbol"
     public static let typedWordMetricName = "product.typed.word"
     public static let automaticSwitchMetricName = "product.switch.auto"
@@ -211,13 +211,13 @@ public enum ProductStatisticsPolicy {
         }
 
         return snapshotFromLegacyCounters(
-            typedWords: LegacyValuePolicy.int(settings[dayuseTypedWordsKey]),
-            typedSymbols: LegacyValuePolicy.int(settings[dayuseTypedSymbolsKey]),
-            automaticSwitches: LegacyValuePolicy.int(settings[dayuseAutoSwitchesKey]),
-            manualSwitches: LegacyValuePolicy.int(settings[dayuseManualSwitchesKey]),
-            reverts: LegacyValuePolicy.int(settings[dayuseRevertsKey]),
-            lastDayuseDate: LegacyValuePolicy.date(settings[dayuseLastDayuseDateKey]),
-            lastProductStatDate: LegacyValuePolicy.date(settings[dayuseLastProductStatDateKey])
+            typedWords: LegacyValuePolicy.int(settings[legacyDayuseTypedWordsKey]),
+            typedSymbols: LegacyValuePolicy.int(settings[legacyDayuseTypedSymbolsKey]),
+            automaticSwitches: LegacyValuePolicy.int(settings[legacyDayuseAutoSwitchesKey]),
+            manualSwitches: LegacyValuePolicy.int(settings[legacyDayuseManualSwitchesKey]),
+            reverts: LegacyValuePolicy.int(settings[legacyDayuseRevertsKey]),
+            lastDayuseDate: LegacyValuePolicy.date(settings[legacyDayuseLastDayuseDateKey]),
+            lastProductStatDate: LegacyValuePolicy.date(settings[legacyDayuseLastProductStatDateKey])
         )
     }
 
