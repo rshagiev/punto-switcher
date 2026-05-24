@@ -12,6 +12,26 @@ func runUndoLearningSettingsPolicyTests() throws {
         "undo learning policy mirrors observed Punto Switcher defaults"
     )
     try expect(
+        UndoLearningSettingsPolicy.legacySettingsKey,
+        PuntoSwitcherObservedSurface.UndoLearning.settingsKey,
+        "undo learning policy keeps settings dictionary key aligned with reverse-audit anchor"
+    )
+    try expect(
+        UndoLearningSettingsPolicy.legacyUndoCollectionEnabledKey,
+        PuntoSwitcherObservedSurface.UndoLearning.undoCollectionEnabledKey,
+        "undo learning policy keeps collection-enabled key aligned with reverse-audit anchor"
+    )
+    try expect(
+        UndoLearningSettingsPolicy.legacyMustShowUndoWindowKey,
+        PuntoSwitcherObservedSurface.UndoLearning.mustShowUndoWindowKey,
+        "undo learning policy keeps show-window key aligned with reverse-audit anchor"
+    )
+    try expect(
+        UndoLearningSettingsPolicy.legacyUndoDictionaryKey,
+        PuntoSwitcherObservedSurface.UndoLearning.undoDictionaryKey,
+        "undo learning policy keeps undo dictionary key aligned with reverse-audit anchor"
+    )
+    try expect(
         PuntoSwitcherObservedSurface.UndoLearning.setUndoCollectionEnabledSelector,
         "setUndoCollectionEnabled:",
         "observed surface preserves undo learning collection setter"
@@ -97,18 +117,18 @@ func runUndoLearningSettingsPolicyTests() throws {
     )
     try expect(
         UndoLearningSettingsPolicy.snapshot(from: [
-            UndoLearningSettingsPolicy.undoCollectionEnabledKey: NSNumber(value: false),
-            UndoLearningSettingsPolicy.mustShowUndoWindowKey: NSNumber(value: true),
-            UndoLearningSettingsPolicy.undoDictionaryKey: [:]
+            UndoLearningSettingsPolicy.legacyUndoCollectionEnabledKey: NSNumber(value: false),
+            UndoLearningSettingsPolicy.legacyMustShowUndoWindowKey: NSNumber(value: true),
+            UndoLearningSettingsPolicy.legacyUndoDictionaryKey: [:]
         ]),
         UndoLearningSettingsPolicy.defaultSnapshot,
         "undo learning policy reads observed Punto Switcher plist shape"
     )
     try expect(
         UndoLearningSettingsPolicy.snapshot(from: [
-            UndoLearningSettingsPolicy.undoCollectionEnabledKey: "yes",
-            UndoLearningSettingsPolicy.mustShowUndoWindowKey: "0",
-            UndoLearningSettingsPolicy.undoDictionaryKey: [
+            UndoLearningSettingsPolicy.legacyUndoCollectionEnabledKey: "yes",
+            UndoLearningSettingsPolicy.legacyMustShowUndoWindowKey: "0",
+            UndoLearningSettingsPolicy.legacyUndoDictionaryKey: [
                 " teh ": " the ",
                 "": "ignored",
                 "adn": " "
@@ -123,7 +143,7 @@ func runUndoLearningSettingsPolicyTests() throws {
     )
     try expect(
         UndoLearningSettingsPolicy.legacyUndoCollectionEnabled(from: [
-            UndoLearningSettingsPolicy.undoCollectionEnabledKey: NSNumber(value: true)
+            UndoLearningSettingsPolicy.legacyUndoCollectionEnabledKey: NSNumber(value: true)
         ]),
         true,
         "undo learning policy exposes imported undoCollectionEnabled for settings fallback"

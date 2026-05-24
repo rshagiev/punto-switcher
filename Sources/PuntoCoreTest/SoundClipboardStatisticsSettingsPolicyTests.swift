@@ -9,8 +9,8 @@ func runSoundClipboardStatisticsSettingsPolicyTests() throws {
     )
     try expect(
         SoundFeedbackPolicy.legacyIsSoundOnKey,
-        "isSoundOn",
-        "sound feedback preserves observed global sound key"
+        PuntoSwitcherObservedSurface.SoundFeedback.isSoundOnKey,
+        "sound feedback keeps global sound key aligned with reverse-audit anchor"
     )
     try expect(
         PuntoSwitcherObservedSurface.SoundFeedback.setSoundStateSelector,

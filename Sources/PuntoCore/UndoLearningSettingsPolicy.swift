@@ -17,10 +17,10 @@ public struct UndoLearningSettingsSnapshot: Equatable {
 }
 
 public enum UndoLearningSettingsPolicy {
-    public static let settingsKey = "undoLearning"
-    public static let undoCollectionEnabledKey = "undoCollectionEnabled"
-    public static let mustShowUndoWindowKey = "mustShowUndoWindow"
-    public static let undoDictionaryKey = "undoDictionary"
+    public static let legacySettingsKey = "undoLearning"
+    public static let legacyUndoCollectionEnabledKey = "undoCollectionEnabled"
+    public static let legacyMustShowUndoWindowKey = "mustShowUndoWindow"
+    public static let legacyUndoDictionaryKey = "undoDictionary"
 
     public static let defaultSnapshot = UndoLearningSettingsSnapshot(
         undoCollectionEnabled: false,
@@ -35,14 +35,14 @@ public enum UndoLearningSettingsPolicy {
 
         return UndoLearningSettingsSnapshot(
             undoCollectionEnabled: LegacyValuePolicy.bool(
-                dictionary[undoCollectionEnabledKey],
+                dictionary[legacyUndoCollectionEnabledKey],
                 defaultValue: defaultSnapshot.undoCollectionEnabled
             ),
             mustShowUndoWindow: LegacyValuePolicy.bool(
-                dictionary[mustShowUndoWindowKey],
+                dictionary[legacyMustShowUndoWindowKey],
                 defaultValue: defaultSnapshot.mustShowUndoWindow
             ),
-            undoDictionary: stringDictionary(dictionary[undoDictionaryKey]) ?? defaultSnapshot.undoDictionary
+            undoDictionary: stringDictionary(dictionary[legacyUndoDictionaryKey]) ?? defaultSnapshot.undoDictionary
         )
     }
 

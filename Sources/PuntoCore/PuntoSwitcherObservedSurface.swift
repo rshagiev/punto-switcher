@@ -224,7 +224,26 @@ public enum PuntoSwitcherObservedSurface {
 
     public enum SoundFeedback {
         public static let skipNextLanguageChangeSoundSelector = "shouldSkipNextLanguageChangeSound"
+        public static let isSoundOnKey = "isSoundOn"
+        public static let enabledSoundsKey = "enabledSounds"
+        public static let useSoundLayoutSwitchToRussianKey = "useSoundLayoutSwitchToRussian"
+        public static let useSoundLayoutSwitchToEnglishKey = "useSoundLayoutSwitchToEnglish"
+        public static let useSoundConvertationKey = "useSoundConvertation"
+        public static let useSoundMisprintKey = "useSoundMisprint"
+        public static let useSoundAutocorrectionKey = "useSoundAutocorrection"
+        public static let useSoundUndoKey = "useSoundUndo"
+        public static let useSoundKeystrokesKey = "useSoundKeystrokes"
         public static let setSoundStateSelector = "setSoundState:isSoundOn:"
+        public static let resourceNames = [
+            "replace",
+            "reverse",
+            "misprint",
+            "switch",
+            "en",
+            "ru",
+            "typeeng",
+            "typerus"
+        ]
     }
 
     public enum StartupPresentation {
@@ -262,6 +281,10 @@ public enum PuntoSwitcherObservedSurface {
     }
 
     public enum UndoLearning {
+        public static let settingsKey = "undoLearning"
+        public static let undoCollectionEnabledKey = "undoCollectionEnabled"
+        public static let mustShowUndoWindowKey = "mustShowUndoWindow"
+        public static let undoDictionaryKey = "undoDictionary"
         public static let setUndoCollectionEnabledSelector = "setUndoCollectionEnabled:"
         public static let setMustShowUndoWindowSelector = "setMustShowUndoWindow:"
         public static let setUndoDictionarySelector = "setUndoDictionary:"

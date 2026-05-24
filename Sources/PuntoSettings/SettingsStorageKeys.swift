@@ -62,7 +62,7 @@ enum SettingsImportKeys {
     static let switcherUseOldRulesDefaultConf = AutoCorrectionRuleSourcePolicy.legacyUseOldRulesDefaultConfPath
     static let switcherUseOldRulesAccessor = AutoCorrectionRuleSourcePolicy.legacyUseOldRulesAccessor
     static let shouldNotAutoconvertWithTabOrEnter = AutoCorrectionPreflightPolicy.legacyShouldNotAutoconvertWithTabOrEnterKey
-    static let undoLearning = UndoLearningSettingsPolicy.settingsKey
+    static let undoLearning = UndoLearningSettingsPolicy.legacySettingsKey
     static let shouldNotAutoconvertAfterConvertion = TextReplacementCommitPolicy.legacyShouldNotAutoconvertAfterConvertionKey
     static let cancellingKeys = AutoCorrectionCancellingKeyPolicy.legacyCancellingKeysBitmaskKey
     static let userRulesDictionary = LegacyUserRulePolicy.userRulesDictionaryKey

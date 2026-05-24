@@ -4,8 +4,13 @@ import PuntoCore
 func runSoundFeedbackPolicyTests() throws {
     try expect(
         SoundFeedbackPolicy.requiredResourceNames,
-        ["replace", "reverse", "misprint", "switch", "en", "ru", "typeeng", "typerus"],
+        Set(PuntoSwitcherObservedSurface.SoundFeedback.resourceNames),
         "sound feedback declares every bundled Punto-style sound resource"
+    )
+    try expect(
+        PuntoSwitcherObservedSurface.SoundFeedback.resourceNames,
+        ["replace", "reverse", "misprint", "switch", "en", "ru", "typeeng", "typerus"],
+        "sound feedback pins observed bundled sound resource names"
     )
     try expect(
         SoundFeedbackPolicy.defaultEnabledResourceNames,
@@ -47,13 +52,13 @@ func runSoundFeedbackPolicyTests() throws {
     try expect(
         Set(SoundFeedbackPolicy.legacyPerResourceToggleKeys),
         [
-            "useSoundLayoutSwitchToRussian",
-            "useSoundLayoutSwitchToEnglish",
-            "useSoundConvertation",
-            "useSoundMisprint",
-            "useSoundAutocorrection",
-            "useSoundUndo",
-            "useSoundKeystrokes"
+            PuntoSwitcherObservedSurface.SoundFeedback.useSoundLayoutSwitchToRussianKey,
+            PuntoSwitcherObservedSurface.SoundFeedback.useSoundLayoutSwitchToEnglishKey,
+            PuntoSwitcherObservedSurface.SoundFeedback.useSoundConvertationKey,
+            PuntoSwitcherObservedSurface.SoundFeedback.useSoundMisprintKey,
+            PuntoSwitcherObservedSurface.SoundFeedback.useSoundAutocorrectionKey,
+            PuntoSwitcherObservedSurface.SoundFeedback.useSoundUndoKey,
+            PuntoSwitcherObservedSurface.SoundFeedback.useSoundKeystrokesKey
         ],
         "sound feedback declares observed Punto Switcher per-resource sound toggles"
     )
@@ -64,8 +69,8 @@ func runSoundFeedbackPolicyTests() throws {
     )
     try expect(
         SoundFeedbackPolicy.legacyIsSoundOnKey,
-        "isSoundOn",
-        "sound feedback pins observed Punto Switcher global sound key"
+        PuntoSwitcherObservedSurface.SoundFeedback.isSoundOnKey,
+        "sound feedback keeps global sound import key aligned with reverse-audit anchor"
     )
     try expect(
         PuntoSwitcherObservedSurface.SoundFeedback.setSoundStateSelector,
@@ -74,8 +79,8 @@ func runSoundFeedbackPolicyTests() throws {
     )
     try expect(
         SoundFeedbackPolicy.legacyEnabledSoundsKey,
-        "enabledSounds",
-        "sound feedback pins observed Punto Switcher enabled-sounds bitmask key"
+        PuntoSwitcherObservedSurface.SoundFeedback.enabledSoundsKey,
+        "sound feedback keeps enabled-sounds bitmask import key aligned with reverse-audit anchor"
     )
     try expect(
         SoundFeedbackPolicy.normalizedEnabledResourceNames(["replace", "unknown", "ru"]),

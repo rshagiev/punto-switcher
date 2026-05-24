@@ -201,6 +201,7 @@ runtime_owned_key_policy_files=(
     Sources/PuntoCore/SettingsPersistencePolicy.swift
     Sources/PuntoCore/SoundFeedbackPolicy.swift
     Sources/PuntoCore/ClipboardReplacementPolicy.swift
+    Sources/PuntoCore/UndoLearningSettingsPolicy.swift
 )
 
 if rg -n "observed[A-Za-z0-9]*Key" "${runtime_owned_key_policy_files[@]}"; then
@@ -208,6 +209,21 @@ if rg -n "observed[A-Za-z0-9]*Key" "${runtime_owned_key_policy_files[@]}"; then
     exit 1
 fi
 echo "PASS runtime-owned setting/import key constants are named by native-vs-legacy role"
+
+undo_learning_unqualified_import_key_patterns=(
+    "public static let settingsKey"
+    "public static let undoCollectionEnabledKey"
+    "public static let mustShowUndoWindowKey"
+    "public static let undoDictionaryKey"
+)
+
+for pattern in "${undo_learning_unqualified_import_key_patterns[@]}"; do
+    if rg --fixed-strings --quiet "$pattern" Sources/PuntoCore/UndoLearningSettingsPolicy.swift; then
+        echo "legacy boundary failed: undo-learning import key lacks legacy role prefix: $pattern" >&2
+        exit 1
+    fi
+    echo "PASS undo-learning import key role prefix enforced: $pattern"
+done
 
 settings_persistence_role_specific_patterns=(
     "legacyDisabledAppsKey"

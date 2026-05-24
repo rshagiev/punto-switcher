@@ -131,11 +131,13 @@ and selector/class boundary. The boundary audit rejects `observed*Key` inside
 selected behavior-policy files.
 
 The same role naming now covers the remaining imported updater, searchbar,
-starter-rule, and nested day-use statistics keys. `ApplicationUpdateSettingsPolicy`,
-`SearchbarSettingsPolicy`, `AutoCorrectionRuleSourcePolicy`, and
-`ProductStatisticsPolicy` expose their Punto Switcher import keys as `legacy*`
-constants, and the boundary script rejects the old generic names so new code
-cannot make import-only plist evidence look like native runtime state.
+starter-rule, sound-resource, undo-learning, and nested day-use statistics keys.
+`ApplicationUpdateSettingsPolicy`, `SearchbarSettingsPolicy`,
+`AutoCorrectionRuleSourcePolicy`, `SoundFeedbackPolicy`,
+`UndoLearningSettingsPolicy`, and `ProductStatisticsPolicy` expose their Punto
+Switcher import keys as `legacy*` constants, and the boundary script rejects the
+old generic names so new code cannot make import-only plist evidence look like
+native runtime state.
 
 The repository also no longer carries a placeholder SwiftPM `Tests/` file that
 claims tests live elsewhere. This toolchain cannot import XCTest, so placeholder
@@ -184,9 +186,10 @@ keeping their native write targets separate.
 - Continue splitting only the remaining constants where the policy currently
   uses reverse-audit naming for a runtime alias, URL fragment, default, or
   sentinel value. The input-source `UNDEFINED` sentinel, Accessibility
-  System Settings URL fragments, startup/accessibility log aliases, and
-  Yandex selected-text search URL markers are now covered by audit-only anchors
-  plus behavior-policy alignment tests.
+  System Settings URL fragments, startup/accessibility log aliases, Yandex
+  selected-text search URL markers, sound-resource import keys, and
+  undo-learning nested keys are now covered by audit-only anchors plus
+  behavior-policy alignment tests.
 - Add an explicit export path if we ever need to generate Punto Switcher-shaped
   settings intentionally; keep routine runtime writes native-only.
 - Keep searchbar/click-search split this way: selected-text Yandex shortcuts and
