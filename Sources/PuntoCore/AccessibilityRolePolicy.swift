@@ -33,11 +33,11 @@ public enum AccessibilityRolePolicy {
         case click
     }
 
-    public static let observedMailApplicationToken = "Mail"
-    public static let observedParallelsBundleID = "com.parallels.desktop"
-    public static let observedScrollAreaRole = "AXScrollArea"
+    public static let mailApplicationToken = "Mail"
+    public static let parallelsBundleID = "com.parallels.desktop"
+    public static let scrollAreaRole = "AXScrollArea"
 
-    public static let observedSearchbarExceptionRoles: [String: [String]] = [
+    public static let searchbarExceptionRoles: [String: [String]] = [
         "*": ["AXTextField", "AXTextArea", "AXComboBox", "AXWindow", "AXUnknown", "AXStaticText", "AXPopUpButton", "AXApplication"],
         "com.adobe.acc.AdobeCreativeCloud": [],
         "com.apple.ActivityMonitor": [],
@@ -72,7 +72,7 @@ public enum AccessibilityRolePolicy {
         "com.google.chrome": ["AXGroup", "AXList"],
         "com.microsoft": [],
         "com.mojang": [],
-        observedParallelsBundleID: [],
+        parallelsBundleID: [],
         "com.teamviewer.TeamViewer": [],
         "com.wunderkinder.wunderlistdesktop": [],
         "it.bloop.airmail": [],
@@ -84,7 +84,7 @@ public enum AccessibilityRolePolicy {
         "ru.yandex.desktop.yandex-browser": ["AXGroup", "AXList"]
     ]
 
-    public static let observedClickExceptionRoles: [String: [String]] = [
+    public static let clickExceptionRoles: [String: [String]] = [
         "*": ["AXTextField", "AXTextArea", "AXComboBox", "AXWindow", "AXUnknown", "AXStaticText", "AXPopUpButton"],
         "com.adobe.acc.AdobeCreativeCloud": [],
         "com.apple.ActivityMonitor": [],
@@ -117,7 +117,7 @@ public enum AccessibilityRolePolicy {
         "com.bohemiancoding.sketch3": [],
         "com.google.chrome": ["AXGroup", "AXList"],
         "com.microsoft": [],
-        observedParallelsBundleID: [],
+        parallelsBundleID: [],
         "com.teamviewer.TeamViewer": [],
         "com.wunderkinder.wunderlistdesktop": [],
         "it.bloop.airmail": [],
@@ -148,13 +148,13 @@ public enum AccessibilityRolePolicy {
         "axcell",
         "axgroup",
         "axwindow",
-        normalizedRole(observedScrollAreaRole) ?? "axscrollarea"
+        normalizedRole(scrollAreaRole) ?? "axscrollarea"
     ]
 
-    private static let globalSearchbarExceptionRoles = normalizedGlobalRoles(from: observedSearchbarExceptionRoles)
-    private static let globalClickExceptionRoles = normalizedGlobalRoles(from: observedClickExceptionRoles)
-    private static let appSpecificSearchbarExceptionRoles = normalizedAppSpecificRoles(from: observedSearchbarExceptionRoles)
-    private static let appSpecificClickExceptionRoles = normalizedAppSpecificRoles(from: observedClickExceptionRoles)
+    private static let globalSearchbarExceptionRoles = normalizedGlobalRoles(from: searchbarExceptionRoles)
+    private static let globalClickExceptionRoles = normalizedGlobalRoles(from: clickExceptionRoles)
+    private static let appSpecificSearchbarExceptionRoles = normalizedAppSpecificRoles(from: searchbarExceptionRoles)
+    private static let appSpecificClickExceptionRoles = normalizedAppSpecificRoles(from: clickExceptionRoles)
 
     public static func normalizedRole(_ role: String?) -> String? {
         guard let role else {
@@ -198,7 +198,7 @@ public enum AccessibilityRolePolicy {
         roles.contains { isWebAreaRole($0) }
     }
 
-    public static func isObservedClipboardReplaceableContentRole(_ role: String?) -> Bool {
+    public static func isClipboardReplaceableContentRole(_ role: String?) -> Bool {
         switch normalizedRole(role) {
         case "axwebarea", "axscrollarea":
             return true
@@ -207,8 +207,8 @@ public enum AccessibilityRolePolicy {
         }
     }
 
-    public static func containsObservedClipboardReplaceableContentRole(_ roles: [String]) -> Bool {
-        roles.contains { isObservedClipboardReplaceableContentRole($0) }
+    public static func containsClipboardReplaceableContentRole(_ roles: [String]) -> Bool {
+        roles.contains { isClipboardReplaceableContentRole($0) }
     }
 
     public static func isEditableTextRole(_ role: String?) -> Bool {
@@ -227,7 +227,7 @@ public enum AccessibilityRolePolicy {
         return nonEditableContentRoles.contains(normalized)
     }
 
-    public static func isObservedSearchExceptionRole(
+    public static func isSearchExceptionRole(
         role: String?,
         bundleID: String?,
         context: SearchExceptionContext

@@ -2433,27 +2433,14 @@ func runApplicationReturnKeyPolicyTests() throws {
 
 func runAccessibilityApplicationPolicyTests() throws {
     try expect(
-        AccessibilityApplicationPolicy.observedBrowserInjectionBundleIDs,
-        [
-            "com.apple.safari",
-            "com.google.chrome",
-            "org.chromium.chromium",
-            "ru.yandex.desktop.yandex-browser",
-            "com.operasoftware.Opera",
-            "org.mozilla.firefox"
-        ],
-        "accessibility app policy preserves observed default-conf injection order"
+        AccessibilityApplicationPolicy.browserInjectionBundleIDs,
+        PuntoSwitcherObservedSurface.AccessibilityApplications.browserInjectionBundleIDs,
+        "accessibility app policy aligns browser injection list to reverse-audit anchor"
     )
     try expect(
-        AccessibilityApplicationPolicy.observedEnhancedUserInterfaceBundleIDs,
-        [
-            "com.google.chrome",
-            "com.operasoftware.Opera",
-            "org.chromium.chromium",
-            "org.mozilla.firefox",
-            "ru.yandex.desktop.yandex-browser"
-        ],
-        "accessibility app policy preserves observed default-conf eui order"
+        AccessibilityApplicationPolicy.enhancedUserInterfaceBundleIDs,
+        PuntoSwitcherObservedSurface.AccessibilityApplications.enhancedUserInterfaceBundleIDs,
+        "accessibility app policy aligns enhanced-UI list to reverse-audit anchor"
     )
 
     for bundleID in [
@@ -2465,7 +2452,7 @@ func runAccessibilityApplicationPolicyTests() throws {
         "ru.yandex.desktop.yandex-browser"
     ] {
         try expect(
-            AccessibilityApplicationPolicy.isObservedBrowserInjectionBundleID(bundleID),
+            AccessibilityApplicationPolicy.isBrowserInjectionBundleID(bundleID),
             true,
             "accessibility app policy detects observed browser injection bundle \(bundleID)"
         )
@@ -2506,4 +2493,3 @@ func runAccessibilityApplicationPolicyTests() throws {
         "accessibility app policy rejects missing bundle id"
     )
 }
-

@@ -793,6 +793,21 @@ if rg -n "observed[A-Za-z0-9]*(Message|URLString|Anchor|PaneID|Legacy|SourceID)"
     exit 1
 fi
 
+runtime_accessibility_policy_files=(
+    Sources/PuntoCore/AccessibilityApplicationPolicy.swift \
+    Sources/PuntoCore/AccessibilityNotificationPolicy.swift \
+    Sources/PuntoCore/AccessibilityRolePolicy.swift \
+    Sources/PuntoCore/ApplicationBundleIDPolicy.swift \
+    Sources/PuntoCore/SecureInputDiagnosticsPolicy.swift
+)
+
+if rg -n "observed[A-Za-z0-9]*(BundleID|Role|Roles|Notification|Notifications|Application|Applications|Plist|Filename|Token)" \
+    "${runtime_accessibility_policy_files[@]}"; then
+    echo "legacy boundary failed: runtime accessibility policy constants use reverse-audit observed naming" >&2
+    exit 1
+fi
+echo "PASS runtime accessibility policy constants use native names"
+
 if rg -n "PuntoSwitcherObservedSurface" "${behavior_policy_observed_surface_files[@]}"; then
     echo "legacy boundary failed: behavior policy depends directly on reverse-audit-only observed surface" >&2
     exit 1

@@ -23,7 +23,7 @@ public struct SecureInputDiagnosticsSnapshot: Equatable {
 }
 
 public enum SecureInputDiagnosticsPolicy {
-    public static let observedPlistFilename = "punto.SecureInput.plist"
+    public static let secureInputDiagnosticsPlistFilename = "punto.SecureInput.plist"
     public static let secureInputStateKey = "SecureInputState"
     public static let contextKey = "Context"
     public static let currentAppKey = "currentApp"

@@ -14,10 +14,10 @@ final class AccessibilityNotificationRuntimeCoordinator {
         self.ownBundleID = ownBundleID
     }
 
-    func handle(notificationName: String, observedBundleID: String?, now: Date = Date()) {
+    func handle(notificationName: String, sourceBundleID: String?, now: Date = Date()) {
         let action = AccessibilityNotificationPolicy.action(
             notificationName: notificationName,
-            observedBundleID: observedBundleID,
+            sourceBundleID: sourceBundleID,
             ownBundleID: ownBundleID,
             now: now,
             ignoreUntil: textState.ignoreAccessibilityNotificationsUntil,

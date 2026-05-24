@@ -58,7 +58,7 @@ public final class AccessibilityStateObserver {
         let applicationElement = AXUIElementCreateApplication(pid)
         let refcon = Unmanaged.passUnretained(self).toOpaque()
         var subscribed = 0
-        for notificationName in AccessibilityNotificationPolicy.observedNotifications {
+        for notificationName in AccessibilityNotificationPolicy.supportedNotifications {
             let result = AXObserverAddNotification(
                 createdObserver,
                 applicationElement,
@@ -94,7 +94,7 @@ public final class AccessibilityStateObserver {
         }
 
         if let observedApplicationElement {
-            for notificationName in AccessibilityNotificationPolicy.observedNotifications {
+            for notificationName in AccessibilityNotificationPolicy.supportedNotifications {
                 AXObserverRemoveNotification(observer, observedApplicationElement, notificationName as CFString)
             }
         }

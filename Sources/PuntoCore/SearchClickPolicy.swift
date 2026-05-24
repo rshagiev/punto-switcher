@@ -6,7 +6,7 @@ public enum SearchClickPolicy {
             return false
         }
 
-        return !AccessibilityRolePolicy.isObservedSearchExceptionRole(
+        return !AccessibilityRolePolicy.isSearchExceptionRole(
             role: role,
             bundleID: bundleID,
             context: .click

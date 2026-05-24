@@ -3,7 +3,7 @@ import Foundation
 public enum AccessibilityApplicationPolicy {
     public static let enhancedUserInterfaceAttribute = "AXEnhancedUserInterface"
 
-    public static let observedBrowserInjectionBundleIDs: [String] = [
+    public static let browserInjectionBundleIDs: [String] = [
         "com.apple.safari",
         "com.google.chrome",
         "org.chromium.chromium",
@@ -12,7 +12,7 @@ public enum AccessibilityApplicationPolicy {
         "org.mozilla.firefox"
     ]
 
-    public static let observedEnhancedUserInterfaceBundleIDs: [String] = [
+    public static let enhancedUserInterfaceBundleIDs: [String] = [
         "com.google.chrome",
         "com.operasoftware.Opera",
         "org.chromium.chromium",
@@ -20,20 +20,20 @@ public enum AccessibilityApplicationPolicy {
         "ru.yandex.desktop.yandex-browser"
     ]
 
-    private static let normalizedObservedBrowserInjectionBundleIDs = ApplicationBundleIDPolicy.normalizedSet(
-        Set(observedBrowserInjectionBundleIDs)
+    private static let normalizedBrowserInjectionBundleIDs = ApplicationBundleIDPolicy.normalizedSet(
+        Set(browserInjectionBundleIDs)
     )
 
-    private static let normalizedObservedEnhancedUserInterfaceBundleIDs = ApplicationBundleIDPolicy.normalizedSet(
-        Set(observedEnhancedUserInterfaceBundleIDs)
+    private static let normalizedEnhancedUserInterfaceBundleIDs = ApplicationBundleIDPolicy.normalizedSet(
+        Set(enhancedUserInterfaceBundleIDs)
     )
 
-    public static func isObservedBrowserInjectionBundleID(_ bundleID: String?) -> Bool {
+    public static func isBrowserInjectionBundleID(_ bundleID: String?) -> Bool {
         guard let bundleID = ApplicationBundleIDPolicy.normalized(bundleID) else {
             return false
         }
 
-        return normalizedObservedBrowserInjectionBundleIDs.contains(bundleID)
+        return normalizedBrowserInjectionBundleIDs.contains(bundleID)
     }
 
     public static func shouldEnableEnhancedUserInterface(bundleID: String?) -> Bool {
@@ -41,6 +41,6 @@ public enum AccessibilityApplicationPolicy {
             return false
         }
 
-        return normalizedObservedEnhancedUserInterfaceBundleIDs.contains(bundleID)
+        return normalizedEnhancedUserInterfaceBundleIDs.contains(bundleID)
     }
 }

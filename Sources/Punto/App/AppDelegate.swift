@@ -178,10 +178,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             textState: textState!,
             ownBundleID: Bundle.main.bundleIdentifier
         )
-        accessibilityStateObserver = AccessibilityStateObserver { [weak self] notificationName, observedBundleID in
+        accessibilityStateObserver = AccessibilityStateObserver { [weak self] notificationName, sourceBundleID in
             self?.accessibilityNotificationRuntime?.handle(
                 notificationName: notificationName,
-                observedBundleID: observedBundleID
+                sourceBundleID: sourceBundleID
             )
         }
         PuntoLog.info("Core components initialized")

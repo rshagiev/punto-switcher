@@ -313,7 +313,7 @@ public enum TextCapturePolicy {
         activeClipboardText: String?,
         accessibilityRoles: [String]
     ) -> CapturedText? {
-        guard AccessibilityRolePolicy.containsObservedClipboardReplaceableContentRole(accessibilityRoles),
+        guard AccessibilityRolePolicy.containsClipboardReplaceableContentRole(accessibilityRoles),
               let activeClipboardText else {
             return nil
         }

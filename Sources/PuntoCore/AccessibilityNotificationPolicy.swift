@@ -13,7 +13,7 @@ public enum AccessibilityNotificationPolicy {
     public static let selectedTextChanged = "AXSelectedTextChanged"
     public static let valueChanged = "AXValueChanged"
 
-    public static let observedNotifications = [
+    public static let supportedNotifications = [
         focusedUIElementChanged,
         focusedWindowChanged,
         mainWindowChanged,
@@ -24,14 +24,14 @@ public enum AccessibilityNotificationPolicy {
 
     public static func action(
         notificationName: String,
-        observedBundleID: String?,
+        sourceBundleID: String?,
         ownBundleID: String?,
         now: Date,
         ignoreUntil: Date?,
         isConversionInProgress: Bool
     ) -> AccessibilityNotificationAction {
         let normalizedNotification = notificationName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard observedNotifications.contains(normalizedNotification) else {
+        guard supportedNotifications.contains(normalizedNotification) else {
             return .ignore(reason: "unsupported accessibility notification")
         }
 
@@ -47,11 +47,11 @@ public enum AccessibilityNotificationPolicy {
             return .ignore(reason: "replacement grace window")
         }
 
-        let normalizedObservedBundleID = ApplicationBundleIDPolicy.normalized(observedBundleID)
+        let normalizedSourceBundleID = ApplicationBundleIDPolicy.normalized(sourceBundleID)
         let normalizedOwnBundleID = ApplicationBundleIDPolicy.normalized(ownBundleID)
-        if let normalizedObservedBundleID,
+        if let normalizedSourceBundleID,
            let normalizedOwnBundleID,
-           normalizedObservedBundleID == normalizedOwnBundleID {
+           normalizedSourceBundleID == normalizedOwnBundleID {
             return .ignore(reason: "own application")
         }
 

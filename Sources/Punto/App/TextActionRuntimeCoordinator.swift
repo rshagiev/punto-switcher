@@ -281,7 +281,7 @@ final class TextActionRuntimeCoordinator {
         )
         let dictionary = SecureInputDiagnosticsPolicy.plistDictionary(from: snapshot)
         let url = URL(fileURLWithPath: NSTemporaryDirectory())
-            .appendingPathComponent(SecureInputDiagnosticsPolicy.observedPlistFilename)
+            .appendingPathComponent(SecureInputDiagnosticsPolicy.secureInputDiagnosticsPlistFilename)
 
         do {
             let data = try PropertyListSerialization.data(fromPropertyList: dictionary, format: .xml, options: 0)

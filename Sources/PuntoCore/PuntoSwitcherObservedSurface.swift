@@ -1,4 +1,38 @@
 public enum PuntoSwitcherObservedSurface {
+    public enum AccessibilityApplications {
+        public static let browserInjectionBundleIDs = [
+            "com.apple.safari",
+            "com.google.chrome",
+            "org.chromium.chromium",
+            "ru.yandex.desktop.yandex-browser",
+            "com.operasoftware.Opera",
+            "org.mozilla.firefox"
+        ]
+
+        public static let enhancedUserInterfaceBundleIDs = [
+            "com.google.chrome",
+            "com.operasoftware.Opera",
+            "org.chromium.chromium",
+            "org.mozilla.firefox",
+            "ru.yandex.desktop.yandex-browser"
+        ]
+    }
+
+    public enum AccessibilityNotifications {
+        public static let focusedUIElementChanged = "AXFocusedUIElementChanged"
+        public static let focusedWindowChanged = "AXFocusedWindowChanged"
+        public static let mainWindowChanged = "AXMainWindowChanged"
+        public static let windowCreated = "AXWindowCreated"
+        public static let selectedTextChanged = "AXSelectedTextChanged"
+        public static let valueChanged = "AXValueChanged"
+    }
+
+    public enum AccessibilityRoles {
+        public static let mailApplicationToken = "Mail"
+        public static let parallelsBundleID = "com.parallels.desktop"
+        public static let scrollAreaRole = "AXScrollArea"
+    }
+
     public enum AccessibilityPreferences {
         public static let launchAccessibilityPreferencesSelector = "launchAccessibilityPreferences"
         public static let openAccessibilityPrefPaneSelector = "openAccesibilityPrefPane:"
@@ -116,6 +150,15 @@ public enum PuntoSwitcherObservedSurface {
         public static let setIsClickSearchSelector = "setIsClickSearch:"
     }
 
+    public enum SecureInputDiagnostics {
+        public static let plistFilename = "punto.SecureInput.plist"
+        public static let secureInputStateKey = "SecureInputState"
+        public static let contextKey = "Context"
+        public static let currentAppKey = "currentApp"
+        public static let runningAppsKey = "runningApps"
+        public static let enabledLayoutsKey = "enabledLayouts"
+    }
+
     public enum Settings {
         public static let setEnabledSelector = "setEnabled:"
         public static let setShowAdvancedSettingsSelector = "setShowAdvancedSettings:"
@@ -158,6 +201,10 @@ public enum PuntoSwitcherObservedSurface {
             "icon_inactive_w",
             "icon_disabled_w"
         ]
+    }
+
+    public enum SystemApplications {
+        public static let screenSaverEngineBundleID = "com.apple.screensaver.engine"
     }
 
     public enum UndoLearning {

@@ -75,9 +75,14 @@ func runApplicationBundleIDPolicyTests() throws {
         "application bundle id policy normalizes persisted sets"
     )
     try expect(
-        ApplicationBundleIDPolicy.isObservedScreenSaverEngine(" COM.Apple.ScreenSaver.Engine "),
+        ApplicationBundleIDPolicy.isScreenSaverEngine(" COM.Apple.ScreenSaver.Engine "),
         true,
         "application bundle id policy recognizes observed Punto Switcher screen saver engine bundle id"
+    )
+    try expect(
+        ApplicationBundleIDPolicy.screenSaverEngineBundleID,
+        PuntoSwitcherObservedSurface.SystemApplications.screenSaverEngineBundleID,
+        "application bundle id policy aligns screen saver bundle id to reverse-audit anchor"
     )
     try expect(
         ApplicationBundleIDPolicy.isVolatileSystemContext("com.apple.ScreenSaver.Engine"),
@@ -95,7 +100,7 @@ func runApplicationBundleIDPolicyTests() throws {
         "application disable policy shares bundle id normalization"
     )
     try expect(
-        AccessibilityApplicationPolicy.isObservedBrowserInjectionBundleID(" COM.Apple.Safari "),
+        AccessibilityApplicationPolicy.isBrowserInjectionBundleID(" COM.Apple.Safari "),
         true,
         "accessibility app policy shares bundle id normalization"
     )
@@ -2617,4 +2622,3 @@ func runAccessibilityPreferencesPolicyTests() throws {
         "accessibility preferences policy skips fallback after successful URL open"
     )
 }
-

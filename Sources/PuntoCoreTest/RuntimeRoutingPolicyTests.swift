@@ -1370,7 +1370,7 @@ func runAccessibilityNotificationPolicyTests() throws {
     let now = Date(timeIntervalSince1970: 1_000)
 
     try expect(
-        AccessibilityNotificationPolicy.observedNotifications,
+        AccessibilityNotificationPolicy.supportedNotifications,
         [
             AccessibilityNotificationPolicy.focusedUIElementChanged,
             AccessibilityNotificationPolicy.focusedWindowChanged,
@@ -1382,9 +1382,21 @@ func runAccessibilityNotificationPolicyTests() throws {
         "accessibility notification policy observes focus, main-window, window creation, selection, and value changes"
     )
     try expect(
+        AccessibilityNotificationPolicy.supportedNotifications,
+        [
+            PuntoSwitcherObservedSurface.AccessibilityNotifications.focusedUIElementChanged,
+            PuntoSwitcherObservedSurface.AccessibilityNotifications.focusedWindowChanged,
+            PuntoSwitcherObservedSurface.AccessibilityNotifications.mainWindowChanged,
+            PuntoSwitcherObservedSurface.AccessibilityNotifications.windowCreated,
+            PuntoSwitcherObservedSurface.AccessibilityNotifications.selectedTextChanged,
+            PuntoSwitcherObservedSurface.AccessibilityNotifications.valueChanged
+        ],
+        "accessibility notification policy aligns native notification names to reverse-audit anchors"
+    )
+    try expect(
         AccessibilityNotificationPolicy.action(
             notificationName: "AXFocusedUIElementChanged",
-            observedBundleID: "com.example.editor",
+            sourceBundleID: "com.example.editor",
             ownBundleID: "com.example.punto",
             now: now,
             ignoreUntil: nil,
@@ -1396,7 +1408,7 @@ func runAccessibilityNotificationPolicyTests() throws {
     try expect(
         AccessibilityNotificationPolicy.action(
             notificationName: "AXSelectedTextChanged",
-            observedBundleID: "com.example.editor",
+            sourceBundleID: "com.example.editor",
             ownBundleID: "com.example.punto",
             now: now,
             ignoreUntil: nil,
@@ -1408,7 +1420,7 @@ func runAccessibilityNotificationPolicyTests() throws {
     try expect(
         AccessibilityNotificationPolicy.action(
             notificationName: "AXMainWindowChanged",
-            observedBundleID: "com.example.editor",
+            sourceBundleID: "com.example.editor",
             ownBundleID: "com.example.punto",
             now: now,
             ignoreUntil: nil,
@@ -1420,7 +1432,7 @@ func runAccessibilityNotificationPolicyTests() throws {
     try expect(
         AccessibilityNotificationPolicy.action(
             notificationName: "AXWindowCreated",
-            observedBundleID: "com.example.editor",
+            sourceBundleID: "com.example.editor",
             ownBundleID: "com.example.punto",
             now: now,
             ignoreUntil: nil,
@@ -1432,7 +1444,7 @@ func runAccessibilityNotificationPolicyTests() throws {
     try expect(
         AccessibilityNotificationPolicy.action(
             notificationName: "AXValueChanged",
-            observedBundleID: "com.example.editor",
+            sourceBundleID: "com.example.editor",
             ownBundleID: "com.example.punto",
             now: now,
             ignoreUntil: nil,
@@ -1444,7 +1456,7 @@ func runAccessibilityNotificationPolicyTests() throws {
     try expect(
         AccessibilityNotificationPolicy.action(
             notificationName: "AXFocusedWindowChanged",
-            observedBundleID: "com.example.editor",
+            sourceBundleID: "com.example.editor",
             ownBundleID: "com.example.punto",
             now: now,
             ignoreUntil: now.addingTimeInterval(0.1),
@@ -1456,7 +1468,7 @@ func runAccessibilityNotificationPolicyTests() throws {
     try expect(
         AccessibilityNotificationPolicy.action(
             notificationName: "AXFocusedWindowChanged",
-            observedBundleID: "com.example.editor",
+            sourceBundleID: "com.example.editor",
             ownBundleID: "com.example.punto",
             now: now,
             ignoreUntil: now,
@@ -1468,7 +1480,7 @@ func runAccessibilityNotificationPolicyTests() throws {
     try expect(
         AccessibilityNotificationPolicy.action(
             notificationName: "AXFocusedWindowChanged",
-            observedBundleID: "com.example.editor",
+            sourceBundleID: "com.example.editor",
             ownBundleID: "com.example.punto",
             now: now,
             ignoreUntil: nil,
@@ -1480,7 +1492,7 @@ func runAccessibilityNotificationPolicyTests() throws {
     try expect(
         AccessibilityNotificationPolicy.action(
             notificationName: "AXFocusedWindowChanged",
-            observedBundleID: " COM.Example.Punto ",
+            sourceBundleID: " COM.Example.Punto ",
             ownBundleID: "com.example.punto",
             now: now,
             ignoreUntil: nil,
@@ -1671,9 +1683,19 @@ func runTextTrackingSecurityPolicyTests() throws {
     )
     let diagnosticsDictionary = SecureInputDiagnosticsPolicy.plistDictionary(from: diagnosticsSnapshot)
     try expect(
+        SecureInputDiagnosticsPolicy.secureInputDiagnosticsPlistFilename,
+        PuntoSwitcherObservedSurface.SecureInputDiagnostics.plistFilename,
+        "secure input diagnostics policy aligns plist filename to reverse-audit anchor"
+    )
+    try expect(
         diagnosticsDictionary[SecureInputDiagnosticsPolicy.secureInputStateKey] as? Bool,
         true,
         "secure input diagnostics writes SecureInputState key"
+    )
+    try expect(
+        SecureInputDiagnosticsPolicy.secureInputStateKey,
+        PuntoSwitcherObservedSurface.SecureInputDiagnostics.secureInputStateKey,
+        "secure input diagnostics policy aligns secure input key to reverse-audit anchor"
     )
     try expect(
         diagnosticsDictionary[SecureInputDiagnosticsPolicy.contextKey] as? String,
@@ -1681,9 +1703,19 @@ func runTextTrackingSecurityPolicyTests() throws {
         "secure input diagnostics writes Context key"
     )
     try expect(
+        SecureInputDiagnosticsPolicy.contextKey,
+        PuntoSwitcherObservedSurface.SecureInputDiagnostics.contextKey,
+        "secure input diagnostics policy aligns context key to reverse-audit anchor"
+    )
+    try expect(
         diagnosticsDictionary[SecureInputDiagnosticsPolicy.currentAppKey] as? String,
         "com.apple.terminal",
         "secure input diagnostics writes currentApp key"
+    )
+    try expect(
+        SecureInputDiagnosticsPolicy.currentAppKey,
+        PuntoSwitcherObservedSurface.SecureInputDiagnostics.currentAppKey,
+        "secure input diagnostics policy aligns current-app key to reverse-audit anchor"
     )
     try expect(
         diagnosticsDictionary[SecureInputDiagnosticsPolicy.runningAppsKey] as? [String],
@@ -1691,9 +1723,19 @@ func runTextTrackingSecurityPolicyTests() throws {
         "secure input diagnostics writes runningApps key"
     )
     try expect(
+        SecureInputDiagnosticsPolicy.runningAppsKey,
+        PuntoSwitcherObservedSurface.SecureInputDiagnostics.runningAppsKey,
+        "secure input diagnostics policy aligns running-apps key to reverse-audit anchor"
+    )
+    try expect(
         diagnosticsDictionary[SecureInputDiagnosticsPolicy.enabledLayoutsKey] as? [String],
         ["com.apple.keylayout.ABC", "com.apple.keylayout.Russian"],
         "secure input diagnostics writes enabledLayouts key"
+    )
+    try expect(
+        SecureInputDiagnosticsPolicy.enabledLayoutsKey,
+        PuntoSwitcherObservedSurface.SecureInputDiagnostics.enabledLayoutsKey,
+        "secure input diagnostics policy aligns enabled-layouts key to reverse-audit anchor"
     )
 }
 
@@ -1738,32 +1780,32 @@ func runAccessibilityRolePolicyTests() throws {
         "accessibility role policy pins observed Punto Switcher Mail deletion counter"
     )
     try expect(
-        AccessibilityRolePolicy.observedMailApplicationToken,
-        "Mail",
-        "accessibility role policy pins observed Punto Switcher Mail app token"
+        AccessibilityRolePolicy.mailApplicationToken,
+        PuntoSwitcherObservedSurface.AccessibilityRoles.mailApplicationToken,
+        "accessibility role policy aligns native Mail app token to reverse-audit anchor"
     )
     try expect(
-        AccessibilityRolePolicy.observedParallelsBundleID,
-        "com.parallels.desktop",
-        "accessibility role policy pins observed Punto Switcher Parallels bundle id"
+        AccessibilityRolePolicy.parallelsBundleID,
+        PuntoSwitcherObservedSurface.AccessibilityRoles.parallelsBundleID,
+        "accessibility role policy aligns native Parallels bundle id to reverse-audit anchor"
     )
     try expect(
-        AccessibilityRolePolicy.observedScrollAreaRole,
-        "AXScrollArea",
-        "accessibility role policy pins observed Punto Switcher scroll-area role"
+        AccessibilityRolePolicy.scrollAreaRole,
+        PuntoSwitcherObservedSurface.AccessibilityRoles.scrollAreaRole,
+        "accessibility role policy aligns native scroll-area role to reverse-audit anchor"
     )
     try expect(
-        AccessibilityRolePolicy.isObservedClipboardReplaceableContentRole("AXScrollArea"),
+        AccessibilityRolePolicy.isClipboardReplaceableContentRole("AXScrollArea"),
         true,
         "accessibility role policy mirrors observed Punto Switcher AXScrollArea content surface"
     )
     try expect(
-        AccessibilityRolePolicy.containsObservedClipboardReplaceableContentRole(["AXStaticText", "AXScrollArea"]),
+        AccessibilityRolePolicy.containsClipboardReplaceableContentRole(["AXStaticText", "AXScrollArea"]),
         true,
         "accessibility role policy detects observed clipboard-replaceable content ancestry"
     )
     try expect(
-        AccessibilityRolePolicy.containsObservedClipboardReplaceableContentRole(["AXStaticText", "AXGroup"]),
+        AccessibilityRolePolicy.containsClipboardReplaceableContentRole(["AXStaticText", "AXGroup"]),
         false,
         "accessibility role policy rejects generic content ancestry for active clipboard replacement"
     )
@@ -1889,7 +1931,7 @@ func runAccessibilityRolePolicyTests() throws {
         "accessibility replacement capability preserves settable unknown-role support"
     )
     try expect(
-        AccessibilityRolePolicy.isObservedSearchExceptionRole(
+        AccessibilityRolePolicy.isSearchExceptionRole(
             role: "AXTextField",
             bundleID: nil,
             context: .searchbar
@@ -1898,7 +1940,7 @@ func runAccessibilityRolePolicyTests() throws {
         "accessibility role policy mirrors global searchbar editable-role exception"
     )
     try expect(
-        AccessibilityRolePolicy.isObservedSearchExceptionRole(
+        AccessibilityRolePolicy.isSearchExceptionRole(
             role: "AXApplication",
             bundleID: nil,
             context: .searchbar
@@ -1907,7 +1949,7 @@ func runAccessibilityRolePolicyTests() throws {
         "accessibility role policy mirrors AXApplication searchbar-only exception"
     )
     try expect(
-        AccessibilityRolePolicy.isObservedSearchExceptionRole(
+        AccessibilityRolePolicy.isSearchExceptionRole(
             role: "AXApplication",
             bundleID: nil,
             context: .click
@@ -1916,7 +1958,7 @@ func runAccessibilityRolePolicyTests() throws {
         "accessibility role policy keeps AXApplication out of click exceptions"
     )
     try expect(
-        AccessibilityRolePolicy.isObservedSearchExceptionRole(
+        AccessibilityRolePolicy.isSearchExceptionRole(
             role: "AXGroup",
             bundleID: "com.apple.finder",
             context: .click
@@ -1925,7 +1967,7 @@ func runAccessibilityRolePolicyTests() throws {
         "accessibility role policy mirrors Finder click group exception"
     )
     try expect(
-        AccessibilityRolePolicy.isObservedSearchExceptionRole(
+        AccessibilityRolePolicy.isSearchExceptionRole(
             role: "AXGroup",
             bundleID: "com.apple.finder",
             context: .searchbar
@@ -1934,7 +1976,7 @@ func runAccessibilityRolePolicyTests() throws {
         "accessibility role policy keeps Finder group click-only exception scoped"
     )
     try expect(
-        AccessibilityRolePolicy.isObservedSearchExceptionRole(
+        AccessibilityRolePolicy.isSearchExceptionRole(
             role: "AXMenuItem",
             bundleID: "ORG.MOZILLA.FIREFOX",
             context: .click
@@ -1943,7 +1985,7 @@ func runAccessibilityRolePolicyTests() throws {
         "accessibility role policy normalizes app-specific search exception bundle ids"
     )
     try expect(
-        AccessibilityRolePolicy.isObservedSearchExceptionRole(
+        AccessibilityRolePolicy.isSearchExceptionRole(
             role: "AXGroup",
             bundleID: "com.example.Editor",
             context: .click
@@ -1952,7 +1994,7 @@ func runAccessibilityRolePolicyTests() throws {
         "accessibility role policy rejects app-specific roles outside observed apps"
     )
     try expect(
-        Set(AccessibilityRolePolicy.observedSearchbarExceptionRoles.keys),
+        Set(AccessibilityRolePolicy.searchbarExceptionRoles.keys),
         [
             "*",
             "com.adobe.acc.AdobeCreativeCloud",
@@ -2002,7 +2044,7 @@ func runAccessibilityRolePolicyTests() throws {
         "accessibility role policy preserves full observed searchbar exception key set"
     )
     try expect(
-        Set(AccessibilityRolePolicy.observedClickExceptionRoles.keys),
+        Set(AccessibilityRolePolicy.clickExceptionRoles.keys),
         [
             "*",
             "com.adobe.acc.AdobeCreativeCloud",
@@ -2050,32 +2092,32 @@ func runAccessibilityRolePolicyTests() throws {
         "accessibility role policy preserves full observed click exception key set"
     )
     try expect(
-        AccessibilityRolePolicy.observedSearchbarExceptionRoles["*"],
+        AccessibilityRolePolicy.searchbarExceptionRoles["*"],
         ["AXTextField", "AXTextArea", "AXComboBox", "AXWindow", "AXUnknown", "AXStaticText", "AXPopUpButton", "AXApplication"],
         "accessibility role policy preserves observed global searchbar roles"
     )
     try expect(
-        AccessibilityRolePolicy.observedClickExceptionRoles["*"],
+        AccessibilityRolePolicy.clickExceptionRoles["*"],
         ["AXTextField", "AXTextArea", "AXComboBox", "AXWindow", "AXUnknown", "AXStaticText", "AXPopUpButton"],
         "accessibility role policy preserves observed global click roles"
     )
     try expect(
-        AccessibilityRolePolicy.observedSearchbarExceptionRoles["com.apple.finder"],
+        AccessibilityRolePolicy.searchbarExceptionRoles["com.apple.finder"],
         ["AXList", "AXOutline", "AXGrid", "AXImage"],
         "accessibility role policy preserves Finder searchbar exception roles"
     )
     try expect(
-        AccessibilityRolePolicy.observedClickExceptionRoles["com.apple.finder"],
+        AccessibilityRolePolicy.clickExceptionRoles["com.apple.finder"],
         ["AXList", "AXOutline", "AXGrid", "AXImage", "AXGroup"],
         "accessibility role policy preserves Finder click exception roles"
     )
     try expect(
-        AccessibilityRolePolicy.observedSearchbarExceptionRoles["com.apple.Preview"],
+        AccessibilityRolePolicy.searchbarExceptionRoles["com.apple.Preview"],
         [],
         "accessibility role policy preserves explicit empty observed app searchbar exception"
     )
     try expect(
-        AccessibilityRolePolicy.observedClickExceptionRoles["com.apple.DiskUtility"],
+        AccessibilityRolePolicy.clickExceptionRoles["com.apple.DiskUtility"],
         [],
         "accessibility role policy preserves explicit empty observed app click exception"
     )
@@ -2905,4 +2947,3 @@ func runAccessibilityReplacementPolicyTests() throws {
         "AX replacement policy rejects invalid negative selection locations"
     )
 }
-
