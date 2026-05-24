@@ -67,6 +67,11 @@ public enum ProductStatisticsPolicy {
     public static let dayuseRevertsKey = "Reverts"
     public static let dayuseLastDayuseDateKey = "LastDayuseDate"
     public static let dayuseLastProductStatDateKey = "LastProductStatDate"
+    public static let typedSymbolMetricName = "product.typed.symbol"
+    public static let typedWordMetricName = "product.typed.word"
+    public static let automaticSwitchMetricName = "product.switch.auto"
+    public static let manualSwitchMetricName = "product.switch.manual"
+    public static let revertMetricName = "product.switch.reverse"
 
     public static func normalized(_ snapshot: ProductStatisticsSnapshot) -> ProductStatisticsSnapshot {
         ProductStatisticsSnapshot(
@@ -152,15 +157,15 @@ public enum ProductStatisticsPolicy {
     public static func metricName(for event: ProductStatisticsEvent) -> String? {
         switch event {
         case .typedText(let text):
-            typedSymbolCount(text) > 0 ? PuntoSwitcherObservedSurface.ProductStatistics.typedSymbolMetricName : nil
+            typedSymbolCount(text) > 0 ? typedSymbolMetricName : nil
         case .completedWord:
-            PuntoSwitcherObservedSurface.ProductStatistics.typedWordMetricName
+            typedWordMetricName
         case .automaticSwitch:
-            PuntoSwitcherObservedSurface.ProductStatistics.automaticSwitchMetricName
+            automaticSwitchMetricName
         case .manualSwitch:
-            PuntoSwitcherObservedSurface.ProductStatistics.manualSwitchMetricName
+            manualSwitchMetricName
         case .revert:
-            PuntoSwitcherObservedSurface.ProductStatistics.revertMetricName
+            revertMetricName
         }
     }
 

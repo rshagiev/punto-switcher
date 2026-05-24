@@ -7,6 +7,12 @@ public enum AutoCorrectionCancellingKeyPolicy {
     public static let observedRightArrowName = "dontAutoconvertWordWithRightArrow"
     public static let observedUpArrowName = "dontAutoconvertWordWithUpArrow"
     public static let observedDownArrowName = "dontAutoconvertWordWithDownArrow"
+    public static let legacyBackspaceSelectorAlias = "dontAutoconvertWordWithBackspace:"
+    public static let legacyDeleteSelectorAlias = "dontAutoconvertWordWithDelete:"
+    public static let legacyLeftArrowSelectorAlias = "dontAutoconvertWordWithLeftArrow:"
+    public static let legacyRightArrowSelectorAlias = "dontAutoconvertWordWithRightArrow:"
+    public static let legacyUpArrowSelectorAlias = "dontAutoconvertWordWithUpArrow:"
+    public static let legacyDownArrowSelectorAlias = "dontAutoconvertWordWithDownArrow:"
     public static let backspace = "backspace"
     public static let delete = "delete"
     public static let leftArrow = "leftArrow"
@@ -41,12 +47,12 @@ public enum AutoCorrectionCancellingKeyPolicy {
         observedRightArrowName: rightArrow,
         observedUpArrowName: upArrow,
         observedDownArrowName: downArrow,
-        PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.backspaceSelector: backspace,
-        PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.deleteSelector: delete,
-        PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.leftArrowSelector: leftArrow,
-        PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.rightArrowSelector: rightArrow,
-        PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.upArrowSelector: upArrow,
-        PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.downArrowSelector: downArrow
+        legacyBackspaceSelectorAlias: backspace,
+        legacyDeleteSelectorAlias: delete,
+        legacyLeftArrowSelectorAlias: leftArrow,
+        legacyRightArrowSelectorAlias: rightArrow,
+        legacyUpArrowSelectorAlias: upArrow,
+        legacyDownArrowSelectorAlias: downArrow
     ]
 
     private static let canonicalNamesByLowercaseName: [String: String] = {

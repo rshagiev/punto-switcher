@@ -573,7 +573,7 @@ if violations:
 print("PASS SettingsManager has no native-owned legacy key writes")
 PY
 
-if rg -n "observed[A-Za-z0-9]*(Selector|ClassName|ProtocolName|ResourceName|FormatKey|Controller|Field|MetricName|Accessor|Checkbox|TooltipKey|Tries|Persists|WasDone)" \
+behavior_policy_observed_surface_files=(
     Sources/PuntoCore/AccessibilityPreferencesPolicy.swift \
     Sources/PuntoCore/AccessibilityRolePolicy.swift \
     Sources/PuntoCore/AutoCorrectionCancellingKeyPolicy.swift \
@@ -589,8 +589,16 @@ if rg -n "observed[A-Za-z0-9]*(Selector|ClassName|ProtocolName|ResourceName|Form
     Sources/PuntoCore/StartupPresentationPolicy.swift \
     Sources/PuntoCore/StatusIconPolicy.swift \
     Sources/PuntoCore/UndoLearningSettingsPolicy.swift \
-    Sources/PuntoCore/LegacyUserRulePolicy.swift; then
+    Sources/PuntoCore/LegacyUserRulePolicy.swift
+)
+
+if rg -n "observed[A-Za-z0-9]*(Selector|ClassName|ProtocolName|ResourceName|FormatKey|Controller|Field|MetricName|Accessor|Checkbox|TooltipKey|Tries|Persists|WasDone)" \
+    "${behavior_policy_observed_surface_files[@]}"; then
     echo "legacy boundary failed: reverse-audit-only observed surface leaked back into behavior policy" >&2
+    exit 1
+fi
+if rg -n "PuntoSwitcherObservedSurface" "${behavior_policy_observed_surface_files[@]}"; then
+    echo "legacy boundary failed: behavior policy depends directly on reverse-audit-only observed surface" >&2
     exit 1
 fi
 echo "PASS reverse-audit-only observed surface stays outside selected behavior policies"

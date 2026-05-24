@@ -90,6 +90,14 @@ is also guarded from reopening app/input-source, AX-notification, text-action,
 command, startup, and undo runtime policy execution after those decisions have
 been moved into coordinators.
 
+Runtime-compatible aliases, log prefixes, and metric names are now owned by the
+native policy that consumes them, not by `PuntoSwitcherObservedSurface`.
+`PuntoCoreTest` aligns those native constants back to the reverse-audit anchors,
+while `Scripts/test-legacy-boundary.sh` rejects direct
+`PuntoSwitcherObservedSurface` references from the selected behavior-policy
+files. This keeps the observed binary surface useful as evidence without turning
+it into a second runtime dependency graph.
+
 The boundary also protects diagnostic code from becoming another legacy fork.
 `Scripts/debug.sh components` now runs `PuntoCoreTest` and `PuntoDiag` against
 the production module instead of carrying inline copies of `LayoutConverter` and

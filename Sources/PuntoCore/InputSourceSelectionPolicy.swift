@@ -30,6 +30,9 @@ public struct InputSourceSelection: Equatable {
 
 public enum InputSourceSelectionPolicy {
     public static let observedUndefinedSourceID = "UNDEFINED"
+    public static let inputSourceEnabledLogPrefix = "inputSourceEnabled:"
+    public static let handleInputSourcesEnabledLogPrefix = "handleInputSourcesEnabled"
+    public static let promptUserToInstallLayoutsLogPrefix = "promptUserToInstallLayouts"
 
     public static func selection(
         from candidates: [InputSourceCandidate],
@@ -130,7 +133,7 @@ public enum InputSourceSelectionPolicy {
         guard !missing.isEmpty else {
             return nil
         }
-        return "\(PuntoSwitcherObservedSurface.InputSources.promptUserToInstallLayoutsSelector): missing \(missing.joined(separator: "/")) input source"
+        return "\(promptUserToInstallLayoutsLogPrefix): missing \(missing.joined(separator: "/")) input source"
     }
 
     public static func shouldEnableInputSource(sourceID: String?, selection: InputSourceSelection) -> Bool {
@@ -141,7 +144,7 @@ public enum InputSourceSelectionPolicy {
     }
 
     public static func inputSourceEnabledLogMessage(sourceID: String) -> String {
-        "\(PuntoSwitcherObservedSurface.InputSources.inputSourceEnabledSelector) \(sourceID)"
+        "\(inputSourceEnabledLogPrefix) \(sourceID)"
     }
 
     public static func handleInputSourcesEnabledLogMessage(sourceIDs: [String]) -> String? {
@@ -149,7 +152,7 @@ public enum InputSourceSelectionPolicy {
         guard !normalized.isEmpty else {
             return nil
         }
-        return "\(PuntoSwitcherObservedSurface.InputSources.handleInputSourcesEnabledSelector): \(normalized.joined(separator: ", "))"
+        return "\(handleInputSourcesEnabledLogPrefix): \(normalized.joined(separator: ", "))"
     }
 
     public static func failedToEnableLayoutLogMessage(sourceID: String, status: Int32) -> String {

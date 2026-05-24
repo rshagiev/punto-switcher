@@ -468,6 +468,36 @@ private func runWordTrackerTests() throws {
             "observed surface preserves auto-correction cancelling-key down-arrow selector"
         )
         try expect(
+            AutoCorrectionCancellingKeyPolicy.legacyBackspaceSelectorAlias,
+            PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.backspaceSelector,
+            "auto-correction cancelling key policy keeps backspace selector alias aligned with reverse-audit anchor"
+        )
+        try expect(
+            AutoCorrectionCancellingKeyPolicy.legacyDeleteSelectorAlias,
+            PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.deleteSelector,
+            "auto-correction cancelling key policy keeps delete selector alias aligned with reverse-audit anchor"
+        )
+        try expect(
+            AutoCorrectionCancellingKeyPolicy.legacyLeftArrowSelectorAlias,
+            PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.leftArrowSelector,
+            "auto-correction cancelling key policy keeps left-arrow selector alias aligned with reverse-audit anchor"
+        )
+        try expect(
+            AutoCorrectionCancellingKeyPolicy.legacyRightArrowSelectorAlias,
+            PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.rightArrowSelector,
+            "auto-correction cancelling key policy keeps right-arrow selector alias aligned with reverse-audit anchor"
+        )
+        try expect(
+            AutoCorrectionCancellingKeyPolicy.legacyUpArrowSelectorAlias,
+            PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.upArrowSelector,
+            "auto-correction cancelling key policy keeps up-arrow selector alias aligned with reverse-audit anchor"
+        )
+        try expect(
+            AutoCorrectionCancellingKeyPolicy.legacyDownArrowSelectorAlias,
+            PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.downArrowSelector,
+            "auto-correction cancelling key policy keeps down-arrow selector alias aligned with reverse-audit anchor"
+        )
+        try expect(
             AutoCorrectionCancellingKeyPolicy.normalizedEnabledKeyNames([
                 " dontAutoconvertWordWithBackspace ",
                 "dontAutoconvertWordWithDelete",
@@ -4588,6 +4618,31 @@ private func runProductStatisticsPolicyTests() throws {
         "product statistics policy preserves observed revert metric name"
     )
     try expect(
+        ProductStatisticsPolicy.typedSymbolMetricName,
+        PuntoSwitcherObservedSurface.ProductStatistics.typedSymbolMetricName,
+        "product statistics policy keeps typed-symbol metric aligned with reverse-audit anchor"
+    )
+    try expect(
+        ProductStatisticsPolicy.typedWordMetricName,
+        PuntoSwitcherObservedSurface.ProductStatistics.typedWordMetricName,
+        "product statistics policy keeps typed-word metric aligned with reverse-audit anchor"
+    )
+    try expect(
+        ProductStatisticsPolicy.automaticSwitchMetricName,
+        PuntoSwitcherObservedSurface.ProductStatistics.automaticSwitchMetricName,
+        "product statistics policy keeps automatic-switch metric aligned with reverse-audit anchor"
+    )
+    try expect(
+        ProductStatisticsPolicy.manualSwitchMetricName,
+        PuntoSwitcherObservedSurface.ProductStatistics.manualSwitchMetricName,
+        "product statistics policy keeps manual-switch metric aligned with reverse-audit anchor"
+    )
+    try expect(
+        ProductStatisticsPolicy.revertMetricName,
+        PuntoSwitcherObservedSurface.ProductStatistics.revertMetricName,
+        "product statistics policy keeps revert metric aligned with reverse-audit anchor"
+    )
+    try expect(
         ProductStatisticsPolicy.metricName(for: .typedText("a ")),
         "product.typed.symbol",
         "product statistics policy maps typed-symbol events to observed metric name"
@@ -6077,6 +6132,21 @@ private func runInputSourceLanguagePolicyTests() throws {
         PuntoSwitcherObservedSurface.InputSources.promptUserToInstallLayoutsSelector,
         "promptUserToInstallLayouts",
         "input source selection policy preserves observed install-layouts prompt selector"
+    )
+    try expect(
+        InputSourceSelectionPolicy.inputSourceEnabledLogPrefix,
+        PuntoSwitcherObservedSurface.InputSources.inputSourceEnabledSelector,
+        "input source selection policy keeps enabled-layout log prefix aligned with reverse-audit anchor"
+    )
+    try expect(
+        InputSourceSelectionPolicy.handleInputSourcesEnabledLogPrefix,
+        PuntoSwitcherObservedSurface.InputSources.handleInputSourcesEnabledSelector,
+        "input source selection policy keeps enabled-layout handler prefix aligned with reverse-audit anchor"
+    )
+    try expect(
+        InputSourceSelectionPolicy.promptUserToInstallLayoutsLogPrefix,
+        PuntoSwitcherObservedSurface.InputSources.promptUserToInstallLayoutsSelector,
+        "input source selection policy keeps install-layout prompt prefix aligned with reverse-audit anchor"
     )
     try expect(
         InputSourceSelectionPolicy.missingRequiredLanguageNames(in: missingSelection),
