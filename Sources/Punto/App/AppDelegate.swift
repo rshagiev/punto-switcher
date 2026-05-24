@@ -23,6 +23,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var textActionRuntime: TextActionRuntimeCoordinator?
     private var autoCorrectionRuntime: AutoCorrectionRuntimeCoordinator?
     private var undoRuntime: UndoRuntimeCoordinator?
+    private var manualTextActionRuntime: ManualTextActionRuntimeCoordinator?
 
     private var isConversionInProgress: Bool {
         textState?.isConversionInProgress == true
@@ -130,6 +131,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             layoutConverter: layoutConverter!,
             reloadAutoCorrectionRules: { [weak self] in
                 self?.autoCorrectionRuntime?.reloadRules()
+            }
+        )
+        manualTextActionRuntime = ManualTextActionRuntimeCoordinator(
+            settingsManager: settingsManager!,
+            wordTracker: wordTracker!,
+            textState: textState!,
+            textAccessor: textAccessor!,
+            textActionRuntime: textActionRuntime!,
+            undoRuntime: undoRuntime!,
+            layoutConverter: layoutConverter!,
+            currentApplicationBundleID: { [weak self] in
+                self?.activeApplicationBundleID ?? NSWorkspace.shared.frontmostApplication?.bundleIdentifier
             }
         )
         keyPressRuntime = KeyPressRuntimeCoordinator(
@@ -412,11 +425,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         hotkeyManager = HotkeyManager(
             settingsManager: settingsManager,
             onConvertLayout: { [weak self] in
-                self?.handleConvertLayout()
+                self?.manualTextActionRuntime?.handleConvertLayout()
             },
             onToggleCase: { [weak self] in
-                PuntoLog.info(">>> Toggle case triggered <<<")
-                self?.handleToggleCase()
+                self?.manualTextActionRuntime?.handleToggleCase()
             },
             onToggleAutoCorrection: { [weak self] in
                 self?.handleToggleAutoCorrection()
@@ -491,159 +503,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     // MARK: - Actions
-
-    private func handleConvertLayout() {
-        let startTime = CFAbsoluteTimeGetCurrent()
-        let conversionContextID = activeApplicationBundleID ?? NSWorkspace.shared.frontmostApplication?.bundleIdentifier
-
-        // Log which app is frontmost and time since last keypress
-        let timeSinceLastKey: String
-        if let lastKey = lastKeyPressTime {
-            let elapsed = Date().timeIntervalSince(lastKey) * 1000
-            timeSinceLastKey = String(format: "%.0fms", elapsed)
-        } else {
-            timeSinceLastKey = "n/a"
-        }
-
-        if let frontApp = NSWorkspace.shared.frontmostApplication {
-            PuntoLog.info(">>> Convert triggered <<< app='\(frontApp.localizedName ?? "?")' sinceLastKey=\(timeSinceLastKey)")
-        } else {
-            PuntoLog.info(">>> Convert triggered <<< (no frontmost app) sinceLastKey=\(timeSinceLastKey)")
-        }
-
-        guard textActionRuntime?.preflightTextAction(.layoutConversion) == true else {
-            return
-        }
-
-        _ = textActionRuntime?.beginReplacementWindow()
-        defer {
-            let totalTime = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
-            PuntoLog.info("⏱️ TOTAL conversion time: \(String(format: "%.1f", totalTime))ms")
-        }
-
-        defer {
-            textActionRuntime?.finishReplacementWindow()
-        }
-
-        // Check for undo possibility
-        if undoRuntime?.performUndoIfAvailable(contextID: conversionContextID) == true {
-            return
-        }
-
-        var t1 = CFAbsoluteTimeGetCurrent()
-
-        let lastTrackedWord = wordTracker?.getLastWord()
-        let lastTrackedTail = wordTracker?.getTypedTail()
-        let capturedText = textAccessor?.captureSelectedText(lastTrackedWord: lastTrackedWord, lastTrackedTail: lastTrackedTail)
-        let getTextTime = (CFAbsoluteTimeGetCurrent() - t1) * 1000
-
-        let plan = ManualLayoutConversionPolicy.plan(
-            capturedText: capturedText,
-            lastWord: lastTrackedWord,
-            lastTrackedTail: lastTrackedTail,
-            russianLayoutType: settingsManager?.russianKeyboardLayoutType
-                ?? KeyboardLayoutTypePolicy.defaultRussianLayoutType,
-            converter: layoutConverter!
-        )
-
-        let runtimePlan = ManualLayoutConversionRuntimePolicy.runtimePlan(
-            from: plan,
-            suppressAutoCorrectionAfterManualConversion: settingsManager?.suppressAutoCorrectionAfterManualConversion
-                ?? SettingsPersistencePolicy.defaultSuppressAutoCorrectionAfterManualConversion
-        )
-
-        switch runtimePlan {
-        case .blockedCapture(let capturedText, let logMessage):
-            PuntoLog.info(logMessage)
-            textActionRuntime?.clearStateAfterBlockedCapture(capturedText)
-            return
-
-        case .replace(let replacementPlan):
-            PuntoLog.info("⏱️ \(replacementPlan.captureTimingLabel): \(String(format: "%.1f", getTextTime))ms")
-            PuntoLog.info(replacementPlan.originalTextLogMessage)
-            PuntoLog.info(replacementPlan.convertedTextLogMessage)
-
-            t1 = CFAbsoluteTimeGetCurrent()
-            let replacementApplied = textAccessor?.replaceCapturedText(
-                replacementPlan.replacement.capturedText,
-                with: replacementPlan.replacement.convertedText,
-                keepSelection: replacementPlan.replacement.keepSelection
-            ) ?? false
-            let replaceTime = (CFAbsoluteTimeGetCurrent() - t1) * 1000
-            PuntoLog.info("⏱️ \(replacementPlan.replacementTimingLabel): \(String(format: "%.1f", replaceTime))ms")
-            guard replacementApplied else {
-                PuntoLog.info(replacementPlan.failedReplacementLogMessage)
-                textActionRuntime?.clearTrackedTextAfterFailedReplacement(method: replacementPlan.failedReplacementMethod)
-                return
-            }
-
-            textActionRuntime?.commitSuccessfulTextReplacement(
-                replacementPlan.commitPlan,
-                contextID: conversionContextID
-            )
-
-        case .clearTrackedText(let reason, let logMessage):
-            PuntoLog.info(logMessage)
-            textState?.clearTrackedText(reason: reason)
-            return
-
-        case .skip(let logMessage):
-            PuntoLog.info(logMessage)
-            return
-
-        case .noText(let logMessage):
-            PuntoLog.info(logMessage)
-            return
-        }
-    }
-
-    private func handleToggleCase() {
-        let conversionContextID = activeApplicationBundleID ?? NSWorkspace.shared.frontmostApplication?.bundleIdentifier
-
-        guard textActionRuntime?.preflightTextAction(.toggleCase) == true else {
-            return
-        }
-
-        _ = textActionRuntime?.beginReplacementWindow()
-        defer {
-            textActionRuntime?.finishReplacementWindow()
-        }
-
-        let lastTrackedWord = wordTracker?.getLastWord()
-        let lastTrackedTail = wordTracker?.getTypedTail()
-        let capturedText = textAccessor?.captureSelectedText(lastTrackedWord: lastTrackedWord, lastTrackedTail: lastTrackedTail)
-        let runtimePlan = ToggleCaseConversionPolicy.runtimePlan(
-            from: ToggleCaseConversionPolicy.plan(capturedText: capturedText)
-        )
-
-        switch runtimePlan {
-        case .blockedCapture(let capturedText, let logMessage):
-            PuntoLog.info(logMessage)
-            textActionRuntime?.clearStateAfterBlockedCapture(capturedText)
-
-        case .replace(let replacementPlan):
-            PuntoLog.info(replacementPlan.logMessage)
-            if textAccessor?.replaceCapturedText(
-                replacementPlan.capturedText,
-                with: replacementPlan.replacement.toggledText,
-                keepSelection: replacementPlan.keepSelection
-            ) == true {
-                textActionRuntime?.commitSuccessfulTextReplacement(
-                    replacementPlan.commitPlan,
-                    contextID: conversionContextID
-                )
-            } else {
-                PuntoLog.info(replacementPlan.failedReplacementLogMessage)
-                textActionRuntime?.clearTrackedTextAfterFailedReplacement(method: replacementPlan.failedReplacementMethod)
-            }
-
-        case .skipped(let logMessage):
-            PuntoLog.info(logMessage)
-
-        case .noText(let logMessage):
-            PuntoLog.info(logMessage)
-        }
-    }
 
     private func handleToggleAutoCorrection() {
         let action = AutoCorrectionTogglePolicy.action(
