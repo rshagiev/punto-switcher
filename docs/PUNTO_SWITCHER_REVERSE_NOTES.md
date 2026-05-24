@@ -91,4 +91,4 @@ Punto Switcher bundles status item icon variants `icon_active.tiff`, `icon_inact
 
 ## Logging Signals
 
-Punto Switcher initializes a bounded file logger through CocoaLumberjack and exposes `maximumNumberOfLogFiles` / `logFilesDiskQuota` knobs in the binary. Native Punto keeps its simple `/tmp/punto.log` debug surface for scripts, but now routes rotation through a tested `LogRetentionPolicy`: active logs rotate when they exceed the native max size, archived logs use deterministic Punto-style filenames, and old archives are pruned by count and total disk quota.
+Punto Switcher initializes a bounded file logger through CocoaLumberjack and exposes `maximumNumberOfLogFiles` / `logFilesDiskQuota` knobs in the binary. Native Punto keeps its simple `/tmp/punto.log` debug surface for scripts, but now routes startup archival and rotation through a tested `LogRetentionPolicy`: non-empty startup logs are archived before the new session starts, active logs rotate when they exceed the native max size, archived logs use deterministic Punto-style filenames with collision suffixes, and old archives are pruned by count and total disk quota.

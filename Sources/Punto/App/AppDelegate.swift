@@ -53,7 +53,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Application Lifecycle
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        PuntoLog.clear()
+        PuntoLog.prepareForNewSession()
         PuntoLog.info("=== Punto Starting ===")
 
         // Initialize settings manager first

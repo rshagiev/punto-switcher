@@ -10821,6 +10821,37 @@ private func runLogRetentionPolicyTests() throws {
         "/tmp/punto.log.2008-12-31-21-00-00-000.log",
         "log retention writes deterministic Punto-style archive names"
     )
+    try expect(
+        LogRetentionPolicy.archivePath(
+            for: Date(timeIntervalSince1970: 1_230_757_200),
+            directory: "/tmp",
+            collisionIndex: 2
+        ),
+        "/tmp/punto.log.2008-12-31-21-00-00-000-002.log",
+        "log retention writes deterministic collision archive names"
+    )
+    try expect(
+        LogRetentionPolicy.uniqueArchivePath(
+            for: Date(timeIntervalSince1970: 1_230_757_200),
+            directory: "/tmp",
+            existingPaths: [
+                "/tmp/punto.log.2008-12-31-21-00-00-000.log",
+                "/tmp/punto.log.2008-12-31-21-00-00-000-001.log"
+            ]
+        ),
+        "/tmp/punto.log.2008-12-31-21-00-00-000-002.log",
+        "log retention chooses the first non-colliding archive path"
+    )
+    try expect(
+        LogRetentionPolicy.shouldArchiveActiveLogAtStartup(size: 0),
+        false,
+        "log retention keeps empty startup log unarchived"
+    )
+    try expect(
+        LogRetentionPolicy.shouldArchiveActiveLogAtStartup(size: 1),
+        true,
+        "log retention archives non-empty startup log before clearing active file"
+    )
 
     let base = Date(timeIntervalSince1970: 1_000)
     let files = [

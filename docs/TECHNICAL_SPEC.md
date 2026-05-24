@@ -144,7 +144,7 @@ private struct LastConversion {
 
 ```
 applicationDidFinishLaunching()
-├── PuntoLog.clear() — очистка логов
+├── PuntoLog.prepareForNewSession() — архивирование прошлого /tmp/punto.log и чистый активный лог
 ├── SettingsManager() — инициализация настроек
 ├── Core компоненты:
 │   ├── LayoutConverter

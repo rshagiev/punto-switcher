@@ -17,27 +17,53 @@ public enum PuntoLog {
         try? "".write(toFile: logFile, atomically: true, encoding: .utf8)
     }
 
+    public static func prepareForNewSession() {
+        let fileManager = FileManager.default
+        guard let attrs = try? fileManager.attributesOfItem(atPath: logFile),
+              let size = attrs[.size] as? Int else {
+            clear()
+            return
+        }
+
+        if LogRetentionPolicy.shouldArchiveActiveLogAtStartup(size: size) {
+            archiveActiveLog(fileManager: fileManager, date: Date())
+        } else {
+            clear()
+        }
+    }
+
     /// Rotate log files using the same bounded file-log shape Punto Switcher exposes through CocoaLumberjack.
     private static func rotateIfNeeded() {
         let fileManager = FileManager.default
-        guard let attrs = try? FileManager.default.attributesOfItem(atPath: logFile),
+        guard let attrs = try? fileManager.attributesOfItem(atPath: logFile),
               let size = attrs[.size] as? Int,
               LogRetentionPolicy.shouldRotateActiveLog(size: size) else {
             return
         }
 
-        let archivePath = LogRetentionPolicy.archivePath(for: Date())
-        try? fileManager.moveItem(atPath: logFile, toPath: archivePath)
-        pruneArchivedLogs(fileManager: fileManager)
+        archiveActiveLog(fileManager: fileManager, date: Date())
     }
 
-    private static func pruneArchivedLogs(fileManager: FileManager) {
+    private static func archiveActiveLog(fileManager: FileManager, date: Date) {
         let directory = (logFile as NSString).deletingLastPathComponent
+        let existingPaths = archivedLogFiles(fileManager: fileManager, directory: directory).map(\.path)
+        let archivePath = LogRetentionPolicy.uniqueArchivePath(
+            for: date,
+            directory: directory,
+            existingPaths: Set(existingPaths)
+        )
+
+        try? fileManager.moveItem(atPath: logFile, toPath: archivePath)
+        clear()
+        pruneArchivedLogs(fileManager: fileManager, directory: directory)
+    }
+
+    private static func archivedLogFiles(fileManager: FileManager, directory: String) -> [ArchivedLogFile] {
         guard let filenames = try? fileManager.contentsOfDirectory(atPath: directory) else {
-            return
+            return []
         }
 
-        let files = filenames.compactMap { filename -> ArchivedLogFile? in
+        return filenames.compactMap { filename -> ArchivedLogFile? in
             guard filename.hasPrefix(LogRetentionPolicy.archivePrefix),
                   filename.hasSuffix(".\(LogRetentionPolicy.archiveExtension)") else {
                 return nil
@@ -54,7 +80,10 @@ public enum PuntoLog {
                 modifiedAt: attrs[.modificationDate] as? Date ?? .distantPast
             )
         }
+    }
 
+    private static func pruneArchivedLogs(fileManager: FileManager, directory: String) {
+        let files = archivedLogFiles(fileManager: fileManager, directory: directory)
         for path in LogRetentionPolicy.archivedLogFilesToDelete(files) {
             try? fileManager.removeItem(atPath: path)
         }

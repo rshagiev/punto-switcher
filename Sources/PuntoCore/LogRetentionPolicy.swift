@@ -21,11 +21,35 @@ public enum LogRetentionPolicy {
     public static let logFilesDiskQuota = 5_000_000
 
     public static func archivePath(for date: Date, directory: String = "/tmp") -> String {
+        archivePath(for: date, directory: directory, collisionIndex: 0)
+    }
+
+    public static func archivePath(for date: Date, directory: String = "/tmp", collisionIndex: Int) -> String {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.timeZone = TimeZone(secondsFromGMT: 0)
         formatter.dateFormat = "yyyy-MM-dd-HH-mm-ss-SSS"
-        return "\(directory)/\(archivePrefix)\(formatter.string(from: date)).\(archiveExtension)"
+        let suffix = collisionIndex > 0 ? String(format: "-%03d", collisionIndex) : ""
+        return "\(directory)/\(archivePrefix)\(formatter.string(from: date))\(suffix).\(archiveExtension)"
+    }
+
+    public static func uniqueArchivePath(
+        for date: Date,
+        directory: String = "/tmp",
+        existingPaths: Set<String>
+    ) -> String {
+        var collisionIndex = 0
+        while true {
+            let path = archivePath(for: date, directory: directory, collisionIndex: collisionIndex)
+            if !existingPaths.contains(path) {
+                return path
+            }
+            collisionIndex += 1
+        }
+    }
+
+    public static func shouldArchiveActiveLogAtStartup(size: Int) -> Bool {
+        size > 0
     }
 
     public static func shouldRotateActiveLog(size: Int, maxActiveLogSize: Int = Self.maxActiveLogSize) -> Bool {
