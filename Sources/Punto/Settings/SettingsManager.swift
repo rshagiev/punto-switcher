@@ -47,15 +47,7 @@ final class SettingsManager {
         static let enabledSoundResourceNames = "enabledSoundResourceNames"
         static let restorePasteboardAfterConversion = "restorePasteboardAfterConversion"
         static let productStatistics = "productStatistics"
-        static let configVersion = ApplicationUpdateSettingsPolicy.configVersionKey
-        static let isJustInstalled = ApplicationUpdateSettingsPolicy.isJustInstalledKey
-        static let isJustUpdated = ApplicationUpdateSettingsPolicy.isJustUpdatedKey
-        static let isUpdating = ApplicationUpdateSettingsPolicy.isUpdatingKey
-        static let shouldCheckForUpdatesAutomatically = ApplicationUpdateSettingsPolicy.shouldCheckForUpdatesAutomaticallyKey
-        static let updateRequestRateInDays = ApplicationUpdateSettingsPolicy.updateRequestRateInDaysKey
-        static let lastStatisticsRequestDate = ApplicationUpdateSettingsPolicy.lastStatisticsRequestDateKey
-        static let lastUpdateRequestDate = ApplicationUpdateSettingsPolicy.lastUpdateRequestDateKey
-        static let lastUpdateShownDate = ApplicationUpdateSettingsPolicy.lastUpdateShownDateKey
+        static let applicationUpdateSettings = "applicationUpdateSettings"
     }
 
     private enum ImportKeys {
@@ -94,6 +86,15 @@ final class SettingsManager {
         static let manualSwitches = "manualSwitches"
         static let reverts = "reverts"
         static let dayuseSettings = ProductStatisticsPolicy.dayuseSettingsKey
+        static let configVersion = ApplicationUpdateSettingsPolicy.configVersionKey
+        static let isJustInstalled = ApplicationUpdateSettingsPolicy.isJustInstalledKey
+        static let isJustUpdated = ApplicationUpdateSettingsPolicy.isJustUpdatedKey
+        static let isUpdating = ApplicationUpdateSettingsPolicy.isUpdatingKey
+        static let shouldCheckForUpdatesAutomatically = ApplicationUpdateSettingsPolicy.shouldCheckForUpdatesAutomaticallyKey
+        static let updateRequestRateInDays = ApplicationUpdateSettingsPolicy.updateRequestRateInDaysKey
+        static let lastStatisticsRequestDate = ApplicationUpdateSettingsPolicy.lastStatisticsRequestDateKey
+        static let lastUpdateRequestDate = ApplicationUpdateSettingsPolicy.lastUpdateRequestDateKey
+        static let lastUpdateShownDate = ApplicationUpdateSettingsPolicy.lastUpdateShownDateKey
     }
 
     // MARK: - Properties
@@ -126,6 +127,13 @@ final class SettingsManager {
     func consumeFirstLaunchPresentationFlags() {
         defaults.set(false, forKey: Keys.isFirstLaunch)
         defaults.set(false, forKey: ImportKeys.isFirstInstallation)
+        defaults.set(false, forKey: ImportKeys.isJustInstalled)
+    }
+
+    /// Consumes imported Punto Switcher update flags after native update presentation.
+    func consumeUpdatePresentationImportFlags() {
+        defaults.set(false, forKey: ImportKeys.isJustUpdated)
+        defaults.set(false, forKey: ImportKeys.isUpdating)
     }
 
     /// Whether to show the icon in the menu bar
@@ -692,22 +700,17 @@ final class SettingsManager {
 
     var applicationUpdateSettings: ApplicationUpdateSettingsSnapshot {
         get {
-            ApplicationUpdateSettingsPolicy.snapshot(from: storedDefaults)
+            if let data = defaults.data(forKey: Keys.applicationUpdateSettings),
+               let snapshot = try? decoder.decode(ApplicationUpdateSettingsSnapshot.self, from: data) {
+                return snapshot
+            }
+            return ApplicationUpdateSettingsPolicy.snapshot(from: storedDefaults)
         }
         set {
-            let dictionary = ApplicationUpdateSettingsPolicy.dictionary(from: newValue)
-            for (key, value) in dictionary {
-                defaults.set(value, forKey: key)
+            guard let data = try? encoder.encode(newValue) else {
+                return
             }
-            if newValue.lastStatisticsRequestDate == nil {
-                defaults.removeObject(forKey: Keys.lastStatisticsRequestDate)
-            }
-            if newValue.lastUpdateRequestDate == nil {
-                defaults.removeObject(forKey: Keys.lastUpdateRequestDate)
-            }
-            if newValue.lastUpdateShownDate == nil {
-                defaults.removeObject(forKey: Keys.lastUpdateShownDate)
-            }
+            defaults.set(data, forKey: Keys.applicationUpdateSettings)
         }
     }
 

@@ -45,6 +45,14 @@ runtime events only update the Codable `productStatistics` payload. The old
 `PSDayuseSettings` keys remain pinned for audit/import coverage, but no core
 writer generates that legacy shape.
 
+Application update/install state is also native-write only. Imported Punto
+Switcher updater keys (`configVersion`, install/update booleans, request-rate
+and date markers) seed `applicationUpdateSettings` when no native snapshot
+exists, but startup presentation writes back only the native Codable payload.
+The only legacy updater writes left are one-shot consumption of imported
+`isFirstInstallation`, `isJustInstalled`, `isJustUpdated`, and `isUpdating` so
+old presentation flags cannot reopen welcome/update UI.
+
 ## Settings Mirror Cut
 
 Most legacy settings keys are now read-only import fallbacks at runtime. Native
@@ -56,10 +64,11 @@ so imported preferences still work, but normal use no longer rewrites the old
 plist shape on every settings change.
 
 The intentional exception is first-run/update consumption. Routine first-launch
-writes are native-only, but when onboarding or an installer/update presentation
-consumes old state, Punto still clears the observed legacy booleans as well as
-the native state so imported `isFirstInstallation`, `isJustInstalled`, or
-`isJustUpdated` values cannot reopen one-shot UI.
+and update-state writes are native-only, but when onboarding or an update
+presentation consumes old state, Punto still clears the observed legacy booleans
+as well as the native state so imported `isFirstInstallation`,
+`isJustInstalled`, `isJustUpdated`, or `isUpdating` values cannot reopen
+one-shot UI.
 
 ## Enforced Boundary
 

@@ -48,6 +48,7 @@ final class StartupRuntimeCoordinator {
             PuntoLog.info(StartupPresentationPolicy.nativeUpdatedTooltipMessage)
             updateSettings = StartupPresentationPolicy.updateSettingsAfterUpdateFinishedTooltip(updateSettings)
             settingsManager.applicationUpdateSettings = updateSettings
+            settingsManager.consumeUpdatePresentationImportFlags()
         }
 
         let trusted = requestAccessibilityTrustIfNeeded()

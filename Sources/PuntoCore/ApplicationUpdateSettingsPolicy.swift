@@ -1,6 +1,6 @@
 import Foundation
 
-public struct ApplicationUpdateSettingsSnapshot: Equatable {
+public struct ApplicationUpdateSettingsSnapshot: Codable, Equatable {
     public let configVersion: Int
     public let isFirstInstallation: Bool
     public let isJustInstalled: Bool

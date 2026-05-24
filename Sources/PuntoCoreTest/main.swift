@@ -4761,6 +4761,10 @@ private func runApplicationUpdateSettingsPolicyTests() throws {
     try expect(dictionary[ApplicationUpdateSettingsPolicy.shouldCheckForUpdatesAutomaticallyKey] as? Bool, false, "update settings policy writes auto-check flag")
     try expect(dictionary[ApplicationUpdateSettingsPolicy.updateRequestRateInDaysKey] as? Int, 14, "update settings policy writes update rate")
     try expect(dictionary[ApplicationUpdateSettingsPolicy.lastUpdateRequestDateKey] as? Date, updateRequestDate, "update settings policy writes update request date")
+
+    let encoded = try JSONEncoder().encode(snapshot)
+    let decoded = try JSONDecoder().decode(ApplicationUpdateSettingsSnapshot.self, from: encoded)
+    try expect(decoded, snapshot, "update settings snapshot supports native Codable persistence")
 }
 
 private func runStartupPresentationPolicyTests() throws {

@@ -149,13 +149,13 @@ for pattern in "${settings_import_alias_patterns[@]}"; do
 done
 
 settings_import_writes="$(rg "defaults\\.(set|removeObject)\\([^\\n]*forKey: ImportKeys\\." Sources/Punto/Settings/SettingsManager.swift || true)"
-unexpected_import_writes="$(printf '%s\n' "$settings_import_writes" | rg -v --fixed-strings "ImportKeys.isFirstInstallation" || true)"
+unexpected_import_writes="$(printf '%s\n' "$settings_import_writes" | rg -v --fixed-strings "ImportKeys.isFirstInstallation" | rg -v --fixed-strings "ImportKeys.isJustInstalled" | rg -v --fixed-strings "ImportKeys.isJustUpdated" | rg -v --fixed-strings "ImportKeys.isUpdating" || true)"
 if [[ -n "$unexpected_import_writes" ]]; then
     echo "legacy boundary failed: routine write to import-only key:" >&2
     printf '%s\n' "$unexpected_import_writes" >&2
     exit 1
 fi
-echo "PASS SettingsManager import-only writes limited to first-run consumption"
+echo "PASS SettingsManager import-only writes limited to first-run/update consumption"
 
 app_delegate_runtime_state_patterns=(
     "private let conversionSession = ConversionSession()"
@@ -430,6 +430,15 @@ forbidden_legacy_write_keys = {
     "reverts",
     "dayuseSettings",
     "isFirstInstallation",
+    "configVersion",
+    "isJustInstalled",
+    "isJustUpdated",
+    "isUpdating",
+    "shouldCheckForUpdatesAutomatically",
+    "updateRequestRateInDays",
+    "lastStatisticsRequestDate",
+    "lastUpdateRequestDate",
+    "lastUpdateShownDate",
 }
 
 with open(path, "r", encoding="utf-8") as handle:
@@ -454,10 +463,13 @@ for index, line in enumerate(lines):
     call = "\n".join(call_lines)
     allowed_one_shot_calls = {
         "isFirstInstallation": "consumeFirstLaunchPresentationFlags",
+        "isJustInstalled": "consumeFirstLaunchPresentationFlags",
+        "isJustUpdated": "consumeUpdatePresentationImportFlags",
+        "isUpdating": "consumeUpdatePresentationImportFlags",
     }
 
     for key in sorted(forbidden_legacy_write_keys):
-        if re.search(rf"\bKeys\.{re.escape(key)}\b", call):
+        if re.search(rf"\b(?:Keys|ImportKeys)\.{re.escape(key)}\b", call):
             allowed_method = allowed_one_shot_calls.get(key)
             if allowed_method:
                 prefix = "".join(lines[max(0, index - 8):index + 1])
