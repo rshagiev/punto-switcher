@@ -102,6 +102,22 @@ for pattern in "${text_accessor_ax_selection_transport_patterns[@]}"; do
     echo "PASS TextAccessor AX selected-text transport absent: $pattern"
 done
 
+app_delegate_runtime_state_patterns=(
+    "private let conversionSession = ConversionSession()"
+    "private var isConversionInProgress ="
+    "private var ignoreInputSourceChangesUntil: Date?  //"
+    "private var ignoreAccessibilityNotificationsUntil: Date?  //"
+    "private var lastKeyPressTime: Date?  //"
+)
+
+for pattern in "${app_delegate_runtime_state_patterns[@]}"; do
+    if rg --fixed-strings --quiet "$pattern" Sources/Punto/App/AppDelegate.swift; then
+        echo "legacy boundary failed: AppDelegate reopened mutable text runtime state: $pattern" >&2
+        exit 1
+    fi
+    echo "PASS AppDelegate mutable text runtime state absent: $pattern"
+done
+
 if rg --fixed-strings --quiet "Placeholder - actual tests" Tests 2>/dev/null; then
     echo "legacy boundary failed: placeholder SwiftPM test target returned" >&2
     exit 1

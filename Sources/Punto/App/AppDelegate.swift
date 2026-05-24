@@ -21,12 +21,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var autoCorrectionEngine = AutoCorrectionEngine(rules: [])
     private var activeApplicationBundleID: String?
     private var activeApplicationName: String?
+    private var textState: TextRuntimeStateCoordinator?
 
-    private let conversionSession = ConversionSession()
-    private var isConversionInProgress = false  // Prevents race condition with key press clearing undo
-    private var ignoreInputSourceChangesUntil: Date?  // Ignore notifications when we switch layout programmatically
-    private var ignoreAccessibilityNotificationsUntil: Date?
-    private var lastKeyPressTime: Date?  // Track when last key was pressed for debugging timing issues
+    private var conversionSession: ConversionSession {
+        guard let textState else {
+            fatalError("Text runtime state used before initialization")
+        }
+        return textState.conversionSession
+    }
+
+    private var isConversionInProgress: Bool {
+        textState?.isConversionInProgress == true
+    }
+
+    private var ignoreInputSourceChangesUntil: Date? {
+        get { textState?.ignoreInputSourceChangesUntil }
+        set { textState?.ignoreInputSourceChangesUntil = newValue }
+    }
+
+    private var ignoreAccessibilityNotificationsUntil: Date? {
+        textState?.ignoreAccessibilityNotificationsUntil
+    }
+
+    private var lastKeyPressTime: Date? {
+        get { textState?.lastKeyPressTime }
+        set { textState?.lastKeyPressTime = newValue }
+    }
 
     // MARK: - Application Lifecycle
 
@@ -41,6 +61,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Initialize core components
         layoutConverter = LayoutConverter()
         wordTracker = WordTracker(maxTailSize: 512)
+        textState = TextRuntimeStateCoordinator(wordTracker: wordTracker!) { [weak self] ignoreEvents in
+            self?.hotkeyManager?.ignoreEvents = ignoreEvents
+        }
         textAccessor = TextAccessor(
             shouldRestorePasteboard: { [weak settingsManager] in
                 settingsManager?.restorePasteboardAfterConversion
@@ -205,8 +228,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         case .rememberLayoutAndClearTextState(let plan):
             rememberCurrentLayoutForActiveApplication(reason: plan.layoutMemoryReason)
-            wordTracker?.clear(reason: plan.clearTrackedTextReason)
-            conversionSession.clear(reason: plan.clearConversionSessionReason)
+            textState?.clearTextAndConversionState(
+                trackedTextReason: plan.clearTrackedTextReason,
+                conversionSessionReason: plan.clearConversionSessionReason
+            )
             PuntoLog.info(plan.logMessage)
         }
     }
@@ -237,8 +262,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             if plan.shouldResetTextState,
                let clearTrackedTextReason = plan.clearTrackedTextReason,
                let clearConversionSessionReason = plan.clearConversionSessionReason {
-                wordTracker?.clear(reason: clearTrackedTextReason)
-                conversionSession.clear(reason: clearConversionSessionReason)
+                textState?.clearTextAndConversionState(
+                    trackedTextReason: clearTrackedTextReason,
+                    conversionSessionReason: clearConversionSessionReason
+                )
             }
         }
 
@@ -316,8 +343,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         switch action {
         case .clearTrackedText(let reason):
-            wordTracker?.clear(reason: reason)
-            conversionSession.clear(reason: reason)
+            textState?.clearTextAndConversionState(
+                trackedTextReason: reason,
+                conversionSessionReason: reason
+            )
             PuntoLog.info("Accessibility notification '\(notificationName)' cleared text state")
         case .ignore(let reason):
             PuntoLog.debug("Accessibility notification '\(notificationName)' ignored (\(reason))")
@@ -329,8 +358,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if action.shouldRefreshInputSources {
             inputSourceManager?.refreshInputSources()
         }
-        wordTracker?.clear(reason: action.clearTrackedTextReason)
-        conversionSession.clear(reason: action.clearConversionSessionReason)
+        textState?.clearTextAndConversionState(
+            trackedTextReason: action.clearTrackedTextReason,
+            conversionSessionReason: action.clearConversionSessionReason
+        )
         PuntoLog.info(action.logMessage)
     }
 
@@ -439,9 +470,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                         ?? NSWorkspace.shared.frontmostApplication?.bundleIdentifier
                 ) ?? false
             },
-            onClearTrackedText: { [weak self, weak wordTracker] reason in
-                wordTracker?.clear(reason: reason)
-                self?.conversionSession.clear(reason: reason)
+            onClearTrackedText: { [weak self] reason in
+                self?.textState?.clearTextAndConversionState(
+                    trackedTextReason: reason,
+                    conversionSessionReason: reason
+                )
             },
             onKeyPress: { [weak self, weak wordTracker] keyCode, characters in
                 self?.lastKeyPressTime = Date()
@@ -492,7 +525,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     if let statisticsEvent = resetPlan.completedTokenStatisticsEvent {
                         self?.settingsManager?.recordProductStatisticsEvent(statisticsEvent)
                     }
-                    self?.conversionSession.clear(reason: resetPlan.conversionSessionClearReason)
+                    self?.textState?.clearConversionSession(reason: resetPlan.conversionSessionClearReason)
                     PuntoLog.info(resetPlan.logMessage)
                     return
 
@@ -503,7 +536,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 if let clearReason = KeyTrackingRuntimePolicy.conversionSessionClearReasonAfterAutoCorrection(
                     isConversionInProgress: self?.isConversionInProgress == true
                 ) {
-                    self?.conversionSession.clear(reason: clearReason)
+                    self?.textState?.clearConversionSession(reason: clearReason)
                 }
             },
             isCurrentApplicationDisabled: { [weak self] in
@@ -651,7 +684,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         case .clearTrackedText(let reason, let logMessage):
             PuntoLog.info(logMessage)
-            wordTracker?.clear(reason: reason)
+            textState?.clearTrackedText(reason: reason)
             return
 
         case .skip(let logMessage):
@@ -703,7 +736,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             if action.clearConversionSession,
                let reason = action.clearConversionSessionReason {
-                conversionSession.clear(reason: reason)
+                textState?.clearConversionSession(reason: reason)
             }
             return true
 
@@ -891,7 +924,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             recordCompletedTokenStatistics(completedTokenStatisticsEvent)
             PuntoLog.info(logMessage)
             if let conversionSessionClearReason {
-                conversionSession.clear(reason: conversionSessionClearReason)
+                textState?.clearConversionSession(reason: conversionSessionClearReason)
             }
             return
 
@@ -973,8 +1006,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             wasEnabled: settingsManager?.autoCorrectionEnabled == true
         )
         settingsManager?.autoCorrectionEnabled = action.newEnabledValue
-        wordTracker?.clear(reason: action.clearTrackedTextReason)
-        conversionSession.clear(reason: action.clearConversionSessionReason)
+        textState?.clearTextAndConversionState(
+            trackedTextReason: action.clearTrackedTextReason,
+            conversionSessionReason: action.clearConversionSessionReason
+        )
         PuntoLog.info(action.logMessage)
         if action.shouldFlashIcon {
             statusBarController?.flashIcon()
@@ -983,7 +1018,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func commitSuccessfulTextReplacement(_ plan: TextReplacementCommitPlan, contextID: String?) {
         if plan.clearTrackedTextBeforeTailCommit {
-            wordTracker?.clear(reason: "conversion completed")
+            textState?.clearTrackedText(reason: "conversion completed")
         }
 
         if let trackedTailCommit = plan.trackedTailCommit {
@@ -1010,19 +1045,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func beginReplacementWindow() -> ReplacementWindowAction {
-        let action = ConversionProtectionPolicy.replacementWindowAction(now: Date(), dispatchNow: .now())
-        isConversionInProgress = action.markConversionInProgress
-        ignoreAccessibilityNotificationsUntil = action.ignoreAccessibilityNotificationsUntil
-        hotkeyManager?.ignoreEvents = action.shouldIgnoreHotkeyEvents
-        return action
+        textState?.beginReplacementWindow() ?? ConversionProtectionPolicy.replacementWindowAction(now: Date(), dispatchNow: .now())
     }
 
     private func finishReplacementWindow() {
-        let releaseAt = ConversionProtectionPolicy.eventRecaptureReleaseDeadline(now: .now())
-        DispatchQueue.main.asyncAfter(deadline: releaseAt) { [weak self] in
-            self?.hotkeyManager?.ignoreEvents = false
-            self?.isConversionInProgress = false
-        }
+        textState?.finishReplacementWindow()
     }
 
     private func preflightTextAction(_ kind: TextActionKind) -> Bool {
@@ -1118,8 +1145,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if action.shouldClearState,
            let clearTrackedTextReason = action.clearTrackedTextReason,
            let clearConversionSessionReason = action.clearConversionSessionReason {
-            wordTracker?.clear(reason: clearTrackedTextReason)
-            conversionSession.clear(reason: clearConversionSessionReason)
+            textState?.clearTextAndConversionState(
+                trackedTextReason: clearTrackedTextReason,
+                conversionSessionReason: clearConversionSessionReason
+            )
         }
         PuntoLog.info(ApplicationDisablePolicy.toggleLogMessage(
             action: action,
@@ -1133,12 +1162,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             isEnabled: isEnabled
         )
 
-        if action.clearTrackedText, let reason = action.clearTrackedTextReason {
-            wordTracker?.clear(reason: reason)
-        }
-        if action.clearConversionSession, let reason = action.clearConversionSessionReason {
-            conversionSession.clear(reason: reason)
-        }
+        textState?.apply(action)
         if let logMessage = action.logMessage {
             PuntoLog.info(logMessage)
         }
@@ -1150,12 +1174,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             isPasswordField: context == "password field"
         )
 
-        if action.clearTrackedText, let reason = action.clearTrackedTextReason {
-            wordTracker?.clear(reason: reason)
-        }
-        if action.clearConversionSession, let reason = action.clearConversionSessionReason {
-            conversionSession.clear(reason: reason)
-        }
+        textState?.apply(action)
         if action.shouldWriteDiagnostics, let diagnosticContext = action.diagnosticContext {
             writeSecureInputDiagnostics(context: diagnosticContext)
         }
@@ -1191,37 +1210,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func clearTrackedTextAfterFailedReplacement(method: TextReplacementMethod) {
         let action = ReplacementFailurePolicy.actionAfterFailedReplacement(method: method)
-
-        if action.clearTrackedText, let reason = action.clearTrackedTextReason {
-            wordTracker?.clear(reason: reason)
-        }
-
-        if action.clearConversionSession, let reason = action.clearConversionSessionReason {
-            conversionSession.clear(reason: reason)
-        }
+        textState?.apply(action)
     }
 
     private func clearStateAfterFailedUndoReplacement(method: TextReplacementMethod) {
         let action = UndoReplacementPolicy.actionAfterFailedReplacement(method: method)
-
-        if action.clearTrackedText, let reason = action.clearTrackedTextReason {
-            wordTracker?.clear(reason: reason)
-        }
-
-        if action.clearConversionSession, let reason = action.clearConversionSessionReason {
-            conversionSession.clear(reason: reason)
-        }
+        textState?.apply(action)
     }
 
     private func clearStateAfterBlockedCapture(_ capturedText: CapturedText?) {
         let action = TextCapturePolicy.actionAfterBlockedCapture(capturedText)
-
-        if action.clearTrackedText, let reason = action.clearTrackedTextReason {
-            wordTracker?.clear(reason: reason)
-        }
-
-        if action.clearConversionSession, let reason = action.clearConversionSessionReason {
-            conversionSession.clear(reason: reason)
-        }
+        textState?.apply(action)
     }
 }
