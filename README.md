@@ -1,300 +1,185 @@
 # Punto
 
-**Native macOS keyboard layout converter. Pure Swift. No bloatware.**
+Native macOS keyboard layout switcher for English and Russian text.
 
-Typed `ghbdtn` instead of `привет`? Press **Cmd+Opt+Shift** — fixed instantly.
+Punto fixes text typed in the wrong keyboard layout. Type `ghbdtn`, press
+`Cmd+Option+Shift`, and Punto replaces it with `привет`.
 
-![macOS](https://img.shields.io/badge/macOS-13%2B-blue)
-![Swift](https://img.shields.io/badge/Swift-5.9-orange)
-![License](https://img.shields.io/badge/License-MIT-green)
+## Download
 
----
+The easiest way to install Punto is from GitHub Releases:
 
-## Quick Start (5 minutes)
+1. Open the [latest release](https://github.com/rshagiev/punto-switcher/releases/latest).
+2. Download `Punto-v1.0.2.dmg`.
+3. Open the disk image.
+4. Drag `Punto.app` to `Applications`.
+5. Open `Punto.app` from `/Applications`.
 
-### Step 1: Download
+macOS may warn that the app was downloaded from the internet. If needed, open it
+from Finder with right click -> Open.
 
-**Option A — Ready-to-use app:**
-1. Go to [Releases](../../releases)
-2. Download `Punto.app.zip`
-3. Unzip and drag `Punto.app` to `/Applications`
+## Required Permission
 
-**Option B — Build yourself:**
-```bash
-git clone https://github.com/rshagiev/punto-switcher.git
-cd punto-switcher
-./Scripts/build.sh
-cp -r Release/Punto.app /Applications/
-```
+Punto needs macOS Accessibility permission. Without it, global hotkeys and text
+replacement cannot work.
 
-### Step 2: Grant Accessibility Permission
+After first launch:
 
-Punto needs Accessibility permission to read and replace text. **Without this, nothing will work.**
+1. Open System Settings.
+2. Go to Privacy & Security -> Accessibility.
+3. Enable Punto.
+4. Restart Punto from `/Applications`.
 
-1. Open `Punto.app` from Applications
-2. macOS will show a permission dialog — click **Open System Settings**
-3. In **Privacy & Security → Accessibility**, find **Punto** and toggle it **ON**
-4. If Punto doesn't appear in the list:
-   - Click the **+** button
-   - Navigate to `/Applications/Punto.app` and add it
-5. **Restart Punto** (quit from menu bar, open again)
+If Punto is missing from the list, add `/Applications/Punto.app` manually with
+the plus button.
 
-<details>
-<summary>Screenshot: How to enable Accessibility</summary>
+## Usage
 
-System Settings → Privacy & Security → Accessibility → Toggle Punto ON
-
-```
-┌─────────────────────────────────────────────────┐
-│ Privacy & Security                              │
-├─────────────────────────────────────────────────┤
-│ Accessibility                                   │
-│                                                 │
-│ Allow the apps below to control your computer.  │
-│                                                 │
-│ ┌─────────────────────────────────────────────┐ │
-│ │ ☑ Punto                              [ON]  │ │
-│ └─────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────┘
-```
-</details>
-
-### Step 3: Use It
-
-1. Open any app (Notes, browser, Telegram, etc.)
-2. Type something in the wrong layout, e.g. `ghbdtn`
-3. Press **Cmd+Opt+Shift** (all three together, then release)
-4. Text converts to `привет`
-
-**That's it. You're done.**
-
----
-
-## Features
-
-- **Instant conversion** — Russian ↔ English layout with one hotkey
-- **Smart detection** — converts selected text or last typed word
-- **Auto layout switch** — changes system keyboard to match converted text
-- **Undo support** — press same hotkey within 3 seconds to revert
-- **Case toggle** — switch between HELLO ↔ hello
-- **Modifier-only hotkey** — no extra key needed, just Cmd+Opt+Shift
-- **Privacy first** — no telemetry, no network, no cloud
-
----
-
-## Hotkeys
+Punto runs in the menu bar.
 
 | Hotkey | Action |
-|--------|--------|
-| **Cmd+Opt+Shift** | Convert layout (last word or selection) |
-| **Cmd+Opt+Z** | Toggle case (HELLO ↔ hello) |
+| --- | --- |
+| `Cmd+Option+Shift` | Convert selected text or the last typed word |
+| Repeat `Cmd+Option+Shift` within 3 seconds | Undo the last conversion |
+| `Cmd+Option+Z` | Toggle text case |
+| `Cmd+Option+A` | Toggle auto-correction |
+| `Cmd+Option+Delete` | Cancel the last conversion |
 
-### Examples
+Examples:
 
-| You typed | After Cmd+Opt+Shift |
-|-----------|---------------------|
+| Wrong layout | Fixed text |
+| --- | --- |
 | `ghbdtn` | `привет` |
 | `руддщ` | `hello` |
 | `Vfrc` | `Макс` |
-| `Rhfcbdj!` | `Красиво!` |
 
-### Two Modes
+Punto can convert:
 
-**1. Last word mode (default):**
-- Just type, no need to select anything
-- Press hotkey — last word gets converted
-- Works in any text field
+- selected text;
+- the last typed word;
+- terminal command tails when direct Accessibility replacement is not safe.
 
-**2. Selection mode:**
-- Select text with mouse or Shift+arrows
-- Press hotkey — selected text gets converted
-- Works for multiple words, sentences, paragraphs
+## Privacy
 
-### Undo
+Punto is local-only software.
 
-Press the same hotkey again within 3 seconds to undo the conversion.
+- No telemetry.
+- No analytics.
+- No network requests for text processing.
+- No cloud sync.
+- Clipboard fallback is used only for local text capture/replacement when an app
+  does not expose a safe Accessibility text API.
 
----
+The app still needs Accessibility permission because macOS requires it for
+global hotkeys, reading selected text, and replacing text in other apps.
 
-## Troubleshooting
+## Supported macOS Versions
 
-### Hotkey doesn't work
+Punto targets macOS 12 or newer. The release artifact is a universal macOS app
+bundle with `arm64` and `x86_64` slices.
 
-1. **Check Accessibility permission** — most common issue
-   - System Settings → Privacy & Security → Accessibility
-   - Make sure Punto is enabled (toggle ON)
-   - If you moved the app, remove old entry and add new one
+## Terminal And Browser Behavior
 
-2. **Restart Punto** after changing permissions
-   - Click menu bar icon → Quit
-   - Open Punto.app again
+Punto does not rely on a hardcoded terminal app list for replacement safety.
+Instead, it checks what the active text surface can actually do:
 
-3. **Check if Punto is running**
-   - Look for keyboard icon in menu bar (top right)
-   - If not there, open Punto.app
+- direct Accessibility replacement for editable selected text;
+- clipboard-backed selected text replacement for browser/content surfaces;
+- backspace plus paste for tracked terminal command tails;
+- no-op when the target cannot be verified safely.
 
-### Text doesn't convert correctly
+This is intentional. A missed conversion is better than deleting or pasting into
+the wrong text field.
 
-1. **Wait for cursor to stop** — don't press hotkey while text is still being typed
-2. **Check keyboard layouts** — make sure you have both English and Russian layouts in System Settings → Keyboard → Input Sources
-3. **Some special characters** may not convert (emojis, math symbols, etc.)
-
-### Converts wrong text
-
-1. **Word boundaries** — Punto tracks the last word since you typed Space, Tab, or Enter
-2. **Selection takes priority** — if you have text selected, it converts that instead of last word
-
-### App keeps asking for permission
-
-1. Remove Punto from Accessibility list
-2. Quit Punto completely
-3. Add Punto back to Accessibility
-4. Open Punto again
-
----
-
-## Comparison with Punto Switcher (Yandex)
-
-| Feature | Punto Switcher (Yandex) | This Punto |
-|---------|------------------------|------------|
-| Telemetry | Yes (sends data to Yandex) | None |
-| Size | ~50 MB | ~2 MB |
-| Auto-updates | Forced popups | Manual |
-| Source code | Closed | Open (MIT) |
-| Dependencies | Many | Zero |
-| Network access | Required | None |
-| Price | Free (you're the product) | Free (actually free) |
-
----
-
-## Advanced
-
-### Settings
-
-Click the menu bar icon → **Settings** to customize:
-- Enable/disable the app
-- Change hotkeys
-- Auto-start on login
-- Auto-switch keyboard layout after conversion
-
-### Building from Source
+## Build From Source
 
 Requirements:
-- macOS 13.0+
-- Xcode Command Line Tools (`xcode-select --install`)
+
+- macOS 12 or newer;
+- Xcode Command Line Tools.
+
+Build a release app:
 
 ```bash
-# Clone repository
-git clone https://github.com/rshagiev/punto-switcher.git
-cd punto-switcher
-
-# Build universal binary (arm64 + x86_64)
 ./Scripts/build.sh
+open Release/Punto.app
+```
 
-# Or build, sign, install, and restart Apple Silicon only (faster)
+For local development on Apple Silicon, build, sign, install, and restart:
+
+```bash
 ./Scripts/deploy.sh
 ```
 
+`deploy.sh` updates `/Applications/Punto.app` and re-signs the bundle. This is
+important because macOS Accessibility permission is tied to the app identity.
+
+## Tests
+
+Run the main regression cycle:
+
+```bash
+./Scripts/test-cycle.sh 1
+```
+
+Focused test entry points:
+
+```bash
+swift run PuntoCoreTest
+swift run PuntoSettingsTest
+swift run PuntoParityTest
+```
+
+Useful installed-app checks:
+
+```bash
+PUNTO_AUDIT_INSTALLED_BUNDLE=1 ./Scripts/test-native-bundle-audit.sh
+codesign --verify --deep --strict --verbose=2 /Applications/Punto.app
+tail -f /tmp/punto.log
+```
+
+## Troubleshooting
+
+### The hotkey does nothing
+
+Check Accessibility permission first. Then quit Punto from the menu bar and open
+it again from `/Applications`.
+
+### Text is not replaced in a specific app
+
+Some apps do not expose selected text through Accessibility. Punto falls back to
+clipboard or keyboard-tail replacement only when it can verify the target safely.
+If the target is not verifiable, Punto skips the conversion.
+
+### The wrong word is converted
+
+Selected text has priority. If nothing is selected, Punto uses its tracked last
+typed word. Clicking somewhere else clears that tracking state.
+
 ### Logs
 
-For debugging, check the log file:
+Punto writes a local diagnostic log:
+
 ```bash
 tail -f /tmp/punto.log
 ```
 
-### Uninstall
+Do not attach logs publicly without reviewing them first; they can contain app
+names and short snippets of text involved in a conversion.
 
-1. Quit Punto (menu bar icon → Quit)
-2. Delete `/Applications/Punto.app`
-3. Optionally, remove from Accessibility in System Settings
+## Project Layout
 
----
+| Path | Purpose |
+| --- | --- |
+| `Sources/PuntoCore` | Pure conversion, policy, tracking, and testable domain logic |
+| `Sources/PuntoRuntime` | macOS Accessibility, clipboard, keyboard, and input-source adapters |
+| `Sources/PuntoSettings` | Native settings and Punto Switcher import fallbacks |
+| `Sources/Punto` | App lifecycle, menu bar UI, and runtime coordinators |
+| `Scripts` | Build, deploy, diagnostics, and regression scripts |
+| `docs` | Architecture notes and behavior documentation |
 
-## How It Works
+## Notes
 
-```
-┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│  WordTracker    │────▶│  LayoutConverter │────▶│   TextAccessor  │
-│  (ring buffer)  │     │  (QWERTY↔ЙЦУКЕН) │     │  (paste result) │
-└─────────────────┘     └──────────────────┘     └─────────────────┘
-         ▲                                                │
-         │                                                ▼
-┌─────────────────┐                              ┌─────────────────┐
-│  HotkeyManager  │                              │InputSourceManager│
-│  (CGEvent tap)  │                              │ (switch layout) │
-└─────────────────┘                              └─────────────────┘
-```
-
-1. **WordTracker** captures every keystroke in a ring buffer
-2. **HotkeyManager** detects Cmd+Opt+Shift press via CGEvent tap
-3. **LayoutConverter** maps characters between QWERTY and ЙЦУКЕН layouts
-4. **TextAccessor** replaces text via Accessibility API (or clipboard fallback)
-5. **InputSourceManager** switches macOS keyboard layout to match converted text
-
----
-
-## Technical Highlights
-
-Built from scratch in Swift. ~7000 lines of code. Zero dependencies.
-
-### Low-Level macOS Integration
-
-| Component | Challenge | Solution |
-|-----------|-----------|----------|
-| **CGEvent Tap** | Global hotkey interception at system level | Event tap with `kCGEventTapOptionDefault`, handles `flagsChanged` for modifier-only detection |
-| **Accessibility API** | Read/replace text in any app | `kAXSelectedTextAttribute` with fallback to clipboard for Safari/Electron |
-| **Input Source API** | Programmatic keyboard switch | `TISSelectInputSource` with notification filtering |
-
-### Non-Trivial Problems Solved
-
-**Modifier-only hotkeys** — Most apps require Cmd+Opt+Shift+*Key*. Punto triggers on Cmd+Opt+Shift alone via `flagsChanged` event tracking. Requires careful state machine to avoid false triggers.
-
-**Self-capture prevention** — When Punto types replacement text, those keystrokes would be captured by its own event tap. Solved with `ignoreEvents` flag and 300ms cooldown window.
-
-**Layout switch echo** — Switching keyboard layout fires one or more `kTISNotifySelectedKeyboardInputSourceChanged` notifications, which normally clear the word buffer. `ignoreInputSourceChangesUntil` keeps a short grace window after Punto's own programmatic switch so delayed notifications do not erase undo state or the tracked word.
-
-**Mixed layout detection** — WordTracker rejects words containing both Cyrillic and Latin characters (e.g., "heпо"). This catches race conditions when layout change notification arrives with delay.
-
-**Safari/Electron compatibility** — Web content doesn't expose `selectedText` via Accessibility. TextAccessor performs recursive AX tree traversal (depth 5) before falling back to Cmd+C clipboard method.
-
-**Password field protection** — Detects `kAXSecureTextField` role and blocks conversion in password inputs.
-
-**Ring buffer word tracking** — Efficient fixed-size buffer tracks last 100 characters. Handles backspace, word boundaries (Space, Tab, Enter), and special keys (Cmd+V clears buffer).
-
-### Architecture
-
-```
-Sources/Punto/
-├── Core/
-│   ├── HotkeyManager.swift    # CGEvent tap, modifier detection
-│   ├── TextAccessor.swift     # AX API, clipboard fallback (800+ lines)
-│   ├── LayoutConverter.swift  # QWERTY ↔ ЙЦУКЕН mapping
-│   ├── WordTracker.swift      # Ring buffer, word boundaries
-│   ├── InputSourceManager.swift
-│   └── Logger.swift
-├── App/
-│   ├── AppDelegate.swift      # Lifecycle, component orchestration
-│   └── StatusBarController.swift
-├── UI/
-│   ├── SettingsWindowController.swift
-│   └── OnboardingWindowController.swift
-└── Settings/
-    └── SettingsManager.swift
-```
-
----
-
-## Requirements
-
-- macOS 13.0 (Ventura) or later
-- Accessibility permission
-
----
-
-## License
-
-MIT License. Do whatever you want with it.
-
----
-
-**Made with frustration after typing in the wrong layout one too many times.**
+Punto is an independent native Swift implementation. Reverse-engineering notes in
+this repository are used only to document behavior and compatibility boundaries;
+the implementation is native Swift code.
