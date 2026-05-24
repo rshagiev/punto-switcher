@@ -63,6 +63,13 @@ puntotest_copy_heavy_patterns=(
     "RAPID CONVERSION SIMULATION TESTS"
     "runClipboardSimulationTests"
     "CLIPBOARD SIMULATION TESTS"
+    "runHotkeyTests"
+    "HOTKEY TESTS"
+    "runShiftNumberTests"
+    "SHIFT+NUMBER MAPPING TESTS"
+    "runToggleCaseTests"
+    "TOGGLE CASE TESTS"
+    "func toggleCase(_ text: String) -> String"
 )
 
 for pattern in "${puntotest_copy_heavy_patterns[@]}"; do

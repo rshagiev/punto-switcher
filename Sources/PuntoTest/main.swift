@@ -668,249 +668,6 @@ func runBugHunt() {
     print("  \(doubleOK ? "✅" : "❌") Double conversion returns original: \(doubleOK)")
 }
 
-// MARK: - NEW TESTS: HotkeyManager Tests
-
-func runHotkeyTests() {
-    print("\n" + String(repeating: "=", count: 50))
-    print("  HOTKEY TESTS")
-    print(String(repeating: "=", count: 50))
-
-    var passed = 0
-    var failed = 0
-
-    // Test isModifierOnly
-    print("\n--- isModifierOnly Tests ---")
-
-    let modifierOnlyHotkey = Hotkey(keyCode: UInt16.max, command: true, option: true, shift: true, control: false)
-    if modifierOnlyHotkey.isModifierOnly {
-        print("✅ keyCode=UInt16.max -> isModifierOnly=true")
-        passed += 1
-    } else {
-        print("❌ keyCode=UInt16.max should be modifier-only")
-        failed += 1
-    }
-
-    let keyBasedHotkey = Hotkey(keyCode: 6, command: true, option: true, shift: false, control: false)
-    if !keyBasedHotkey.isModifierOnly {
-        print("✅ keyCode=6 (Z) -> isModifierOnly=false")
-        passed += 1
-    } else {
-        print("❌ keyCode=6 should NOT be modifier-only")
-        failed += 1
-    }
-
-    let zeroKeyHotkey = Hotkey(keyCode: 0, command: true, option: false, shift: false, control: false)
-    if !zeroKeyHotkey.isModifierOnly {
-        print("✅ keyCode=0 (A) -> isModifierOnly=false")
-        passed += 1
-    } else {
-        print("❌ keyCode=0 should NOT be modifier-only")
-        failed += 1
-    }
-
-    // Test displayString
-    print("\n--- displayString Tests ---")
-
-    let displayTests: [(Hotkey, String, String)] = [
-        (Hotkey(keyCode: UInt16.max, command: true, option: true, shift: true, control: false),
-         "⌥⇧⌘", "Cmd+Opt+Shift modifier-only"),
-        (Hotkey(keyCode: 6, command: true, option: true, shift: false, control: false),
-         "⌥⌘Z", "Cmd+Opt+Z"),
-        (Hotkey(keyCode: 0, command: true, option: false, shift: false, control: false),
-         "⌘A", "Cmd+A"),
-        (Hotkey(keyCode: 6, command: true, option: true, shift: true, control: true),
-         "⌃⌥⇧⌘Z", "All modifiers + Z"),
-        (Hotkey(keyCode: UInt16.max, command: false, option: false, shift: false, control: true),
-         "⌃", "Control only modifier-only"),
-        (Hotkey(keyCode: 49, command: true, option: false, shift: false, control: false),
-         "⌘Space", "Cmd+Space"),
-        (Hotkey(keyCode: 36, command: false, option: false, shift: true, control: false),
-         "⇧Return", "Shift+Return"),
-    ]
-
-    for (hotkey, expected, desc) in displayTests {
-        let result = hotkey.displayString
-        if result == expected {
-            print("✅ \(desc): '\(result)'")
-            passed += 1
-        } else {
-            print("❌ \(desc)")
-            print("   Expected: '\(expected)'")
-            print("   Got:      '\(result)'")
-            failed += 1
-        }
-    }
-
-    // Test default hotkeys
-    print("\n--- Default Hotkey Values ---")
-
-    let defaultConvert = Hotkey.defaultConvertLayout
-    if defaultConvert.keyCode == UInt16.max &&
-       defaultConvert.command && defaultConvert.option && defaultConvert.shift && !defaultConvert.control {
-        print("✅ defaultConvertLayout: Cmd+Opt+Shift (modifier-only)")
-        passed += 1
-    } else {
-        print("❌ defaultConvertLayout values incorrect")
-        failed += 1
-    }
-
-    let defaultToggle = Hotkey.defaultToggleCase
-    if defaultToggle.keyCode == 6 &&
-       defaultToggle.command && defaultToggle.option && !defaultToggle.shift && !defaultToggle.control {
-        print("✅ defaultToggleCase: Cmd+Opt+Z")
-        passed += 1
-    } else {
-        print("❌ defaultToggleCase values incorrect")
-        failed += 1
-    }
-
-    // Test Codable round-trip
-    print("\n--- Hotkey Codable Round-trip ---")
-
-    let hotkeysToEncode = [
-        Hotkey.defaultConvertLayout,
-        Hotkey.defaultToggleCase,
-        Hotkey(keyCode: 0, command: true, option: true, shift: true, control: true),
-    ]
-
-    for hotkey in hotkeysToEncode {
-        do {
-            let encoded = try JSONEncoder().encode(hotkey)
-            let decoded = try JSONDecoder().decode(Hotkey.self, from: encoded)
-            if decoded == hotkey {
-                print("✅ Codable round-trip: \(hotkey.displayString)")
-                passed += 1
-            } else {
-                print("❌ Codable mismatch for \(hotkey.displayString)")
-                failed += 1
-            }
-        } catch {
-            print("❌ Codable error for \(hotkey.displayString): \(error)")
-            failed += 1
-        }
-    }
-
-    // Test KeyCodeNames
-    print("\n--- KeyCodeNames Tests ---")
-
-    let keyCodeTests: [(UInt16, String?)] = [
-        (0, "A"),
-        (6, "Z"),
-        (36, "Return"),
-        (49, "Space"),
-        (51, "Delete"),
-        (53, "Escape"),
-        (123, "Left"),
-        (124, "Right"),
-        (125, "Down"),
-        (126, "Up"),
-        (115, "Home"),
-        (119, "End"),
-        (116, "Page Up"),
-        (121, "Page Down"),
-        (117, "Forward Delete"),
-        (999, nil),  // Unknown key code
-        (UInt16.max, nil),  // Modifier-only marker
-    ]
-
-    for (keyCode, expected) in keyCodeTests {
-        let result = KeyCodeNames.name(for: keyCode)
-        if result == expected {
-            print("✅ KeyCode \(keyCode) -> \(result ?? "nil")")
-            passed += 1
-        } else {
-            print("❌ KeyCode \(keyCode)")
-            print("   Expected: \(expected ?? "nil")")
-            print("   Got:      \(result ?? "nil")")
-            failed += 1
-        }
-    }
-
-    reportResults(passed: passed, failed: failed)
-}
-
-// MARK: - NEW TESTS: Shift+Number Mapping Tests
-
-func runShiftNumberTests() {
-    print("\n" + String(repeating: "=", count: 50))
-    print("  SHIFT+NUMBER MAPPING TESTS")
-    print(String(repeating: "=", count: 50))
-
-    let converter = TestLayoutConverter()
-    var passed = 0
-    var failed = 0
-
-    // Test Shift+Number forward mappings (EN -> RU)
-    print("\n--- Shift+Number EN -> RU ---")
-
-    let shiftNumberTests: [(String, String, String)] = [
-        ("@", "\"", "@ -> \" (Shift+2)"),
-        ("#", "№", "# -> № (Shift+3)"),
-        ("$", ";", "$ -> ; (Shift+4)"),
-        ("^", ":", "^ -> : (Shift+6)"),
-        ("&", "?", "& -> ? (Shift+7)"),
-    ]
-
-    for (input, expected, desc) in shiftNumberTests {
-        let result = converter.convertToRussian(input)
-        if result == expected {
-            print("✅ \(desc)")
-            passed += 1
-        } else {
-            print("❌ \(desc)")
-            print("   Expected: '\(expected)', Got: '\(result)'")
-            failed += 1
-        }
-    }
-
-    // Test reverse mappings (RU -> EN)
-    print("\n--- Shift+Number RU -> EN ---")
-
-    let reverseTests: [(String, String, String)] = [
-        ("№", "#", "№ -> # (Shift+3 reverse)"),
-        // Note: These use the ambiguous mapping overrides
-    ]
-
-    for (input, expected, desc) in reverseTests {
-        let result = converter.convertToEnglish(input)
-        if result == expected {
-            print("✅ \(desc)")
-            passed += 1
-        } else {
-            print("❌ \(desc)")
-            print("   Expected: '\(expected)', Got: '\(result)'")
-            failed += 1
-        }
-    }
-
-    // Test in context
-    print("\n--- Shift+Number in Context ---")
-
-    let contextTests: [(String, String, String)] = [
-        ("test@email", "еуые\"уьфшд", "@ in email context"),
-        ("$100", ";100", "$ in price context"),
-        ("A&B", "Ф?И", "& in text context"),
-        ("test#1", "еуые№1", "# in hashtag context"),
-        ("x^2", "ч:2", "^ in math context"),
-    ]
-
-    for (input, expected, desc) in contextTests {
-        let result = converter.convertToRussian(input)
-        if result == expected {
-            print("✅ \(desc)")
-            passed += 1
-        } else {
-            print("❌ \(desc)")
-            print("   Input:    '\(input)'")
-            print("   Expected: '\(expected)'")
-            print("   Got:      '\(result)'")
-            failed += 1
-        }
-    }
-
-    reportResults(passed: passed, failed: failed)
-}
-
 // MARK: - NEW TESTS: Layout Detection Boundary Tests
 
 func runLayoutDetectionTests() {
@@ -1487,155 +1244,6 @@ func runMixedLayoutTests() {
         passed += 1
     } else {
         print("❌ Mixed with ё should return nil")
-        failed += 1
-    }
-
-    reportResults(passed: passed, failed: failed)
-}
-
-// MARK: - NEW TESTS: Toggle Case Tests
-
-func runToggleCaseTests() {
-    print("\n" + String(repeating: "=", count: 50))
-    print("  TOGGLE CASE TESTS")
-    print(String(repeating: "=", count: 50))
-
-    var passed = 0
-    var failed = 0
-
-    // Simple toggle case function
-    func toggleCase(_ text: String) -> String {
-        return String(text.map { char in
-            if char.isUppercase {
-                return Character(char.lowercased())
-            } else if char.isLowercase {
-                return Character(char.uppercased())
-            }
-            return char
-        })
-    }
-
-    // Test 1: Basic toggle
-    print("\n--- Basic Toggle ---")
-
-    let basicTests: [(String, String, String)] = [
-        ("hello", "HELLO", "lowercase -> UPPERCASE"),
-        ("HELLO", "hello", "UPPERCASE -> lowercase"),
-        ("Hello", "hELLO", "Mixed -> inverted"),
-        ("hELLO", "Hello", "Inverted -> Mixed"),
-        ("HeLLo WoRLd", "hEllO wOrlD", "Mixed words"),
-    ]
-
-    for (input, expected, desc) in basicTests {
-        let result = toggleCase(input)
-        if result == expected {
-            print("✅ '\(input)' -> '\(result)' (\(desc))")
-            passed += 1
-        } else {
-            print("❌ '\(desc)' failed")
-            print("   Expected: '\(expected)', Got: '\(result)'")
-            failed += 1
-        }
-    }
-
-    // Test 2: Russian toggle
-    print("\n--- Russian Toggle ---")
-
-    let russianTests: [(String, String, String)] = [
-        ("привет", "ПРИВЕТ", "Russian lowercase -> UPPERCASE"),
-        ("ПРИВЕТ", "привет", "Russian UPPERCASE -> lowercase"),
-        ("Привет", "пРИВЕТ", "Russian mixed -> inverted"),
-        ("ПрИвЕт", "пРиВеТ", "Russian alternating"),
-    ]
-
-    for (input, expected, desc) in russianTests {
-        let result = toggleCase(input)
-        if result == expected {
-            print("✅ '\(input)' -> '\(result)' (\(desc))")
-            passed += 1
-        } else {
-            print("❌ '\(desc)' failed")
-            print("   Expected: '\(expected)', Got: '\(result)'")
-            failed += 1
-        }
-    }
-
-    // Test 3: Numbers and special chars (unchanged)
-    print("\n--- Numbers and Special Chars (unchanged) ---")
-
-    let unchangedTests: [(String, String)] = [
-        ("123", "Numbers only"),
-        ("!@#$%", "Special chars"),
-        ("hello123", "Letters + numbers"),
-        ("HELLO123", "Uppercase + numbers"),
-        (";'[].,", "Punctuation"),
-    ]
-
-    for (input, desc) in unchangedTests {
-        let result = toggleCase(input)
-        let hasCorrectNumbers = input.filter { $0.isNumber } == result.filter { $0.isNumber }
-        let hasCorrectSpecial = input.filter { !$0.isLetter && !$0.isNumber } == result.filter { !$0.isLetter && !$0.isNumber }
-
-        if hasCorrectNumbers && hasCorrectSpecial {
-            print("✅ '\(input)' numbers/special unchanged (\(desc))")
-            passed += 1
-        } else {
-            print("❌ '\(desc)' - numbers/special should be unchanged")
-            failed += 1
-        }
-    }
-
-    // Test 4: Double toggle returns original
-    print("\n--- Double Toggle (idempotence) ---")
-
-    let doubleToggleTests = ["Hello", "WORLD", "привет", "ПРИВЕТ", "MiXeD CaSe", "ПрИвЕт МиР"]
-
-    for original in doubleToggleTests {
-        let once = toggleCase(original)
-        let twice = toggleCase(once)
-
-        if twice == original {
-            print("✅ '\(original)' -> '\(once)' -> '\(twice)'")
-            passed += 1
-        } else {
-            print("❌ Double toggle failed for '\(original)'")
-            print("   Got: '\(twice)'")
-            failed += 1
-        }
-    }
-
-    // Test 5: Empty and edge cases
-    print("\n--- Edge Cases ---")
-
-    if toggleCase("") == "" {
-        print("✅ Empty string -> empty string")
-        passed += 1
-    } else {
-        print("❌ Empty string failed")
-        failed += 1
-    }
-
-    if toggleCase(" ") == " " {
-        print("✅ Single space unchanged")
-        passed += 1
-    } else {
-        print("❌ Single space failed")
-        failed += 1
-    }
-
-    if toggleCase("a") == "A" {
-        print("✅ Single char 'a' -> 'A'")
-        passed += 1
-    } else {
-        print("❌ Single char failed")
-        failed += 1
-    }
-
-    if toggleCase("Ё") == "ё" {
-        print("✅ Russian Ё -> ё")
-        passed += 1
-    } else {
-        print("❌ Russian Ё toggle failed")
         failed += 1
     }
 
@@ -2305,10 +1913,6 @@ if args.count > 1 {
     case "selection", "select":
         runSelectionTests()
     // NEW test commands
-    case "hotkey", "hotkeys":
-        runHotkeyTests()
-    case "shift", "shiftnumber":
-        runShiftNumberTests()
     case "layout", "detection":
         runLayoutDetectionTests()
     case "realtracker", "tracker":
@@ -2319,8 +1923,6 @@ if args.count > 1 {
         runUnicodeBoundaryTests()
     case "mixed", "mixedlayout":
         runMixedLayoutTests()
-    case "toggle", "case":
-        runToggleCaseTests()
     case "weakness", "weak":
         runWeaknessTests()
     case "trackerweakness", "trackerweak":
@@ -2339,14 +1941,11 @@ if args.count > 1 {
         runSelectionTests()
         runEdgeCaseTests()
         // NEW tests
-        runHotkeyTests()
-        runShiftNumberTests()
         runLayoutDetectionTests()
         runRealWordTrackerTests()
         runConvertWithResultTests()
         runUnicodeBoundaryTests()
         runMixedLayoutTests()
-        runToggleCaseTests()
         // Weakness tests (intentionally show weaknesses)
         runWeaknessTests()
         runWordTrackerWeaknessTests()
@@ -2359,13 +1958,13 @@ if args.count > 1 {
     default:
         print("Unknown command: \(args[1])")
         print("Usage: PuntoTest [convert|track|sim|stress|mass|double|long|edge|selection|bugs|all]")
-        print("       New: [hotkey|shift|layout|realtracker|result|unicode|mixed|toggle]")
+        print("       New: [layout|realtracker|result|unicode|mixed]")
         print("       Weakness: [weakness|trackerweak|direction|allweak]")
         exit(2)
     }
 } else {
     print("Usage: PuntoTest [convert|track|sim|stress|mass|double|long|edge|selection|bugs|all]")
-    print("       New: [hotkey|shift|layout|realtracker|result|unicode|mixed|toggle]")
+    print("       New: [layout|realtracker|result|unicode|mixed]")
     print("\nRunning all tests by default...\n")
     runConversionTests()
     runWordTrackingTests()
@@ -2374,14 +1973,11 @@ if args.count > 1 {
     runSelectionTests()
     runEdgeCaseTests()
     // NEW tests
-    runHotkeyTests()
-    runShiftNumberTests()
     runLayoutDetectionTests()
     runRealWordTrackerTests()
     runConvertWithResultTests()
     runUnicodeBoundaryTests()
     runMixedLayoutTests()
-    runToggleCaseTests()
     // Weakness tests
     runWeaknessTests()
     runWordTrackerWeaknessTests()
