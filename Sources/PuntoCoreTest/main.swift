@@ -3517,12 +3517,12 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings persistence preserves observed advanced-settings setter"
     )
     try expect(
-        SettingsPersistencePolicy.defaultLaunchAtLogin,
+        LoginItemPolicy.defaultLaunchAtLogin,
         false,
         "settings defaults do not launch at login"
     )
     try expect(
-        SettingsPersistencePolicy.legacyLaunchesOnStartupKey,
+        LoginItemPolicy.legacyLaunchesOnStartupKey,
         "launchesOnStartup",
         "settings persistence preserves observed launch-at-login alias key"
     )
@@ -3532,17 +3532,17 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings persistence preserves observed launch-at-login setter"
     )
     try expect(
-        SettingsPersistencePolicy.defaultSwitchLayoutAfterConversion,
+        LayoutSwitchPolicy.defaultSwitchLayoutAfterConversion,
         false,
         "settings defaults do not switch input source after conversion"
     )
     try expect(
-        SettingsPersistencePolicy.defaultSwitchLayoutAfterSelectedTextConversion,
+        LayoutSwitchPolicy.defaultSwitchLayoutAfterSelectedTextConversion,
         true,
         "settings defaults allow selected-text layout switching when global switching is enabled"
     )
     try expect(
-        SettingsPersistencePolicy.legacySwitchLayoutOnSelectedTextSwitchKey,
+        LayoutSwitchPolicy.legacySwitchLayoutOnSelectedTextSwitchKey,
         "switchLayoutOnSelectedTextSwitch",
         "settings persistence preserves observed selected-text switch key"
     )
@@ -3557,7 +3557,7 @@ private func runSettingsPersistencePolicyTests() throws {
             persistedValue: false,
             hasLegacyValue: true,
             legacyValue: true,
-            defaultValue: SettingsPersistencePolicy.defaultSwitchLayoutAfterSelectedTextConversion
+            defaultValue: LayoutSwitchPolicy.defaultSwitchLayoutAfterSelectedTextConversion
         ),
         true,
         "settings persistence reads Punto Switcher switchLayoutOnSelectedTextSwitch alias"
@@ -3568,7 +3568,7 @@ private func runSettingsPersistencePolicyTests() throws {
             persistedValue: false,
             hasLegacyValue: true,
             legacyValue: true,
-            defaultValue: SettingsPersistencePolicy.defaultSwitchLayoutAfterSelectedTextConversion
+            defaultValue: LayoutSwitchPolicy.defaultSwitchLayoutAfterSelectedTextConversion
         ),
         false,
         "settings persistence prefers native selected-text layout switch over Punto Switcher alias"
@@ -3579,12 +3579,12 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings defaults use Mac Russian keyboard layout"
     )
     try expect(
-        SettingsPersistencePolicy.defaultManualConversionDisabled,
+        TextActionPreflightPolicy.defaultManualConversionDisabled,
         false,
         "settings defaults keep manual conversion enabled"
     )
     try expect(
-        SettingsPersistencePolicy.legacyIsManualConversionDisabledKey,
+        TextActionPreflightPolicy.legacyIsManualConversionDisabledKey,
         "isManualConversionDisabled",
         "settings persistence preserves observed manual-conversion-disable key"
     )
@@ -3599,7 +3599,7 @@ private func runSettingsPersistencePolicyTests() throws {
             persistedValue: false,
             hasLegacyValue: true,
             legacyValue: true,
-            defaultValue: SettingsPersistencePolicy.defaultManualConversionDisabled
+            defaultValue: TextActionPreflightPolicy.defaultManualConversionDisabled
         ),
         true,
         "settings persistence reads Punto Switcher isManualConversionDisabled alias"
@@ -3610,7 +3610,7 @@ private func runSettingsPersistencePolicyTests() throws {
             persistedValue: false,
             hasLegacyValue: true,
             legacyValue: true,
-            defaultValue: SettingsPersistencePolicy.defaultManualConversionDisabled
+            defaultValue: TextActionPreflightPolicy.defaultManualConversionDisabled
         ),
         false,
         "settings persistence prefers native manual conversion setting over Punto Switcher alias"
@@ -3666,12 +3666,12 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings persistence preserves observed full-disable exception-apps key"
     )
     try expect(
-        SettingsPersistencePolicy.defaultAutoCorrectionEnabled,
+        AutoCorrectionPreflightPolicy.defaultAutoCorrectionEnabled,
         false,
         "settings defaults keep auto-correction off"
     )
     try expect(
-        SettingsPersistencePolicy.legacyIsAutocorrectionActiveKey,
+        AutoCorrectionPreflightPolicy.legacyIsAutocorrectionActiveKey,
         "isAutocorrectionActive",
         "settings persistence preserves observed auto-correction active key"
     )
@@ -3681,17 +3681,17 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings defaults keep auto-correction undo learning off"
     )
     try expect(
-        SettingsPersistencePolicy.defaultSuppressAutoCorrectionAfterManualConversion,
+        TextReplacementCommitPolicy.defaultSuppressAutoCorrectionAfterManualConversion,
         true,
         "settings defaults suppress auto-correction after manual conversion"
     )
     try expect(
-        SettingsPersistencePolicy.legacyShouldNotAutoconvertAfterConvertionKey,
+        TextReplacementCommitPolicy.legacyShouldNotAutoconvertAfterConvertionKey,
         "shouldNotAutoconvertAfterConvertion",
         "settings persistence preserves observed post-conversion suppression key"
     )
     try expect(
-        SettingsPersistencePolicy.legacyShouldNotAutoconvertWithTabOrEnterKey,
+        AutoCorrectionPreflightPolicy.legacyShouldNotAutoconvertWithTabOrEnterKey,
         "shouldNotAutoconvertWithTabOrEnter",
         "settings persistence owns observed Enter/Tab suppression key"
     )
@@ -3706,7 +3706,7 @@ private func runSettingsPersistencePolicyTests() throws {
             persistedValue: nil,
             hasLegacyValue: true,
             invertedLegacyValue: false,
-            defaultValue: SettingsPersistencePolicy.defaultSuppressAutoCorrectionAfterManualConversion
+            defaultValue: TextReplacementCommitPolicy.defaultSuppressAutoCorrectionAfterManualConversion
         ),
         true,
         "settings persistence reads observed shouldNotAutoconvertAfterConvertion=false as suppression enabled"
@@ -3717,7 +3717,7 @@ private func runSettingsPersistencePolicyTests() throws {
             persistedValue: nil,
             hasLegacyValue: true,
             invertedLegacyValue: true,
-            defaultValue: SettingsPersistencePolicy.defaultSuppressAutoCorrectionAfterManualConversion
+            defaultValue: TextReplacementCommitPolicy.defaultSuppressAutoCorrectionAfterManualConversion
         ),
         false,
         "settings persistence reads observed shouldNotAutoconvertAfterConvertion=true as suppression disabled"
@@ -3993,12 +3993,12 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings persistence prefers native disabled app ids over legacy alias"
     )
     try expect(
-        SettingsPersistencePolicy.defaultAutoCorrectOnEnterAndTab,
+        AutoCorrectionPreflightPolicy.defaultAutoCorrectOnEnterAndTab,
         true,
         "settings persistence defaults to auto-correction on Enter and Tab"
     )
     try expect(
-        SettingsPersistencePolicy.legacyShouldNotAutoconvertWithTabOrEnterKey,
+        AutoCorrectionPreflightPolicy.legacyShouldNotAutoconvertWithTabOrEnterKey,
         "shouldNotAutoconvertWithTabOrEnter",
         "settings persistence preserves observed Enter/Tab suppression key"
     )
@@ -4013,7 +4013,7 @@ private func runSettingsPersistencePolicyTests() throws {
             persistedValue: nil,
             hasLegacyValue: true,
             invertedLegacyValue: false,
-            defaultValue: SettingsPersistencePolicy.defaultAutoCorrectOnEnterAndTab
+            defaultValue: AutoCorrectionPreflightPolicy.defaultAutoCorrectOnEnterAndTab
         ),
         true,
         "settings persistence reads observed shouldNotAutoconvertWithTabOrEnter=false as Enter/Tab auto-correction enabled"
@@ -4024,7 +4024,7 @@ private func runSettingsPersistencePolicyTests() throws {
             persistedValue: nil,
             hasLegacyValue: true,
             invertedLegacyValue: true,
-            defaultValue: SettingsPersistencePolicy.defaultAutoCorrectOnEnterAndTab
+            defaultValue: AutoCorrectionPreflightPolicy.defaultAutoCorrectOnEnterAndTab
         ),
         false,
         "settings persistence reads observed shouldNotAutoconvertWithTabOrEnter=true as Enter/Tab auto-correction disabled"

@@ -150,6 +150,7 @@ runtime_owned_key_policy_files=(
     Sources/PuntoCore/ApplicationLayoutPolicy.swift
     Sources/PuntoCore/ApplicationReturnKeyPolicy.swift
     Sources/PuntoCore/AutoCorrectionCancellingKeyPolicy.swift
+    Sources/PuntoCore/LoginItemPolicy.swift
     Sources/PuntoCore/InputSourceSelectionPolicy.swift
     Sources/PuntoCore/KeyboardLayoutTypePolicy.swift
     Sources/PuntoCore/ProductStatisticsPolicy.swift
@@ -172,6 +173,19 @@ settings_persistence_role_specific_patterns=(
     "legacyRussianKeyboardLayoutTypeKey"
     "legacyEnglishInputSourceIDKey"
     "legacyRussianInputSourceIDKey"
+    "legacyLaunchesOnStartupKey"
+    "legacySwitchLayoutOnSelectedTextSwitchKey"
+    "legacyIsManualConversionDisabledKey"
+    "legacyIsAutocorrectionActiveKey"
+    "legacyShouldNotAutoconvertWithTabOrEnterKey"
+    "legacyShouldNotAutoconvertAfterConvertionKey"
+    "defaultLaunchAtLogin"
+    "defaultSwitchLayoutAfterConversion"
+    "defaultSwitchLayoutAfterSelectedTextConversion"
+    "defaultManualConversionDisabled"
+    "defaultAutoCorrectionEnabled"
+    "defaultAutoCorrectOnEnterAndTab"
+    "defaultSuppressAutoCorrectionAfterManualConversion"
     "normalizedDisabledApplicationBundleIDs"
     "effectiveDisabledApplicationBundleIDs"
     "normalizedResetOnReturnBundleComponents"

@@ -71,6 +71,9 @@ public struct TextReplacementCommitPlan: Equatable {
 }
 
 public enum TextReplacementCommitPolicy {
+    public static let defaultSuppressAutoCorrectionAfterManualConversion = true
+    public static let legacyShouldNotAutoconvertAfterConvertionKey = "shouldNotAutoconvertAfterConvertion"
+
     public static func manualSelectedText(
         _ replacement: LayoutConversionReplacement,
         suppressAutoCorrectionAfterManualConversion: Bool

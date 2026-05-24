@@ -7,6 +7,10 @@ public enum LayoutConversionSurface: Equatable {
 }
 
 public enum LayoutSwitchPolicy {
+    public static let defaultSwitchLayoutAfterConversion = false
+    public static let defaultSwitchLayoutAfterSelectedTextConversion = true
+    public static let legacySwitchLayoutOnSelectedTextSwitchKey = "switchLayoutOnSelectedTextSwitch"
+
     public static func shouldSwitchLayoutAfterConversion(
         surface: LayoutConversionSurface,
         switchLayoutAfterConversion: Bool,

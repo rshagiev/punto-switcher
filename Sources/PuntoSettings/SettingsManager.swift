@@ -52,7 +52,7 @@ public final class SettingsManager {
 
     private enum ImportKeys {
         static let isFirstInstallation = ApplicationUpdateSettingsPolicy.isFirstInstallationKey
-        static let launchesOnStartup = SettingsPersistencePolicy.legacyLaunchesOnStartupKey
+        static let launchesOnStartup = LoginItemPolicy.legacyLaunchesOnStartupKey
         static let shortcutChangeLayout = LegacyHotkeyPolicy.legacyShortcutChangeLayoutKey
         static let shortcutChangeCase = LegacyHotkeyPolicy.legacyShortcutChangeCaseKey
         static let shortcutSwitchAutocorrection = LegacyHotkeyPolicy.legacyShortcutSwitchAutocorrectionKey
@@ -60,8 +60,8 @@ public final class SettingsManager {
         static let shortcutFindInYandex = LegacyHotkeyPolicy.legacyShortcutFindInYandexKey
         static let shortcutFindInSlovari = LegacyHotkeyPolicy.legacyShortcutFindInSlovariKey
         static let searchbarSettings = SearchbarSettingsPolicy.settingsKey
-        static let switchLayoutOnSelectedTextSwitch = SettingsPersistencePolicy.legacySwitchLayoutOnSelectedTextSwitchKey
-        static let isManualConversionDisabled = SettingsPersistencePolicy.legacyIsManualConversionDisabledKey
+        static let switchLayoutOnSelectedTextSwitch = LayoutSwitchPolicy.legacySwitchLayoutOnSelectedTextSwitchKey
+        static let isManualConversionDisabled = TextActionPreflightPolicy.legacyIsManualConversionDisabledKey
         static let kbdLayoutType = KeyboardLayoutTypePolicy.legacyRussianKeyboardLayoutTypeKey
         static let englishLayoutID = InputSourceSelectionPolicy.legacyEnglishInputSourceIDKey
         static let russianLayoutID = InputSourceSelectionPolicy.legacyRussianInputSourceIDKey
@@ -69,12 +69,12 @@ public final class SettingsManager {
         static let disabledApps = ApplicationDisablePolicy.legacyDisabledAppsKey
         static let completelyDisableInExceptionApps = ApplicationDisablePolicy.legacyCompletelyDisableInExceptionApplicationsKey
         static let switcherResetOnReturn = ApplicationReturnKeyPolicy.legacyResetOnReturnKey
-        static let isAutocorrectionActive = SettingsPersistencePolicy.legacyIsAutocorrectionActiveKey
+        static let isAutocorrectionActive = AutoCorrectionPreflightPolicy.legacyIsAutocorrectionActiveKey
         static let switcherUseOldRulesDefaultConf = AutoCorrectionRuleSourcePolicy.useOldRulesDefaultConfPath
         static let switcherUseOldRulesAccessor = AutoCorrectionRuleSourcePolicy.useOldRulesAccessor
-        static let shouldNotAutoconvertWithTabOrEnter = SettingsPersistencePolicy.legacyShouldNotAutoconvertWithTabOrEnterKey
+        static let shouldNotAutoconvertWithTabOrEnter = AutoCorrectionPreflightPolicy.legacyShouldNotAutoconvertWithTabOrEnterKey
         static let undoLearning = UndoLearningSettingsPolicy.settingsKey
-        static let shouldNotAutoconvertAfterConvertion = SettingsPersistencePolicy.legacyShouldNotAutoconvertAfterConvertionKey
+        static let shouldNotAutoconvertAfterConvertion = TextReplacementCommitPolicy.legacyShouldNotAutoconvertAfterConvertionKey
         static let cancellingKeys = AutoCorrectionCancellingKeyPolicy.legacyCancellingKeysBitmaskKey
         static let userRulesDictionary = LegacyUserRulePolicy.userRulesDictionaryKey
         static let isSoundOn = SoundFeedbackPolicy.legacyIsSoundOnKey
@@ -141,7 +141,7 @@ public final class SettingsManager {
 
     /// Whether to launch at login
     public var launchAtLogin: Bool {
-        get { resolver.bool(nativeKey: Keys.launchAtLogin, legacyKey: ImportKeys.launchesOnStartup, defaultValue: SettingsPersistencePolicy.defaultLaunchAtLogin) }
+        get { resolver.bool(nativeKey: Keys.launchAtLogin, legacyKey: ImportKeys.launchesOnStartup, defaultValue: LoginItemPolicy.defaultLaunchAtLogin) }
         set {
             store.set(newValue, forKey: Keys.launchAtLogin)
             updateLoginItem(enabled: newValue)
@@ -252,19 +252,19 @@ public final class SettingsManager {
 
     /// Переключать раскладку после конвертации
     public var switchLayoutAfterConversion: Bool {
-        get { resolver.bool(nativeKey: Keys.switchLayoutAfterConversion, defaultValue: SettingsPersistencePolicy.defaultSwitchLayoutAfterConversion) }
+        get { resolver.bool(nativeKey: Keys.switchLayoutAfterConversion, defaultValue: LayoutSwitchPolicy.defaultSwitchLayoutAfterConversion) }
         set { store.set(newValue, forKey: Keys.switchLayoutAfterConversion) }
     }
 
     public var switchLayoutAfterSelectedTextConversion: Bool {
-        get { resolver.bool(nativeKey: Keys.switchLayoutAfterSelectedTextConversion, legacyKey: ImportKeys.switchLayoutOnSelectedTextSwitch, defaultValue: SettingsPersistencePolicy.defaultSwitchLayoutAfterSelectedTextConversion) }
+        get { resolver.bool(nativeKey: Keys.switchLayoutAfterSelectedTextConversion, legacyKey: ImportKeys.switchLayoutOnSelectedTextSwitch, defaultValue: LayoutSwitchPolicy.defaultSwitchLayoutAfterSelectedTextConversion) }
         set {
             store.set(newValue, forKey: Keys.switchLayoutAfterSelectedTextConversion)
         }
     }
 
     public var manualConversionDisabled: Bool {
-        get { resolver.bool(nativeKey: Keys.manualConversionDisabled, legacyKey: ImportKeys.isManualConversionDisabled, defaultValue: SettingsPersistencePolicy.defaultManualConversionDisabled) }
+        get { resolver.bool(nativeKey: Keys.manualConversionDisabled, legacyKey: ImportKeys.isManualConversionDisabled, defaultValue: TextActionPreflightPolicy.defaultManualConversionDisabled) }
         set {
             store.set(newValue, forKey: Keys.manualConversionDisabled)
         }
@@ -365,7 +365,7 @@ public final class SettingsManager {
     }
 
     public var autoCorrectionEnabled: Bool {
-        get { resolver.bool(nativeKey: Keys.autoCorrectionEnabled, legacyKey: ImportKeys.isAutocorrectionActive, defaultValue: SettingsPersistencePolicy.defaultAutoCorrectionEnabled) }
+        get { resolver.bool(nativeKey: Keys.autoCorrectionEnabled, legacyKey: ImportKeys.isAutocorrectionActive, defaultValue: AutoCorrectionPreflightPolicy.defaultAutoCorrectionEnabled) }
         set {
             store.set(newValue, forKey: Keys.autoCorrectionEnabled)
         }
@@ -388,7 +388,7 @@ public final class SettingsManager {
     }
 
     public var autoCorrectOnEnterAndTab: Bool {
-        get { resolver.invertedLegacyBool(nativeKey: Keys.autoCorrectOnEnterAndTab, legacyKey: ImportKeys.shouldNotAutoconvertWithTabOrEnter, defaultValue: SettingsPersistencePolicy.defaultAutoCorrectOnEnterAndTab) }
+        get { resolver.invertedLegacyBool(nativeKey: Keys.autoCorrectOnEnterAndTab, legacyKey: ImportKeys.shouldNotAutoconvertWithTabOrEnter, defaultValue: AutoCorrectionPreflightPolicy.defaultAutoCorrectOnEnterAndTab) }
         set {
             store.set(newValue, forKey: Keys.autoCorrectOnEnterAndTab)
         }
@@ -402,7 +402,7 @@ public final class SettingsManager {
     }
 
     public var suppressAutoCorrectionAfterManualConversion: Bool {
-        get { resolver.invertedLegacyBool(nativeKey: Keys.suppressAutoCorrectionAfterManualConversion, legacyKey: ImportKeys.shouldNotAutoconvertAfterConvertion, defaultValue: SettingsPersistencePolicy.defaultSuppressAutoCorrectionAfterManualConversion) }
+        get { resolver.invertedLegacyBool(nativeKey: Keys.suppressAutoCorrectionAfterManualConversion, legacyKey: ImportKeys.shouldNotAutoconvertAfterConvertion, defaultValue: TextReplacementCommitPolicy.defaultSuppressAutoCorrectionAfterManualConversion) }
         set {
             store.set(newValue, forKey: Keys.suppressAutoCorrectionAfterManualConversion)
         }
@@ -549,19 +549,19 @@ public final class SettingsManager {
             Keys.isFirstLaunch: SettingsPersistencePolicy.defaultIsFirstLaunch,
             Keys.showInMenuBar: SettingsPersistencePolicy.defaultShowInMenuBar,
             Keys.showAdvancedSettings: SettingsPersistencePolicy.defaultShowAdvancedSettings,
-            Keys.launchAtLogin: SettingsPersistencePolicy.defaultLaunchAtLogin,
-            Keys.switchLayoutAfterConversion: SettingsPersistencePolicy.defaultSwitchLayoutAfterConversion,
-            Keys.switchLayoutAfterSelectedTextConversion: SettingsPersistencePolicy.defaultSwitchLayoutAfterSelectedTextConversion,
+            Keys.launchAtLogin: LoginItemPolicy.defaultLaunchAtLogin,
+            Keys.switchLayoutAfterConversion: LayoutSwitchPolicy.defaultSwitchLayoutAfterConversion,
+            Keys.switchLayoutAfterSelectedTextConversion: LayoutSwitchPolicy.defaultSwitchLayoutAfterSelectedTextConversion,
             Keys.russianKeyboardLayoutType: SettingsPersistencePolicy.defaultRussianKeyboardLayoutType,
-            Keys.manualConversionDisabled: SettingsPersistencePolicy.defaultManualConversionDisabled,
+            Keys.manualConversionDisabled: TextActionPreflightPolicy.defaultManualConversionDisabled,
             Keys.rememberInputSourceForEachApp: SettingsPersistencePolicy.defaultRememberInputSourceForEachApp,
             Keys.rememberedApplicationLayouts: SettingsPersistencePolicy.defaultRememberedApplicationLayouts,
             Keys.disabledApplicationBundleIDs: SettingsPersistencePolicy.defaultDisabledApplicationBundleIDs,
             Keys.completelyDisableInExceptionApplications: SettingsPersistencePolicy.defaultCompletelyDisableInExceptionApplications,
-            Keys.autoCorrectionEnabled: SettingsPersistencePolicy.defaultAutoCorrectionEnabled,
-            Keys.autoCorrectOnEnterAndTab: SettingsPersistencePolicy.defaultAutoCorrectOnEnterAndTab,
+            Keys.autoCorrectionEnabled: AutoCorrectionPreflightPolicy.defaultAutoCorrectionEnabled,
+            Keys.autoCorrectOnEnterAndTab: AutoCorrectionPreflightPolicy.defaultAutoCorrectOnEnterAndTab,
             Keys.autoCorrectionUndoLearningEnabled: SettingsPersistencePolicy.defaultAutoCorrectionUndoLearningEnabled,
-            Keys.suppressAutoCorrectionAfterManualConversion: SettingsPersistencePolicy.defaultSuppressAutoCorrectionAfterManualConversion,
+            Keys.suppressAutoCorrectionAfterManualConversion: TextReplacementCommitPolicy.defaultSuppressAutoCorrectionAfterManualConversion,
             Keys.autoCorrectionCancellingKeyNames: SettingsPersistencePolicy.defaultAutoCorrectionCancellingKeyNames,
             Keys.soundEffectsEnabled: SettingsPersistencePolicy.defaultSoundEffectsEnabled,
             Keys.restorePasteboardAfterConversion: SettingsPersistencePolicy.defaultRestorePasteboardAfterConversion

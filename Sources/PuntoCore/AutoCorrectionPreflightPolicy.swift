@@ -8,6 +8,11 @@ public enum AutoCorrectionPreflightAction: Equatable {
 }
 
 public enum AutoCorrectionPreflightPolicy {
+    public static let defaultAutoCorrectionEnabled = false
+    public static let legacyIsAutocorrectionActiveKey = "isAutocorrectionActive"
+    public static let defaultAutoCorrectOnEnterAndTab = true
+    public static let legacyShouldNotAutoconvertWithTabOrEnterKey = "shouldNotAutoconvertWithTabOrEnter"
+
     public static func action(
         isEnabled: Bool,
         autoCorrectionEnabled: Bool,

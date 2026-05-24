@@ -13,6 +13,9 @@ public enum TextActionPreflightAction: Equatable {
 }
 
 public enum TextActionPreflightPolicy {
+    public static let defaultManualConversionDisabled = false
+    public static let legacyIsManualConversionDisabledKey = "isManualConversionDisabled"
+
     public static func action(
         kind: TextActionKind,
         isEnabled: Bool,
