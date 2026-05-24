@@ -124,6 +124,13 @@ uses `legacy*Name` / `legacy*SelectorAlias`, while
 Tests align the two surfaces without making behavior policies depend on the
 reverse-audit namespace.
 
+Observed application identifiers follow the same raw-vs-runtime split. The
+reverse-audit surface preserves binary/default-conf casing, while runtime
+policies normalize bundle ids before comparing or persisting them. For example,
+`PuntoSwitcherObservedSurface` keeps the raw `com.apple.ScreenSaver.Engine`
+marker, and `ApplicationBundleIDPolicy` owns the normalized volatile-system
+context id used by per-app layout memory.
+
 Hotkey import aliases follow the same rule. `LegacyHotkeyPolicy` exposes
 `legacy*Key` constants for Punto Switcher shortcut dictionaries and shortcut
 field keys, while `PuntoSwitcherObservedSurface.Hotkeys` owns the observed keys

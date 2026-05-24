@@ -285,7 +285,7 @@ public enum PuntoSwitcherObservedSurface {
     }
 
     public enum SystemApplications {
-        public static let screenSaverEngineBundleID = "com.apple.screensaver.engine"
+        public static let screenSaverEngineBundleID = "com.apple.ScreenSaver.Engine"
     }
 
     public enum UndoLearning {

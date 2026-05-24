@@ -84,8 +84,13 @@ func runApplicationBundleIDPolicyTests() throws {
     )
     try expect(
         ApplicationBundleIDPolicy.screenSaverEngineBundleID,
+        ApplicationBundleIDPolicy.normalized(PuntoSwitcherObservedSurface.SystemApplications.screenSaverEngineBundleID),
+        "application bundle id policy aligns normalized screen saver bundle id to reverse-audit anchor"
+    )
+    try expect(
         PuntoSwitcherObservedSurface.SystemApplications.screenSaverEngineBundleID,
-        "application bundle id policy aligns screen saver bundle id to reverse-audit anchor"
+        "com.apple.ScreenSaver.Engine",
+        "observed surface preserves raw Punto Switcher screen saver engine bundle id casing"
     )
     try expect(
         ApplicationBundleIDPolicy.isVolatileSystemContext("com.apple.ScreenSaver.Engine"),
