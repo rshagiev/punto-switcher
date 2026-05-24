@@ -78,6 +78,18 @@ final class ApplicationRuntimeCoordinator {
         }
     }
 
+    func handleInputSourcePreferencesChanged() {
+        let action = InputSourceChangePolicy.preferencesChangeAction()
+        if action.shouldRefreshInputSources {
+            inputSourceManager.refreshInputSources()
+        }
+        textState.clearTextAndConversionState(
+            trackedTextReason: action.clearTrackedTextReason,
+            conversionSessionReason: action.clearConversionSessionReason
+        )
+        PuntoLog.info(action.logMessage)
+    }
+
     @discardableResult
     func handleActiveApplicationChanged(runningApplication: NSRunningApplication?) -> Bool {
         let newBundleID = runningApplication?.bundleIdentifier

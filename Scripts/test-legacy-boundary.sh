@@ -224,6 +224,7 @@ app_delegate_application_runtime_patterns=(
     "ApplicationLayoutPolicy.layoutMemoryUpdateAfterObservedInputSourceChange"
     "ApplicationLayoutPolicy.layoutMemoryUpdateAfterProgrammaticSwitch"
     "InputSourceChangePolicy.action("
+    "InputSourceChangePolicy.preferencesChangeAction"
 )
 
 for pattern in "${app_delegate_application_runtime_patterns[@]}"; do
@@ -353,6 +354,20 @@ for pattern in "${app_delegate_startup_runtime_patterns[@]}"; do
         exit 1
     fi
     echo "PASS AppDelegate startup/accessibility runtime coordination absent: $pattern"
+done
+
+app_delegate_accessibility_notification_patterns=(
+    "AccessibilityNotificationPolicy."
+    "ignoreAccessibilityNotificationsUntil"
+    "accessibilityStateChanged("
+)
+
+for pattern in "${app_delegate_accessibility_notification_patterns[@]}"; do
+    if rg --fixed-strings --quiet "$pattern" Sources/Punto/App/AppDelegate.swift; then
+        echo "legacy boundary failed: AppDelegate reopened accessibility notification runtime coordination: $pattern" >&2
+        exit 1
+    fi
+    echo "PASS AppDelegate accessibility notification runtime coordination absent: $pattern"
 done
 
 app_delegate_log_lifecycle_patterns=(

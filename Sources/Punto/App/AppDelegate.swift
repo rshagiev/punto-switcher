@@ -14,6 +14,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsWindowController: SettingsWindowController?
     private var soundFeedbackController: SoundFeedbackController?
     private var accessibilityStateObserver: AccessibilityStateObserver?
+    private var accessibilityNotificationRuntime: AccessibilityNotificationRuntimeCoordinator?
     private var inputSourceManager: InputSourceManager?
     private var textState: TextRuntimeStateCoordinator?
     private var appRuntime: ApplicationRuntimeCoordinator?
@@ -24,23 +25,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var manualTextActionRuntime: ManualTextActionRuntimeCoordinator?
     private var commandRuntime: ApplicationCommandRuntimeCoordinator?
     private var startupRuntime: StartupRuntimeCoordinator?
-
-    private var isConversionInProgress: Bool {
-        textState?.isConversionInProgress == true
-    }
-
-    private var ignoreInputSourceChangesUntil: Date? {
-        get { textState?.ignoreInputSourceChangesUntil }
-        set { textState?.ignoreInputSourceChangesUntil = newValue }
-    }
-
-    private var ignoreAccessibilityNotificationsUntil: Date? {
-        textState?.ignoreAccessibilityNotificationsUntil
-    }
-
-    private var lastKeyPressTime: Date? {
-        textState?.lastKeyPressTime
-    }
 
     private var activeApplicationBundleID: String? {
         appRuntime?.activeApplicationBundleID
@@ -184,8 +168,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.autoCorrectionRuntime?.handleAutoCorrectionIfNeeded()
             }
         )
+        accessibilityNotificationRuntime = AccessibilityNotificationRuntimeCoordinator(
+            textState: textState!,
+            ownBundleID: Bundle.main.bundleIdentifier
+        )
         accessibilityStateObserver = AccessibilityStateObserver { [weak self] notificationName, observedBundleID in
-            self?.accessibilityStateChanged(notificationName: notificationName, observedBundleID: observedBundleID)
+            self?.accessibilityNotificationRuntime?.handle(
+                notificationName: notificationName,
+                observedBundleID: observedBundleID
+            )
         }
         PuntoLog.info("Core components initialized")
 
@@ -289,38 +280,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
     }
 
-    private func accessibilityStateChanged(notificationName: String, observedBundleID: String?) {
-        let action = AccessibilityNotificationPolicy.action(
-            notificationName: notificationName,
-            observedBundleID: observedBundleID,
-            ownBundleID: Bundle.main.bundleIdentifier,
-            now: Date(),
-            ignoreUntil: ignoreAccessibilityNotificationsUntil,
-            isConversionInProgress: isConversionInProgress
-        )
-
-        switch action {
-        case .clearTrackedText(let reason):
-            textState?.clearTextAndConversionState(
-                trackedTextReason: reason,
-                conversionSessionReason: reason
-            )
-            PuntoLog.info("Accessibility notification '\(notificationName)' cleared text state")
-        case .ignore(let reason):
-            PuntoLog.debug("Accessibility notification '\(notificationName)' ignored (\(reason))")
-        }
-    }
-
     @objc private func inputSourcePreferencesChanged() {
-        let action = InputSourceChangePolicy.preferencesChangeAction()
-        if action.shouldRefreshInputSources {
-            inputSourceManager?.refreshInputSources()
-        }
-        textState?.clearTextAndConversionState(
-            trackedTextReason: action.clearTrackedTextReason,
-            conversionSessionReason: action.clearConversionSessionReason
-        )
-        PuntoLog.info(action.logMessage)
+        appRuntime?.handleInputSourcePreferencesChanged()
     }
 
     // MARK: - Hotkey Manager

@@ -85,7 +85,10 @@ clipboard replacement, hotkey editing, input-source install prompts,
 keyboard-layout private selectors, product statistics, search-click UI gates,
 settings setters, sound state, startup presentation, status icons, undo
 learning, and user-rule UI now live in `PuntoSwitcherObservedSurface` instead of
-the behavior policies that parse settings or execute native logic.
+the behavior policies that parse settings or execute native logic. AppDelegate
+is also guarded from reopening app/input-source, AX-notification, text-action,
+command, startup, and undo runtime policy execution after those decisions have
+been moved into coordinators.
 
 The boundary also protects diagnostic code from becoming another legacy fork.
 `Scripts/debug.sh components` now runs `PuntoCoreTest` and `PuntoDiag` against
