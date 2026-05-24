@@ -79,7 +79,13 @@ public final class TextAccessor {
         switch axResult {
         case .text(let text, let element, let replacementSupported):
             if !replacementSupported {
-                if TextCapturePolicy.shouldAttemptActiveClipboardFallbackForNonSettableSelection(
+                let accessibilityRoles = accessibilityElements.rolesFromElementToAncestors(
+                    element,
+                    maxDepth: AccessibilityTraversalPolicy.maxAncestorRoleDepth
+                )
+                if TextCapturePolicy.shouldPreferActiveClipboardFallbackForNonSettableContentSelection(
+                    accessibilityRoles: accessibilityRoles
+                ) || TextCapturePolicy.shouldAttemptActiveClipboardFallbackForNonSettableSelection(
                     selectedText: text,
                     lastTrackedTail: lastTrackedTail
                 ) {
@@ -89,10 +95,7 @@ public final class TextAccessor {
                     overrideCapturedText = TextCapturePolicy.activeClipboardFallbackForNonSettableContentSelection(
                         selectedText: text,
                         activeClipboardText: activeClipboardText,
-                        accessibilityRoles: accessibilityElements.rolesFromElementToAncestors(
-                            element,
-                            maxDepth: AccessibilityTraversalPolicy.maxAncestorRoleDepth
-                        )
+                        accessibilityRoles: accessibilityRoles
                     )
                 }
             }

@@ -92,6 +92,12 @@ public enum TextCapturePolicy {
         terminalTailRewrite(selectedText: selectedText, lastTrackedTail: lastTrackedTail) == nil
     }
 
+    public static func shouldPreferActiveClipboardFallbackForNonSettableContentSelection(
+        accessibilityRoles: [String]
+    ) -> Bool {
+        AccessibilityRolePolicy.containsWebAreaRole(accessibilityRoles)
+    }
+
     public static func captureDecision(
         observation: AccessibilityObservation,
         activeClipboardText: String?,
