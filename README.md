@@ -10,7 +10,7 @@ Punto fixes text typed in the wrong keyboard layout. Type `ghbdtn`, press
 The easiest way to install Punto is from GitHub Releases:
 
 1. Open the [latest release](https://github.com/rshagiev/punto-switcher/releases/latest).
-2. Download `Punto-v1.0.2.dmg`.
+2. Download `Punto-v1.0.3.dmg`.
 3. Open the disk image.
 4. Drag `Punto.app` to `Applications`.
 5. Open `Punto.app` from `/Applications`.

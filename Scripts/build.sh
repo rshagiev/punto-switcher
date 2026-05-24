@@ -8,7 +8,7 @@ set -e
 # Configuration
 APP_NAME="Punto"
 BUNDLE_ID="com.rshagiev.Punto"
-VERSION="1.0.2"
+VERSION="1.0.3"
 SIGN_IDENTITY="${PUNTO_SIGN_IDENTITY:-Punto Local Code Signing}"
 
 # Directories
