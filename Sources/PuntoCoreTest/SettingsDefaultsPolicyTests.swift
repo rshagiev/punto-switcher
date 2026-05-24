@@ -57,4 +57,40 @@ func runSettingsDefaultsPolicyTests() throws {
         "setLaunchesOnStartup:",
         "settings persistence preserves observed launch-at-login setter"
     )
+    try expect(
+        SettingsTogglePolicy.basicDisplayOrder.map(\.slot),
+        [
+            .launchAtLogin,
+            .showInMenuBar,
+            .switchLayoutAfterConversion,
+            .autoCorrectionEnabled,
+            .soundEffectsEnabled,
+            .showAdvancedSettings
+        ],
+        "settings toggle policy owns basic settings display order"
+    )
+    try expect(
+        SettingsTogglePolicy.advancedDisplayOrder.map(\.slot),
+        [
+            .switchLayoutAfterSelectedTextConversion,
+            .searchSelectedTextByDoubleClick,
+            .manualConversionDisabled,
+            .rememberInputSourceForEachApp,
+            .autoCorrectOnEnterAndTab,
+            .autoCorrectionUndoLearningEnabled,
+            .suppressAutoCorrectionAfterManualConversion,
+            .completelyDisableInExceptionApplications
+        ],
+        "settings toggle policy owns advanced settings display order"
+    )
+    try expect(
+        SettingsTogglePolicy.displayOrder.map(\.slot),
+        SettingsToggleSlot.allCases,
+        "settings toggle policy covers every supported boolean settings slot"
+    )
+    try expect(
+        SettingsTogglePolicy.metadata(for: .soundEffectsEnabled)?.systemName,
+        "speaker.wave.2",
+        "settings toggle policy owns menu icon metadata"
+    )
 }

@@ -193,6 +193,72 @@ public final class SettingsManager {
         setHotkey(HotkeyCommandPolicy.defaultHotkey(for: slot), for: slot)
     }
 
+    public func bool(for slot: SettingsToggleSlot) -> Bool {
+        switch slot {
+        case .launchAtLogin:
+            return launchAtLogin
+        case .showInMenuBar:
+            return showInMenuBar
+        case .switchLayoutAfterConversion:
+            return switchLayoutAfterConversion
+        case .autoCorrectionEnabled:
+            return autoCorrectionEnabled
+        case .soundEffectsEnabled:
+            return soundEffectsEnabled
+        case .showAdvancedSettings:
+            return showAdvancedSettings
+        case .switchLayoutAfterSelectedTextConversion:
+            return switchLayoutAfterSelectedTextConversion
+        case .searchSelectedTextByDoubleClick:
+            return searchSelectedTextByDoubleClick
+        case .manualConversionDisabled:
+            return manualConversionDisabled
+        case .rememberInputSourceForEachApp:
+            return rememberInputSourceForEachApp
+        case .autoCorrectOnEnterAndTab:
+            return autoCorrectOnEnterAndTab
+        case .autoCorrectionUndoLearningEnabled:
+            return autoCorrectionUndoLearningEnabled
+        case .suppressAutoCorrectionAfterManualConversion:
+            return suppressAutoCorrectionAfterManualConversion
+        case .completelyDisableInExceptionApplications:
+            return completelyDisableInExceptionApplications
+        }
+    }
+
+    public func setBool(_ isEnabled: Bool, for slot: SettingsToggleSlot) {
+        switch slot {
+        case .launchAtLogin:
+            launchAtLogin = isEnabled
+        case .showInMenuBar:
+            showInMenuBar = isEnabled
+        case .switchLayoutAfterConversion:
+            switchLayoutAfterConversion = isEnabled
+        case .autoCorrectionEnabled:
+            autoCorrectionEnabled = isEnabled
+        case .soundEffectsEnabled:
+            soundEffectsEnabled = isEnabled
+        case .showAdvancedSettings:
+            showAdvancedSettings = isEnabled
+        case .switchLayoutAfterSelectedTextConversion:
+            switchLayoutAfterSelectedTextConversion = isEnabled
+        case .searchSelectedTextByDoubleClick:
+            searchSelectedTextByDoubleClick = isEnabled
+        case .manualConversionDisabled:
+            manualConversionDisabled = isEnabled
+        case .rememberInputSourceForEachApp:
+            rememberInputSourceForEachApp = isEnabled
+        case .autoCorrectOnEnterAndTab:
+            autoCorrectOnEnterAndTab = isEnabled
+        case .autoCorrectionUndoLearningEnabled:
+            autoCorrectionUndoLearningEnabled = isEnabled
+        case .suppressAutoCorrectionAfterManualConversion:
+            suppressAutoCorrectionAfterManualConversion = isEnabled
+        case .completelyDisableInExceptionApplications:
+            completelyDisableInExceptionApplications = isEnabled
+        }
+    }
+
     public var searchSelectedTextByDoubleClick: Bool {
         get {
             resolver.searchSelectedTextByDoubleClick(

@@ -265,6 +265,28 @@ func runHotkeySlotAccessTests() throws {
     )
 }
 
+func runBooleanToggleSlotAccessTests() throws {
+    let fixture = try DefaultsFixture("toggle-slots")
+    let settings = fixture.manager()
+
+    settings.setBool(true, for: .soundEffectsEnabled)
+    settings.setBool(true, for: .showAdvancedSettings)
+    settings.setBool(false, for: .switchLayoutAfterConversion)
+
+    try expect(
+        settings.bool(for: .soundEffectsEnabled),
+        "settings manager writes sound effects through boolean slot access"
+    )
+    try expect(
+        settings.bool(for: .showAdvancedSettings),
+        "settings manager writes advanced settings through boolean slot access"
+    )
+    try expect(
+        !settings.bool(for: .switchLayoutAfterConversion),
+        "settings manager writes layout switching through boolean slot access"
+    )
+}
+
 do {
     print("PuntoSettingsTest starting")
     try runSearchbarImportTests()
@@ -275,6 +297,7 @@ do {
     try runUserRuleImportTests()
     try runInputSourceNotificationTests()
     try runHotkeySlotAccessTests()
+    try runBooleanToggleSlotAccessTests()
     print("PuntoSettingsTest passed")
 } catch {
     fputs("PuntoSettingsTest failed: \(error)\n", stderr)
