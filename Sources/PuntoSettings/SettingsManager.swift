@@ -62,12 +62,12 @@ public final class SettingsManager {
         static let searchbarSettings = SearchbarSettingsPolicy.settingsKey
         static let switchLayoutOnSelectedTextSwitch = SettingsPersistencePolicy.legacySwitchLayoutOnSelectedTextSwitchKey
         static let isManualConversionDisabled = SettingsPersistencePolicy.legacyIsManualConversionDisabledKey
-        static let kbdLayoutType = SettingsPersistencePolicy.legacyRussianKeyboardLayoutTypeKey
-        static let englishLayoutID = SettingsPersistencePolicy.legacyEnglishInputSourceIDKey
-        static let russianLayoutID = SettingsPersistencePolicy.legacyRussianInputSourceIDKey
-        static let shouldRememberInputSourceForEachApp = SettingsPersistencePolicy.legacyShouldRememberInputSourceForEachAppKey
-        static let disabledApps = SettingsPersistencePolicy.legacyDisabledAppsKey
-        static let completelyDisableInExceptionApps = SettingsPersistencePolicy.legacyCompletelyDisableInExceptionApplicationsKey
+        static let kbdLayoutType = KeyboardLayoutTypePolicy.legacyRussianKeyboardLayoutTypeKey
+        static let englishLayoutID = InputSourceSelectionPolicy.legacyEnglishInputSourceIDKey
+        static let russianLayoutID = InputSourceSelectionPolicy.legacyRussianInputSourceIDKey
+        static let shouldRememberInputSourceForEachApp = ApplicationLayoutPolicy.legacyShouldRememberInputSourceForEachAppKey
+        static let disabledApps = ApplicationDisablePolicy.legacyDisabledAppsKey
+        static let completelyDisableInExceptionApps = ApplicationDisablePolicy.legacyCompletelyDisableInExceptionApplicationsKey
         static let switcherResetOnReturn = ApplicationReturnKeyPolicy.legacyResetOnReturnKey
         static let isAutocorrectionActive = SettingsPersistencePolicy.legacyIsAutocorrectionActiveKey
         static let switcherUseOldRulesDefaultConf = AutoCorrectionRuleSourcePolicy.useOldRulesDefaultConfPath
@@ -75,7 +75,7 @@ public final class SettingsManager {
         static let shouldNotAutoconvertWithTabOrEnter = SettingsPersistencePolicy.legacyShouldNotAutoconvertWithTabOrEnterKey
         static let undoLearning = UndoLearningSettingsPolicy.settingsKey
         static let shouldNotAutoconvertAfterConvertion = SettingsPersistencePolicy.legacyShouldNotAutoconvertAfterConvertionKey
-        static let cancellingKeys = SettingsPersistencePolicy.legacyAutoCorrectionCancellingKeysBitmaskKey
+        static let cancellingKeys = AutoCorrectionCancellingKeyPolicy.legacyCancellingKeysBitmaskKey
         static let userRulesDictionary = LegacyUserRulePolicy.userRulesDictionaryKey
         static let isSoundOn = SoundFeedbackPolicy.legacyIsSoundOnKey
         static let enabledSounds = SoundFeedbackPolicy.legacyEnabledSoundsKey
@@ -303,13 +303,13 @@ public final class SettingsManager {
 
     public var rememberedApplicationLayouts: [String: String] {
         get {
-            SettingsPersistencePolicy.normalizedRememberedApplicationLayouts(
+            ApplicationLayoutMemory.normalizedSnapshot(
                 store.dictionary(forKey: Keys.rememberedApplicationLayouts) as? [String: String] ?? [:]
             )
         }
         set {
             store.set(
-                SettingsPersistencePolicy.normalizedRememberedApplicationLayouts(newValue),
+                ApplicationLayoutMemory.normalizedSnapshot(newValue),
                 forKey: Keys.rememberedApplicationLayouts
             )
         }
@@ -318,7 +318,7 @@ public final class SettingsManager {
     public var disabledApplicationBundleIDs: Set<String> {
         get { resolver.disabledApplicationBundleIDs(nativeKey: Keys.disabledApplicationBundleIDs, legacyKey: ImportKeys.disabledApps) }
         set {
-            let normalized = Array(SettingsPersistencePolicy.normalizedDisabledApplicationBundleIDs(newValue)).sorted()
+            let normalized = Array(ApplicationDisablePolicy.normalizedSet(newValue)).sorted()
             store.set(normalized, forKey: Keys.disabledApplicationBundleIDs)
         }
     }
@@ -356,7 +356,7 @@ public final class SettingsManager {
     public var resetOnReturnBundleComponents: Set<String> {
         get { resolver.resetOnReturnBundleComponents(nativeKey: Keys.resetOnReturnBundleComponents, legacyKey: ImportKeys.switcherResetOnReturn) }
         set {
-            let normalized = Array(SettingsPersistencePolicy.normalizedResetOnReturnBundleComponents(newValue)).sorted()
+            let normalized = Array(ApplicationReturnKeyPolicy.normalizedResetBundleComponents(newValue)).sorted()
             store.set(
                 normalized,
                 forKey: Keys.resetOnReturnBundleComponents
@@ -412,7 +412,7 @@ public final class SettingsManager {
         get { resolver.autoCorrectionCancellingKeyNames(nativeKey: Keys.autoCorrectionCancellingKeyNames, legacyKey: ImportKeys.cancellingKeys) }
         set {
             store.set(
-                Array(SettingsPersistencePolicy.normalizedAutoCorrectionCancellingKeyNames(newValue)).sorted(),
+                Array(AutoCorrectionCancellingKeyPolicy.normalizedEnabledKeyNames(newValue)).sorted(),
                 forKey: Keys.autoCorrectionCancellingKeyNames
             )
         }
@@ -615,7 +615,7 @@ public final class SettingsManager {
     }
 
     private func setPreferredInputSourceID(_ sourceID: String?, nativeKey: String) {
-        if let normalized = SettingsPersistencePolicy.normalizedInputSourceID(sourceID) {
+        if let normalized = InputSourceSelectionPolicy.normalizedSourceID(sourceID) {
             store.set(normalized, forKey: nativeKey)
         } else {
             store.removeObject(forKey: nativeKey)

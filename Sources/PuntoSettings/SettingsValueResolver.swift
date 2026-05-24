@@ -57,7 +57,7 @@ final class SettingsValueResolver {
     }
 
     func russianKeyboardLayoutType(nativeKey: String, legacyKey: String) -> KeyboardLayoutType {
-        SettingsPersistencePolicy.effectiveRussianKeyboardLayoutType(
+        KeyboardLayoutTypePolicy.effectiveRussianKeyboardLayoutType(
             hasPersistedValue: hasStoredValue(nativeKey),
             persistedValue: store.string(forKey: nativeKey),
             hasLegacyValue: hasStoredValue(legacyKey),
@@ -66,7 +66,7 @@ final class SettingsValueResolver {
     }
 
     func inputSourceID(nativeKey: String, legacyKey: String) -> String? {
-        SettingsPersistencePolicy.effectiveInputSourceID(
+        InputSourceSelectionPolicy.effectiveInputSourceID(
             hasPersistedValue: hasStoredValue(nativeKey),
             persistedValue: store.string(forKey: nativeKey),
             hasLegacyValue: hasStoredValue(legacyKey),
@@ -75,7 +75,7 @@ final class SettingsValueResolver {
     }
 
     func disabledApplicationBundleIDs(nativeKey: String, legacyKey: String) -> Set<String> {
-        SettingsPersistencePolicy.effectiveDisabledApplicationBundleIDs(
+        ApplicationDisablePolicy.effectiveDisabledBundleIDs(
             hasPersistedValue: hasStoredValue(nativeKey),
             persistedValue: Set(store.stringArray(forKey: nativeKey) ?? []),
             hasLegacyValue: hasStoredValue(legacyKey),
@@ -84,7 +84,7 @@ final class SettingsValueResolver {
     }
 
     func resetOnReturnBundleComponents(nativeKey: String, legacyKey: String) -> Set<String> {
-        SettingsPersistencePolicy.effectiveResetOnReturnBundleComponents(
+        ApplicationReturnKeyPolicy.effectiveResetBundleComponents(
             hasPersistedComponents: store.object(forKey: nativeKey) != nil,
             persistedComponents: store.stringArray(forKey: nativeKey).map(Set.init),
             hasLegacyComponents: store.object(forKey: legacyKey) != nil,
@@ -93,7 +93,7 @@ final class SettingsValueResolver {
     }
 
     func autoCorrectionCancellingKeyNames(nativeKey: String, legacyKey: String) -> Set<String> {
-        SettingsPersistencePolicy.effectiveAutoCorrectionCancellingKeyNames(
+        AutoCorrectionCancellingKeyPolicy.effectiveEnabledKeyNames(
             hasPersistedValue: hasStoredValue(nativeKey),
             persistedValue: Set(store.stringArray(forKey: nativeKey) ?? []),
             hasLegacyValue: hasStoredValue(legacyKey),

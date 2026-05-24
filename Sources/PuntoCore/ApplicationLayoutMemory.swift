@@ -38,7 +38,7 @@ public final class ApplicationLayoutMemory {
         self.layoutsByBundleID = Self.normalizedSnapshot(layoutsByBundleID)
     }
 
-    private static func normalizedSnapshot(_ layoutsByBundleID: [String: String]) -> [String: String] {
+    public static func normalizedSnapshot(_ layoutsByBundleID: [String: String]) -> [String: String] {
         var normalized: [String: String] = [:]
         for (bundleID, layoutID) in layoutsByBundleID {
             guard let normalizedBundleID = ApplicationBundleIDPolicy.normalized(bundleID),

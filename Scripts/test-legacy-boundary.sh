@@ -146,7 +146,12 @@ for pattern in "${core_live_transport_patterns[@]}"; do
 done
 
 runtime_owned_key_policy_files=(
+    Sources/PuntoCore/ApplicationDisablePolicy.swift
+    Sources/PuntoCore/ApplicationLayoutPolicy.swift
     Sources/PuntoCore/ApplicationReturnKeyPolicy.swift
+    Sources/PuntoCore/AutoCorrectionCancellingKeyPolicy.swift
+    Sources/PuntoCore/InputSourceSelectionPolicy.swift
+    Sources/PuntoCore/KeyboardLayoutTypePolicy.swift
     Sources/PuntoCore/ProductStatisticsPolicy.swift
     Sources/PuntoCore/SettingsPersistencePolicy.swift
     Sources/PuntoCore/SoundFeedbackPolicy.swift
@@ -158,6 +163,36 @@ if rg -n "observed[A-Za-z0-9]*Key" "${runtime_owned_key_policy_files[@]}"; then
     exit 1
 fi
 echo "PASS runtime-owned setting/import key constants are named by native-vs-legacy role"
+
+settings_persistence_role_specific_patterns=(
+    "legacyDisabledAppsKey"
+    "legacyCompletelyDisableInExceptionApplicationsKey"
+    "legacyShouldRememberInputSourceForEachAppKey"
+    "legacyAutoCorrectionCancellingKeysBitmaskKey"
+    "legacyRussianKeyboardLayoutTypeKey"
+    "legacyEnglishInputSourceIDKey"
+    "legacyRussianInputSourceIDKey"
+    "normalizedDisabledApplicationBundleIDs"
+    "effectiveDisabledApplicationBundleIDs"
+    "normalizedResetOnReturnBundleComponents"
+    "effectiveResetOnReturnBundleComponents"
+    "normalizedAutoCorrectionCancellingKeyNames"
+    "legacyAutoCorrectionCancellingKeyNames"
+    "effectiveAutoCorrectionCancellingKeyNames"
+    "normalizedRussianKeyboardLayoutType"
+    "effectiveRussianKeyboardLayoutType"
+    "normalizedInputSourceID"
+    "effectiveInputSourceID"
+    "normalizedRememberedApplicationLayouts"
+)
+
+for pattern in "${settings_persistence_role_specific_patterns[@]}"; do
+    if rg --fixed-strings --quiet "$pattern" Sources/PuntoCore/SettingsPersistencePolicy.swift; then
+        echo "legacy boundary failed: SettingsPersistencePolicy owns role-specific import behavior: $pattern" >&2
+        exit 1
+    fi
+    echo "PASS SettingsPersistencePolicy role-specific behavior absent: $pattern"
+done
 
 settings_import_alias_patterns=(
     "\\bKeys\\.isFirstInstallation"

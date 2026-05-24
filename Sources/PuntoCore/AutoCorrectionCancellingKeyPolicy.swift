@@ -1,6 +1,7 @@
 import Foundation
 
 public enum AutoCorrectionCancellingKeyPolicy {
+    public static let legacyCancellingKeysBitmaskKey = "cancellingKeys"
     public static let legacyBackspaceName = "dontAutoconvertWordWithBackspace"
     public static let legacyDeleteName = "dontAutoconvertWordWithDelete"
     public static let legacyLeftArrowName = "dontAutoconvertWordWithLeftArrow"
@@ -68,6 +69,35 @@ public enum AutoCorrectionCancellingKeyPolicy {
             keyNames
                 .compactMap { canonicalNamesByLowercaseName[$0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()] }
         )
+    }
+
+    public static func legacyEnabledKeyNames(from bitmask: Int?) -> Set<String>? {
+        guard let bitmask else {
+            return nil
+        }
+
+        guard bitmask == 0 else {
+            return nil
+        }
+
+        return []
+    }
+
+    public static func effectiveEnabledKeyNames(
+        hasPersistedValue: Bool,
+        persistedValue: Set<String>,
+        hasLegacyValue: Bool,
+        legacyBitmask: Int?
+    ) -> Set<String> {
+        if hasPersistedValue {
+            return normalizedEnabledKeyNames(persistedValue)
+        }
+
+        if hasLegacyValue, let legacyKeyNames = legacyEnabledKeyNames(from: legacyBitmask) {
+            return legacyKeyNames
+        }
+
+        return normalizedEnabledKeyNames(defaultEnabledKeyNames)
     }
 
     public static func shouldSuppressAutoCorrection(

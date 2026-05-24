@@ -30,6 +30,8 @@ public struct InputSourceSelection: Equatable {
 
 public enum InputSourceSelectionPolicy {
     public static let undefinedSourceID = "UNDEFINED"
+    public static let legacyEnglishInputSourceIDKey = "englishLayoutID"
+    public static let legacyRussianInputSourceIDKey = "russianLayoutID"
     public static let inputSourceEnabledLogPrefix = "inputSourceEnabled:"
     public static let handleInputSourcesEnabledLogPrefix = "handleInputSourcesEnabled"
     public static let promptUserToInstallLayoutsLogPrefix = "promptUserToInstallLayouts"
@@ -174,6 +176,23 @@ public enum InputSourceSelectionPolicy {
         }
 
         return trimmed
+    }
+
+    public static func effectiveInputSourceID(
+        hasPersistedValue: Bool,
+        persistedValue: String?,
+        hasLegacyValue: Bool,
+        legacyValue: String?
+    ) -> String? {
+        if hasPersistedValue {
+            return normalizedSourceID(persistedValue)
+        }
+
+        if hasLegacyValue {
+            return normalizedSourceID(legacyValue)
+        }
+
+        return nil
     }
 
 }

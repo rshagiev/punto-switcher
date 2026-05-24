@@ -6,6 +6,36 @@ public enum ApplicationReturnKeyPolicy {
     public static let defaultResetBundleComponents: Set<String> = ["telegram"]
     public static let legacyResetOnReturnKey = "switcher.reset_on_return"
 
+    public static func normalizedResetBundleComponents(_ components: Set<String>) -> Set<String> {
+        ApplicationBundleIDPolicy.normalizedSet(components)
+    }
+
+    public static func effectiveResetBundleComponents(
+        hasPersistedComponents: Bool,
+        persistedComponents: Set<String>?,
+        hasLegacyComponents: Bool = false,
+        legacyComponents: Set<String>? = nil,
+        defaultComponents: Set<String> = defaultResetBundleComponents
+    ) -> Set<String> {
+        if hasPersistedComponents {
+            guard let persistedComponents else {
+                return normalizedResetBundleComponents(defaultComponents)
+            }
+
+            return normalizedResetBundleComponents(persistedComponents)
+        }
+
+        if hasLegacyComponents {
+            guard let legacyComponents else {
+                return normalizedResetBundleComponents(defaultComponents)
+            }
+
+            return normalizedResetBundleComponents(legacyComponents)
+        }
+
+        return normalizedResetBundleComponents(defaultComponents)
+    }
+
     public static func shouldResetTextStateOnReturn(
         bundleID: String?,
         keyCode: UInt16,

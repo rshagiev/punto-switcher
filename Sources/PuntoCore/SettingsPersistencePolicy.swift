@@ -14,12 +14,9 @@ public enum SettingsPersistencePolicy {
     public static let defaultManualConversionDisabled = false
     public static let legacyIsManualConversionDisabledKey = "isManualConversionDisabled"
     public static let defaultRememberInputSourceForEachApp = false
-    public static let legacyShouldRememberInputSourceForEachAppKey = "shouldRememberInputSourceForEachApp"
     public static let defaultRememberedApplicationLayouts: [String: String] = [:]
     public static let defaultDisabledApplicationBundleIDs: [String] = []
-    public static let legacyDisabledAppsKey = "disabledApps"
     public static let defaultCompletelyDisableInExceptionApplications = false
-    public static let legacyCompletelyDisableInExceptionApplicationsKey = "CompletelyDisableInExceptionApps"
     public static let defaultAutoCorrectionEnabled = false
     public static let legacyIsAutocorrectionActiveKey = "isAutocorrectionActive"
     public static let defaultAutoCorrectionStarterRulesEnabled = true
@@ -29,145 +26,11 @@ public enum SettingsPersistencePolicy {
     public static let defaultSuppressAutoCorrectionAfterManualConversion = true
     public static let legacyShouldNotAutoconvertAfterConvertionKey = "shouldNotAutoconvertAfterConvertion"
     public static let defaultAutoCorrectionCancellingKeyNames = Array(AutoCorrectionCancellingKeyPolicy.defaultEnabledKeyNames).sorted()
-    public static let legacyAutoCorrectionCancellingKeysBitmaskKey = "cancellingKeys"
     public static let defaultSoundEffectsEnabled = false
     public static let defaultRestorePasteboardAfterConversion = true
     public static let defaultIsFirstLaunch = true
     public static let defaultRussianKeyboardLayoutType = KeyboardLayoutTypePolicy.defaultRussianLayoutType.rawValue
-    public static let legacyRussianKeyboardLayoutTypeKey = "kbdLayoutType"
-    public static let legacyEnglishInputSourceIDKey = "englishLayoutID"
-    public static let legacyRussianInputSourceIDKey = "russianLayoutID"
     public static let defaultProductStatistics = ProductStatisticsPolicy.emptySnapshot
-
-    public static func normalizedDisabledApplicationBundleIDs(_ bundleIDs: Set<String>) -> Set<String> {
-        ApplicationDisablePolicy.normalizedSet(bundleIDs)
-    }
-
-    public static func effectiveDisabledApplicationBundleIDs(
-        hasPersistedValue: Bool,
-        persistedValue: Set<String>,
-        hasLegacyValue: Bool,
-        legacyValue: Set<String>
-    ) -> Set<String> {
-        if hasPersistedValue {
-            return normalizedDisabledApplicationBundleIDs(persistedValue)
-        }
-
-        if hasLegacyValue {
-            return normalizedDisabledApplicationBundleIDs(legacyValue)
-        }
-
-        return normalizedDisabledApplicationBundleIDs(Set(defaultDisabledApplicationBundleIDs))
-    }
-
-    public static func normalizedResetOnReturnBundleComponents(_ components: Set<String>) -> Set<String> {
-        ApplicationBundleIDPolicy.normalizedSet(components)
-    }
-
-    public static func normalizedAutoCorrectionCancellingKeyNames(_ keyNames: Set<String>) -> Set<String> {
-        AutoCorrectionCancellingKeyPolicy.normalizedEnabledKeyNames(keyNames)
-    }
-
-    public static func legacyAutoCorrectionCancellingKeyNames(from bitmask: Int?) -> Set<String>? {
-        guard let bitmask else {
-            return nil
-        }
-
-        guard bitmask == 0 else {
-            return nil
-        }
-
-        return []
-    }
-
-    public static func effectiveAutoCorrectionCancellingKeyNames(
-        hasPersistedValue: Bool,
-        persistedValue: Set<String>,
-        hasLegacyValue: Bool,
-        legacyBitmask: Int?
-    ) -> Set<String> {
-        if hasPersistedValue {
-            return normalizedAutoCorrectionCancellingKeyNames(persistedValue)
-        }
-
-        if hasLegacyValue, let legacyKeyNames = legacyAutoCorrectionCancellingKeyNames(from: legacyBitmask) {
-            return legacyKeyNames
-        }
-
-        return normalizedAutoCorrectionCancellingKeyNames(Set(defaultAutoCorrectionCancellingKeyNames))
-    }
-
-    public static func normalizedRussianKeyboardLayoutType(_ rawValue: String?) -> KeyboardLayoutType {
-        KeyboardLayoutTypePolicy.normalized(rawValue)
-    }
-
-    public static func effectiveRussianKeyboardLayoutType(
-        hasPersistedValue: Bool,
-        persistedValue: String?,
-        hasLegacyValue: Bool,
-        legacyValue: String?
-    ) -> KeyboardLayoutType {
-        if hasPersistedValue {
-            return normalizedRussianKeyboardLayoutType(persistedValue)
-        }
-
-        if hasLegacyValue {
-            return normalizedRussianKeyboardLayoutType(legacyValue)
-        }
-
-        return KeyboardLayoutTypePolicy.defaultRussianLayoutType
-    }
-
-    public static func normalizedInputSourceID(_ sourceID: String?) -> String? {
-        InputSourceSelectionPolicy.normalizedSourceID(sourceID)
-    }
-
-    public static func effectiveInputSourceID(
-        hasPersistedValue: Bool,
-        persistedValue: String?,
-        hasLegacyValue: Bool,
-        legacyValue: String?
-    ) -> String? {
-        if hasPersistedValue {
-            return normalizedInputSourceID(persistedValue)
-        }
-
-        if hasLegacyValue {
-            return normalizedInputSourceID(legacyValue)
-        }
-
-        return nil
-    }
-
-    public static func effectiveResetOnReturnBundleComponents(
-        hasPersistedComponents: Bool,
-        persistedComponents: Set<String>?,
-        hasLegacyComponents: Bool = false,
-        legacyComponents: Set<String>? = nil,
-        defaultComponents: Set<String> = ApplicationReturnKeyPolicy.defaultResetBundleComponents
-    ) -> Set<String> {
-        if hasPersistedComponents {
-            guard let persistedComponents else {
-                return normalizedResetOnReturnBundleComponents(defaultComponents)
-            }
-
-            return normalizedResetOnReturnBundleComponents(persistedComponents)
-        }
-
-        if hasLegacyComponents {
-            guard let legacyComponents else {
-                return normalizedResetOnReturnBundleComponents(defaultComponents)
-            }
-
-            return normalizedResetOnReturnBundleComponents(legacyComponents)
-        }
-
-        return normalizedResetOnReturnBundleComponents(defaultComponents)
-    }
-
-    public static func normalizedRememberedApplicationLayouts(_ layoutsByBundleID: [String: String]) -> [String: String] {
-        ApplicationLayoutMemory(layoutsByBundleID: layoutsByBundleID).snapshot()
-    }
 
     public static func normalizedProductStatistics(_ snapshot: ProductStatisticsSnapshot) -> ProductStatisticsSnapshot {
         ProductStatisticsPolicy.normalized(snapshot)

@@ -7,6 +7,8 @@ public enum ApplicationLayoutRestoreAction: Equatable {
 }
 
 public enum ApplicationLayoutPolicy {
+    public static let legacyShouldRememberInputSourceForEachAppKey = "shouldRememberInputSourceForEachApp"
+
     public static func shouldRecordCurrentLayoutOnApplicationActivation(
         rememberInputSourceForEachApp: Bool
     ) -> Bool {

@@ -3621,7 +3621,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings defaults keep per-app layout memory off"
     )
     try expect(
-        SettingsPersistencePolicy.legacyShouldRememberInputSourceForEachAppKey,
+        ApplicationLayoutPolicy.legacyShouldRememberInputSourceForEachAppKey,
         "shouldRememberInputSourceForEachApp",
         "settings persistence preserves observed per-app layout memory key"
     )
@@ -3636,7 +3636,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings defaults start with no disabled applications"
     )
     try expect(
-        SettingsPersistencePolicy.legacyDisabledAppsKey,
+        ApplicationDisablePolicy.legacyDisabledAppsKey,
         "disabledApps",
         "settings persistence preserves observed disabled-apps key"
     )
@@ -3661,7 +3661,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings defaults keep exception apps partially disabled"
     )
     try expect(
-        SettingsPersistencePolicy.legacyCompletelyDisableInExceptionApplicationsKey,
+        ApplicationDisablePolicy.legacyCompletelyDisableInExceptionApplicationsKey,
         "CompletelyDisableInExceptionApps",
         "settings persistence preserves observed full-disable exception-apps key"
     )
@@ -3723,21 +3723,21 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings persistence reads observed shouldNotAutoconvertAfterConvertion=true as suppression disabled"
     )
     try expect(
-        SettingsPersistencePolicy.legacyAutoCorrectionCancellingKeysBitmaskKey,
+        AutoCorrectionCancellingKeyPolicy.legacyCancellingKeysBitmaskKey,
         "cancellingKeys",
         "settings persistence owns observed cancelling-keys bitmask key"
     )
     try expect(
-        SettingsPersistencePolicy.legacyAutoCorrectionCancellingKeyNames(from: 0),
+        AutoCorrectionCancellingKeyPolicy.legacyEnabledKeyNames(from: 0),
         [],
         "settings persistence reads observed Punto Switcher cancellingKeys=0 as no cancelling keys"
     )
     try expectNil(
-        SettingsPersistencePolicy.legacyAutoCorrectionCancellingKeyNames(from: 1),
+        AutoCorrectionCancellingKeyPolicy.legacyEnabledKeyNames(from: 1),
         "settings persistence does not guess unknown Punto Switcher cancellingKeys bit order"
     )
     try expect(
-        SettingsPersistencePolicy.effectiveAutoCorrectionCancellingKeyNames(
+        AutoCorrectionCancellingKeyPolicy.effectiveEnabledKeyNames(
             hasPersistedValue: false,
             persistedValue: [],
             hasLegacyValue: true,
@@ -3747,7 +3747,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings persistence applies observed Punto Switcher cancellingKeys=0 alias"
     )
     try expect(
-        SettingsPersistencePolicy.effectiveAutoCorrectionCancellingKeyNames(
+        AutoCorrectionCancellingKeyPolicy.effectiveEnabledKeyNames(
             hasPersistedValue: true,
             persistedValue: ["backspace"],
             hasLegacyValue: true,
@@ -3964,7 +3964,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings persistence ignores missing undoLearning dictionaries"
     )
     try expect(
-        SettingsPersistencePolicy.normalizedDisabledApplicationBundleIDs([
+        ApplicationDisablePolicy.normalizedSet([
             " COM.Example.Editor ",
             "",
             "com.example.Terminal"
@@ -3973,7 +3973,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings persistence normalizes disabled app ids"
     )
     try expect(
-        SettingsPersistencePolicy.effectiveDisabledApplicationBundleIDs(
+        ApplicationDisablePolicy.effectiveDisabledBundleIDs(
             hasPersistedValue: false,
             persistedValue: [],
             hasLegacyValue: true,
@@ -3983,7 +3983,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings persistence reads Punto Switcher-style disabledApps alias"
     )
     try expect(
-        SettingsPersistencePolicy.effectiveDisabledApplicationBundleIDs(
+        ApplicationDisablePolicy.effectiveDisabledBundleIDs(
             hasPersistedValue: true,
             persistedValue: ["com.example.native"],
             hasLegacyValue: true,
@@ -4035,22 +4035,22 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings persistence defaults to Punto Switcher old-rules starter catalog"
     )
     try expect(
-        SettingsPersistencePolicy.normalizedRussianKeyboardLayoutType(" Windows "),
+        KeyboardLayoutTypePolicy.normalized(" Windows "),
         .windows,
         "settings persistence normalizes Windows Russian keyboard layout type"
     )
     try expect(
-        SettingsPersistencePolicy.normalizedRussianKeyboardLayoutType("appl"),
+        KeyboardLayoutTypePolicy.normalized("appl"),
         .mac,
         "settings persistence normalizes observed Punto Switcher Mac keyboard layout type"
     )
     try expect(
-        SettingsPersistencePolicy.normalizedRussianKeyboardLayoutType("unknown"),
+        KeyboardLayoutTypePolicy.normalized("unknown"),
         .mac,
         "settings persistence falls back to Mac Russian keyboard layout type"
     )
     try expect(
-        SettingsPersistencePolicy.effectiveRussianKeyboardLayoutType(
+        KeyboardLayoutTypePolicy.effectiveRussianKeyboardLayoutType(
             hasPersistedValue: false,
             persistedValue: nil,
             hasLegacyValue: true,
@@ -4060,22 +4060,22 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings persistence reads Punto Switcher-style kbdLayoutType alias"
     )
     try expect(
-        SettingsPersistencePolicy.legacyRussianKeyboardLayoutTypeKey,
+        KeyboardLayoutTypePolicy.legacyRussianKeyboardLayoutTypeKey,
         "kbdLayoutType",
         "settings persistence owns observed Russian keyboard layout type key"
     )
     try expect(
-        SettingsPersistencePolicy.legacyEnglishInputSourceIDKey,
+        InputSourceSelectionPolicy.legacyEnglishInputSourceIDKey,
         "englishLayoutID",
         "settings persistence owns observed English input-source id key"
     )
     try expect(
-        SettingsPersistencePolicy.legacyRussianInputSourceIDKey,
+        InputSourceSelectionPolicy.legacyRussianInputSourceIDKey,
         "russianLayoutID",
         "settings persistence owns observed Russian input-source id key"
     )
     try expect(
-        SettingsPersistencePolicy.effectiveRussianKeyboardLayoutType(
+        KeyboardLayoutTypePolicy.effectiveRussianKeyboardLayoutType(
             hasPersistedValue: true,
             persistedValue: "mac",
             hasLegacyValue: true,
@@ -4085,20 +4085,20 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings persistence prefers native keyboard layout type over legacy alias"
     )
     try expect(
-        SettingsPersistencePolicy.normalizedInputSourceID(" com.apple.keylayout.Dvorak "),
+        InputSourceSelectionPolicy.normalizedSourceID(" com.apple.keylayout.Dvorak "),
         "com.apple.keylayout.Dvorak",
         "settings persistence normalizes preferred input source ids"
     )
     try expectNil(
-        SettingsPersistencePolicy.normalizedInputSourceID(" \n\t "),
+        InputSourceSelectionPolicy.normalizedSourceID(" \n\t "),
         "settings persistence rejects blank preferred input source ids"
     )
     try expectNil(
-        SettingsPersistencePolicy.normalizedInputSourceID(" undefined "),
+        InputSourceSelectionPolicy.normalizedSourceID(" undefined "),
         "settings persistence treats Punto Switcher UNDEFINED layout id as unset"
     )
     try expect(
-        SettingsPersistencePolicy.effectiveInputSourceID(
+        InputSourceSelectionPolicy.effectiveInputSourceID(
             hasPersistedValue: false,
             persistedValue: nil,
             hasLegacyValue: true,
@@ -4108,7 +4108,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings persistence reads Punto Switcher-style layout id alias"
     )
     try expectNil(
-        SettingsPersistencePolicy.effectiveInputSourceID(
+        InputSourceSelectionPolicy.effectiveInputSourceID(
             hasPersistedValue: false,
             persistedValue: nil,
             hasLegacyValue: true,
@@ -4117,7 +4117,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings persistence ignores Punto Switcher UNDEFINED layout id alias"
     )
     try expect(
-        SettingsPersistencePolicy.effectiveInputSourceID(
+        InputSourceSelectionPolicy.effectiveInputSourceID(
             hasPersistedValue: true,
             persistedValue: "com.apple.keylayout.Dvorak",
             hasLegacyValue: true,
@@ -4127,7 +4127,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings persistence prefers native input source id over legacy alias"
     )
     try expect(
-        SettingsPersistencePolicy.normalizedResetOnReturnBundleComponents([
+        ApplicationReturnKeyPolicy.normalizedResetBundleComponents([
             " Telegram ",
             "",
             "SLACK"
@@ -4136,7 +4136,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings persistence normalizes reset-on-return components"
     )
     try expect(
-        SettingsPersistencePolicy.effectiveResetOnReturnBundleComponents(
+        ApplicationReturnKeyPolicy.effectiveResetBundleComponents(
             hasPersistedComponents: false,
             persistedComponents: nil
         ),
@@ -4144,7 +4144,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings persistence uses default reset-on-return components before user config"
     )
     try expect(
-        SettingsPersistencePolicy.effectiveResetOnReturnBundleComponents(
+        ApplicationReturnKeyPolicy.effectiveResetBundleComponents(
             hasPersistedComponents: false,
             persistedComponents: nil,
             hasLegacyComponents: true,
@@ -4154,7 +4154,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings persistence reads Punto Switcher switcher.reset_on_return alias"
     )
     try expect(
-        SettingsPersistencePolicy.effectiveResetOnReturnBundleComponents(
+        ApplicationReturnKeyPolicy.effectiveResetBundleComponents(
             hasPersistedComponents: true,
             persistedComponents: [],
             hasLegacyComponents: true,
@@ -4164,7 +4164,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings persistence prefers intentionally empty native reset-on-return override"
     )
     try expect(
-        SettingsPersistencePolicy.effectiveResetOnReturnBundleComponents(
+        ApplicationReturnKeyPolicy.effectiveResetBundleComponents(
             hasPersistedComponents: true,
             persistedComponents: nil,
             hasLegacyComponents: true,
@@ -4174,7 +4174,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings persistence falls back to default for unreadable reset-on-return config"
     )
 
-    let layouts = SettingsPersistencePolicy.normalizedRememberedApplicationLayouts([
+    let layouts = ApplicationLayoutMemory.normalizedSnapshot([
         " COM.Example.Editor ": " com.apple.keylayout.Russian ",
         "": "ignored",
         "com.example.empty": " ",

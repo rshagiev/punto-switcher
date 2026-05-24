@@ -7,6 +7,7 @@ public enum KeyboardLayoutType: String, Codable, Equatable, CaseIterable {
 
 public enum KeyboardLayoutTypePolicy {
     public static let defaultRussianLayoutType: KeyboardLayoutType = .mac
+    public static let legacyRussianKeyboardLayoutTypeKey = "kbdLayoutType"
 
     public static func normalized(_ rawValue: String?) -> KeyboardLayoutType {
         guard let rawValue else {
@@ -21,6 +22,23 @@ public enum KeyboardLayoutTypePolicy {
         default:
             return defaultRussianLayoutType
         }
+    }
+
+    public static func effectiveRussianKeyboardLayoutType(
+        hasPersistedValue: Bool,
+        persistedValue: String?,
+        hasLegacyValue: Bool,
+        legacyValue: String?
+    ) -> KeyboardLayoutType {
+        if hasPersistedValue {
+            return normalized(persistedValue)
+        }
+
+        if hasLegacyValue {
+            return normalized(legacyValue)
+        }
+
+        return defaultRussianLayoutType
     }
 
     public static func isPreferredRussianSource(

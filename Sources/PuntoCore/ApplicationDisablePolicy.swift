@@ -35,6 +35,9 @@ public struct ApplicationDisableMenuState: Equatable {
 }
 
 public enum ApplicationDisablePolicy {
+    public static let legacyDisabledAppsKey = "disabledApps"
+    public static let legacyCompletelyDisableInExceptionApplicationsKey = "CompletelyDisableInExceptionApps"
+
     public static func isApplicationDisabled(bundleID: String?, disabledBundleIDs: Set<String>) -> Bool {
         guard let bundleID = ApplicationBundleIDPolicy.normalized(bundleID) else {
             return false
@@ -93,6 +96,24 @@ public enum ApplicationDisablePolicy {
 
     public static func normalizedSet(_ bundleIDs: Set<String>) -> Set<String> {
         ApplicationBundleIDPolicy.normalizedSet(bundleIDs)
+    }
+
+    public static func effectiveDisabledBundleIDs(
+        hasPersistedValue: Bool,
+        persistedValue: Set<String>,
+        hasLegacyValue: Bool,
+        legacyValue: Set<String>,
+        defaultValue: [String] = []
+    ) -> Set<String> {
+        if hasPersistedValue {
+            return normalizedSet(persistedValue)
+        }
+
+        if hasLegacyValue {
+            return normalizedSet(legacyValue)
+        }
+
+        return normalizedSet(Set(defaultValue))
     }
 
     public static func toggleAction(
