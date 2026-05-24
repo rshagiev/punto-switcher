@@ -27,7 +27,7 @@ final class StartupRuntimeCoordinator {
         var updateSettings = settingsManager.applicationUpdateSettings
 
         if StartupPresentationPolicy.shouldHandleInstallArgument(arguments) {
-            PuntoLog.info(PuntoSwitcherObservedSurface.StartupPresentation.handleInstallArgumentSelector)
+            PuntoLog.info(StartupPresentationPolicy.installArgumentHandlerLogName)
             updateSettings = StartupPresentationPolicy.updateSettingsAfterInstallArgument(updateSettings)
             settingsManager.applicationUpdateSettings = updateSettings
             PuntoLog.info(StartupPresentationPolicy.nativeInstalledTooltipMessage)
@@ -45,7 +45,7 @@ final class StartupRuntimeCoordinator {
         }
 
         if StartupPresentationPolicy.shouldDisplayUpdateFinishedTooltip(updateSettings: updateSettings) {
-            PuntoLog.info(PuntoSwitcherObservedSurface.StartupPresentation.showUpdateFinishedTooltipSelector)
+            PuntoLog.info(StartupPresentationPolicy.updateFinishedTooltipLogName)
             PuntoLog.info(StartupPresentationPolicy.nativeUpdatedTooltipMessage)
             updateSettings = StartupPresentationPolicy.updateSettingsAfterUpdateFinishedTooltip(updateSettings)
             settingsManager.applicationUpdateSettings = updateSettings

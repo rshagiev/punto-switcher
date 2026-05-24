@@ -1,5 +1,7 @@
 public enum StartupPresentationPolicy {
-    public static let observedInstallArgument = "--install"
+    public static let installArgument = "--install"
+    public static let installArgumentHandlerLogName = "handleInstallArgument"
+    public static let updateFinishedTooltipLogName = "showUpdateFinishedTooltip"
     public static let nativeInstalledTooltipMessage = "Punto installed. Automatic layout switching is ready."
     public static let nativeUpdatedTooltipMessage = "Punto updated. Automatic layout switching is ready."
 
@@ -8,7 +10,7 @@ public enum StartupPresentationPolicy {
     public static let observedAccessibilityDisabledLogMessage = "Accessibility API disabled. Showing accessibility preference window."
 
     public static func shouldHandleInstallArgument(_ arguments: [String]) -> Bool {
-        arguments.contains(observedInstallArgument)
+        arguments.contains(installArgument)
     }
 
     public static func updateSettingsAfterInstallArgument(_ snapshot: ApplicationUpdateSettingsSnapshot) -> ApplicationUpdateSettingsSnapshot {

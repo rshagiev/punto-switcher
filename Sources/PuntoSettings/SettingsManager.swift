@@ -70,8 +70,8 @@ public final class SettingsManager {
         static let completelyDisableInExceptionApps = SettingsPersistencePolicy.observedCompletelyDisableInExceptionApplicationsKey
         static let switcherResetOnReturn = "switcher.reset_on_return"
         static let isAutocorrectionActive = SettingsPersistencePolicy.observedIsAutocorrectionActiveKey
-        static let switcherUseOldRulesDefaultConf = AutoCorrectionRuleSourcePolicy.observedUseOldRulesDefaultConfPath
-        static let switcherUseOldRulesAccessor = AutoCorrectionRuleSourcePolicy.observedUseOldRulesAccessor
+        static let switcherUseOldRulesDefaultConf = AutoCorrectionRuleSourcePolicy.useOldRulesDefaultConfPath
+        static let switcherUseOldRulesAccessor = AutoCorrectionRuleSourcePolicy.useOldRulesAccessor
         static let shouldNotAutoconvertWithTabOrEnter = "shouldNotAutoconvertWithTabOrEnter"
         static let undoLearning = UndoLearningSettingsPolicy.settingsKey
         static let shouldNotAutoconvertAfterConvertion = SettingsPersistencePolicy.observedShouldNotAutoconvertAfterConvertionKey

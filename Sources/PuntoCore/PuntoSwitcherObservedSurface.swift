@@ -128,6 +128,11 @@ public enum PuntoSwitcherObservedSurface {
         public static let shouldDisplayWelcomeSelector = "shouldDisplayWelcome"
     }
 
+    public enum AutoCorrectionRuleSource {
+        public static let useOldRulesDefaultConfPath = "switcher.use_old_rules"
+        public static let useOldRulesAccessor = "switcherUseOldRules"
+    }
+
     public enum StatusIcon {
         public static let updateMenubarIconSelector = "updateMenubarIcon:"
         public static let resourceNames = [

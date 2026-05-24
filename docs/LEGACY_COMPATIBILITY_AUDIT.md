@@ -94,9 +94,12 @@ Runtime-compatible aliases, log prefixes, and metric names are now owned by the
 native policy that consumes them, not by `PuntoSwitcherObservedSurface`.
 `PuntoCoreTest` aligns those native constants back to the reverse-audit anchors,
 while `Scripts/test-legacy-boundary.sh` rejects direct
-`PuntoSwitcherObservedSurface` references from the selected behavior-policy
-files. This keeps the observed binary surface useful as evidence without turning
-it into a second runtime dependency graph.
+`PuntoSwitcherObservedSurface` references from the app shell and selected
+behavior-policy files. This keeps the observed binary surface useful as evidence
+without turning it into a second runtime dependency graph. Startup presentation
+logs and auto-correction old-rule import keys follow the same split: the runtime
+and import policy own the native-compatible strings they use, while tests align
+those strings back to the reverse-audit anchors.
 
 The boundary also protects diagnostic code from becoming another legacy fork.
 `Scripts/debug.sh components` now runs `PuntoCoreTest` and `PuntoDiag` against

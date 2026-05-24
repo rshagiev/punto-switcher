@@ -121,6 +121,12 @@ for pattern in "${app_target_live_transport_patterns[@]}"; do
     echo "PASS app shell live transport absent: $pattern"
 done
 
+if rg -n "PuntoSwitcherObservedSurface" Sources/Punto/App Sources/Punto/UI Sources/Punto/main.swift; then
+    echo "legacy boundary failed: app shell depends directly on reverse-audit-only observed surface" >&2
+    exit 1
+fi
+echo "PASS app shell has no direct reverse-audit-only observed surface dependency"
+
 settings_import_alias_patterns=(
     "\\bKeys\\.isFirstInstallation"
     "\\bKeys\\.launchesOnStartup"
@@ -577,6 +583,7 @@ behavior_policy_observed_surface_files=(
     Sources/PuntoCore/AccessibilityPreferencesPolicy.swift \
     Sources/PuntoCore/AccessibilityRolePolicy.swift \
     Sources/PuntoCore/AutoCorrectionCancellingKeyPolicy.swift \
+    Sources/PuntoCore/AutoCorrectionRuleSourcePolicy.swift \
     Sources/PuntoCore/ClipboardReplacementPolicy.swift \
     Sources/PuntoCore/Hotkey.swift \
     Sources/PuntoCore/HotkeyCollisionPolicy.swift \

@@ -4836,7 +4836,7 @@ private func runApplicationUpdateSettingsPolicyTests() throws {
 
 private func runStartupPresentationPolicyTests() throws {
     try expect(
-        StartupPresentationPolicy.observedInstallArgument,
+        StartupPresentationPolicy.installArgument,
         "--install",
         "startup presentation policy preserves observed installer argument"
     )
@@ -4859,6 +4859,16 @@ private func runStartupPresentationPolicyTests() throws {
         PuntoSwitcherObservedSurface.StartupPresentation.shouldDisplayWelcomeSelector,
         "shouldDisplayWelcome",
         "startup presentation policy preserves observed welcome selector"
+    )
+    try expect(
+        StartupPresentationPolicy.installArgumentHandlerLogName,
+        PuntoSwitcherObservedSurface.StartupPresentation.handleInstallArgumentSelector,
+        "startup presentation policy keeps install handler log aligned with reverse-audit anchor"
+    )
+    try expect(
+        StartupPresentationPolicy.updateFinishedTooltipLogName,
+        PuntoSwitcherObservedSurface.StartupPresentation.showUpdateFinishedTooltipSelector,
+        "startup presentation policy keeps update-finished log aligned with reverse-audit anchor"
     )
     try expect(
         StartupPresentationPolicy.observedWelcomeLogMessage,
@@ -10580,14 +10590,24 @@ private func runAutoCorrectionRuleSourcePolicyTests() throws {
     ]
 
     try expect(
-        AutoCorrectionRuleSourcePolicy.observedUseOldRulesDefaultConfPath,
+        PuntoSwitcherObservedSurface.AutoCorrectionRuleSource.useOldRulesDefaultConfPath,
         "switcher.use_old_rules",
-        "rule source policy pins observed Punto Switcher default-conf old-rules path"
+        "observed surface pins Punto Switcher default-conf old-rules path"
     )
     try expect(
-        AutoCorrectionRuleSourcePolicy.observedUseOldRulesAccessor,
+        PuntoSwitcherObservedSurface.AutoCorrectionRuleSource.useOldRulesAccessor,
         "switcherUseOldRules",
-        "rule source policy pins observed Punto Switcher old-rules accessor"
+        "observed surface pins Punto Switcher old-rules accessor"
+    )
+    try expect(
+        AutoCorrectionRuleSourcePolicy.useOldRulesDefaultConfPath,
+        PuntoSwitcherObservedSurface.AutoCorrectionRuleSource.useOldRulesDefaultConfPath,
+        "rule source policy keeps default-conf old-rules path aligned with reverse-audit anchor"
+    )
+    try expect(
+        AutoCorrectionRuleSourcePolicy.useOldRulesAccessor,
+        PuntoSwitcherObservedSurface.AutoCorrectionRuleSource.useOldRulesAccessor,
+        "rule source policy keeps old-rules accessor aligned with reverse-audit anchor"
     )
     try expect(
         AutoCorrectionRuleSourcePolicy.effectiveRules(
