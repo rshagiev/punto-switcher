@@ -69,6 +69,22 @@ for pattern in "${text_accessor_ax_client_patterns[@]}"; do
     echo "PASS TextAccessor live AX client plumbing absent: $pattern"
 done
 
+text_accessor_clipboard_transport_patterns=(
+    "NSPasteboard"
+    "PasteboardSnapshot"
+    "restorePasteboardIfEnabled"
+    "pasteboard.clearContents"
+    "pasteboard.setString"
+)
+
+for pattern in "${text_accessor_clipboard_transport_patterns[@]}"; do
+    if rg --fixed-strings --quiet "$pattern" Sources/Punto/Core/TextAccessor.swift; then
+        echo "legacy boundary failed: TextAccessor reopened pasteboard transport: $pattern" >&2
+        exit 1
+    fi
+    echo "PASS TextAccessor pasteboard transport absent: $pattern"
+done
+
 if rg --fixed-strings --quiet "Placeholder - actual tests" Tests 2>/dev/null; then
     echo "legacy boundary failed: placeholder SwiftPM test target returned" >&2
     exit 1
