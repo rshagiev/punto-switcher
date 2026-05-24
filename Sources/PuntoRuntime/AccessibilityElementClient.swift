@@ -10,24 +10,7 @@ import PuntoCore
 final class AccessibilityElementClient {
 
     func focusedElement() -> AXUIElement? {
-        let systemWide = AXUIElementCreateSystemWide()
-
-        var focusedAppElement: AXUIElement?
-        var appResult: AXError = .failure
-
-        for attempt in 1...AccessibilityReplacementPolicy.focusedApplicationRetryAttempts {
-            (appResult, focusedAppElement) = AccessibilityValueBridge.elementAttributeResult(
-                kAXFocusedApplicationAttribute as CFString,
-                from: systemWide,
-                context: "getFocusedElement: focused app"
-            )
-            if appResult == .success {
-                break
-            }
-            if AccessibilityReplacementPolicy.shouldRetryFocusedApplicationLookup(attempt: attempt) {
-                Thread.sleep(forTimeInterval: AccessibilityReplacementPolicy.focusedApplicationRetryDelay)
-            }
-        }
+        let (appResult, focusedAppElement) = focusedApplicationElement(context: "getFocusedElement: focused app")
 
         guard appResult == .success, focusedAppElement != nil else {
             if let frontApp = NSWorkspace.shared.frontmostApplication {
@@ -69,13 +52,7 @@ final class AccessibilityElementClient {
     }
 
     func appFocusedElement() -> AXUIElement? {
-        let systemWide = AXUIElementCreateSystemWide()
-
-        let (appResult, appElement) = AccessibilityValueBridge.elementAttributeResult(
-            kAXFocusedApplicationAttribute as CFString,
-            from: systemWide,
-            context: "getAppFocusedElement: focused app"
-        )
+        let (appResult, appElement) = focusedApplicationElement(context: "getAppFocusedElement: focused app")
         guard appResult == .success else {
             PuntoLog.info("getAppFocusedElement: failed to get app, error=\(appResult.rawValue)")
             return nil
@@ -182,13 +159,7 @@ final class AccessibilityElementClient {
     }
 
     func keyboardFocusEvidence() -> KeyboardFocusEvidence {
-        let systemWide = AXUIElementCreateSystemWide()
-
-        let (appResult, appElement) = AccessibilityValueBridge.elementAttributeResult(
-            kAXFocusedApplicationAttribute as CFString,
-            from: systemWide,
-            context: "checkKeyboardFocusEvidence: focused app"
-        )
+        let (appResult, appElement) = focusedApplicationElement(context: "checkKeyboardFocusEvidence: focused app")
 
         guard appResult == .success, let appElement else {
             return .noFocusedApplication(errorCode: appResult.rawValue)
@@ -216,6 +187,28 @@ final class AccessibilityElementClient {
             isEnabled: isEnabled,
             isFocused: hasFocus
         )
+    }
+
+    private func focusedApplicationElement(context: String) -> (AXError, AXUIElement?) {
+        let systemWide = AXUIElementCreateSystemWide()
+        var focusedAppElement: AXUIElement?
+        var appResult: AXError = .failure
+
+        for attempt in AccessibilityReplacementPolicy.focusedApplicationLookupAttempts {
+            (appResult, focusedAppElement) = AccessibilityValueBridge.elementAttributeResult(
+                kAXFocusedApplicationAttribute as CFString,
+                from: systemWide,
+                context: context
+            )
+            if appResult == .success {
+                break
+            }
+            if AccessibilityReplacementPolicy.shouldRetryFocusedApplicationLookup(attempt: attempt) {
+                Thread.sleep(forTimeInterval: AccessibilityReplacementPolicy.focusedApplicationRetryDelay)
+            }
+        }
+
+        return (appResult, focusedAppElement)
     }
 
     private func elementOrDescendantIsPasswordField(_ element: AXUIElement, depth: Int) -> Bool {

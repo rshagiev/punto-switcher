@@ -18,6 +18,11 @@ func runAccessibilityReplacementPolicyTests() throws {
         "AX replacement policy keeps focused application retry delay"
     )
     try expect(
+        AccessibilityReplacementPolicy.focusedApplicationLookupAttempts,
+        [1, 2, 3],
+        "AX replacement policy owns focused application lookup attempt sequence"
+    )
+    try expect(
         AccessibilityReplacementPolicy.shouldAcceptSelectedTextSet(
             setSucceeded: false,
             originalSelectedText: "hello",

@@ -15,6 +15,10 @@ public enum AccessibilityReplacementPolicy {
     public static let focusedApplicationRetryAttempts = 3
     public static let focusedApplicationRetryDelay: TimeInterval = 0.05
 
+    public static var focusedApplicationLookupAttempts: [Int] {
+        Array(1...focusedApplicationRetryAttempts)
+    }
+
     public static func shouldAcceptSelectedTextSet(
         setSucceeded: Bool,
         originalSelectedText: String?,
