@@ -29,7 +29,7 @@ public struct InputSourceSelection: Equatable {
 }
 
 public enum InputSourceSelectionPolicy {
-    public static let undefinedSourceID = "UNDEFINED"
+    public static let legacyUndefinedSourceID = "UNDEFINED"
     public static let legacyEnglishInputSourceIDKey = "englishLayoutID"
     public static let legacyRussianInputSourceIDKey = "russianLayoutID"
     public static let inputSourceEnabledLogPrefix = "inputSourceEnabled:"
@@ -173,7 +173,7 @@ public enum InputSourceSelectionPolicy {
             return nil
         }
 
-        if trimmed.caseInsensitiveCompare(undefinedSourceID) == .orderedSame {
+        if trimmed.caseInsensitiveCompare(legacyUndefinedSourceID) == .orderedSame {
             return nil
         }
 

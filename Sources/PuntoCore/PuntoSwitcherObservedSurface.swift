@@ -107,6 +107,7 @@ public enum PuntoSwitcherObservedSurface {
     }
 
     public enum InputSources {
+        public static let undefinedSourceID = "UNDEFINED"
         public static let inputSourceEnabledSelector = "inputSourceEnabled:"
         public static let handleInputSourcesEnabledSelector = "handleInputSourcesEnabled"
         public static let promptUserToInstallLayoutsSelector = "promptUserToInstallLayouts"

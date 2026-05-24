@@ -230,6 +230,11 @@ func runInputSourceSelectionPolicyTests() throws {
     )
     let missingSelection = InputSourceSelection(englishSourceID: nil, russianSourceID: "com.apple.keylayout.Russian")
     try expect(
+        PuntoSwitcherObservedSurface.InputSources.undefinedSourceID,
+        "UNDEFINED",
+        "input source selection policy preserves observed undefined layout-id sentinel"
+    )
+    try expect(
         PuntoSwitcherObservedSurface.InputSources.inputSourceEnabledSelector,
         "inputSourceEnabled:",
         "input source selection policy preserves observed enabled selector"
@@ -243,6 +248,11 @@ func runInputSourceSelectionPolicyTests() throws {
         PuntoSwitcherObservedSurface.InputSources.promptUserToInstallLayoutsSelector,
         "promptUserToInstallLayouts",
         "input source selection policy preserves observed install-layouts prompt selector"
+    )
+    try expect(
+        InputSourceSelectionPolicy.legacyUndefinedSourceID,
+        PuntoSwitcherObservedSurface.InputSources.undefinedSourceID,
+        "input source selection policy keeps legacy undefined sentinel aligned with reverse-audit anchor"
     )
     try expect(
         InputSourceSelectionPolicy.inputSourceEnabledLogPrefix,

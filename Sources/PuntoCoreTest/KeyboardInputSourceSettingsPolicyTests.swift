@@ -43,6 +43,11 @@ func runKeyboardInputSourceSettingsPolicyTests() throws {
         "settings persistence owns observed Russian input-source id key"
     )
     try expect(
+        InputSourceSelectionPolicy.legacyUndefinedSourceID,
+        "UNDEFINED",
+        "settings persistence owns observed undefined input-source id sentinel as a legacy alias"
+    )
+    try expect(
         KeyboardLayoutTypePolicy.effectiveRussianKeyboardLayoutType(
             hasPersistedValue: true,
             persistedValue: "mac",

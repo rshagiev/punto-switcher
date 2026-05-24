@@ -217,6 +217,7 @@ settings_persistence_role_specific_patterns=(
     "legacyRussianKeyboardLayoutTypeKey"
     "legacyEnglishInputSourceIDKey"
     "legacyRussianInputSourceIDKey"
+    "legacyUndefinedSourceID"
     "legacyLaunchesOnStartupKey"
     "legacySwitchLayoutOnSelectedTextSwitchKey"
     "legacyIsManualConversionDisabledKey"
@@ -950,6 +951,12 @@ if violations:
 
 print("PASS SettingsManager has no native-owned legacy key writes")
 PY
+
+if rg --fixed-strings --quiet "public static let undefinedSourceID" Sources/PuntoCore/InputSourceSelectionPolicy.swift; then
+    echo "legacy boundary failed: InputSourceSelectionPolicy uses neutral naming for Punto Switcher UNDEFINED sentinel" >&2
+    exit 1
+fi
+echo "PASS InputSourceSelectionPolicy names Punto Switcher UNDEFINED as legacy sentinel"
 
 behavior_policy_observed_surface_files=(
     Sources/PuntoCore/AccessibilityPreferencesPolicy.swift \
