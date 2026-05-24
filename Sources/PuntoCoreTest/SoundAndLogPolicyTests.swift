@@ -13,6 +13,38 @@ func runSoundFeedbackPolicyTests() throws {
         "sound feedback enables every resource by default"
     )
     try expect(
+        SoundFeedbackPolicy.displayRows,
+        [
+            [
+                SoundResourceDisplayItem(title: "Replace", resourceName: "replace"),
+                SoundResourceDisplayItem(title: "Reverse", resourceName: "reverse")
+            ],
+            [
+                SoundResourceDisplayItem(title: "Misprint", resourceName: "misprint"),
+                SoundResourceDisplayItem(title: "Switch", resourceName: "switch")
+            ],
+            [
+                SoundResourceDisplayItem(title: "English", resourceName: "en"),
+                SoundResourceDisplayItem(title: "Russian", resourceName: "ru")
+            ],
+            [
+                SoundResourceDisplayItem(title: "Typed EN", resourceName: "typeeng"),
+                SoundResourceDisplayItem(title: "Typed RU", resourceName: "typerus")
+            ]
+        ],
+        "sound feedback owns settings UI display rows for bundled resources"
+    )
+    try expect(
+        Set(SoundFeedbackPolicy.displayOrder.map(\.resourceName)),
+        SoundFeedbackPolicy.requiredResourceNames,
+        "sound feedback settings display covers every bundled resource"
+    )
+    try expect(
+        SoundFeedbackPolicy.displayOrder.count,
+        SoundFeedbackPolicy.requiredResourceNames.count,
+        "sound feedback settings display lists every bundled resource exactly once"
+    )
+    try expect(
         Set(SoundFeedbackPolicy.legacyPerResourceToggleKeys),
         [
             "useSoundLayoutSwitchToRussian",
@@ -309,4 +341,3 @@ func runLogRetentionPolicyTests() throws {
         "log retention zero max count deletes all archived logs"
     )
 }
-

@@ -15,6 +15,27 @@ public enum InputSourceSwitchSoundContext: Equatable {
     case rememberedApplicationRestore
 }
 
+public struct SoundResourceDisplayItem: Equatable {
+    public let title: String
+    public let resourceName: String
+
+    public init(title: String, resourceName: String) {
+        self.title = title
+        self.resourceName = resourceName
+    }
+}
+
+public enum SoundFeedbackResourceName {
+    public static let replace = "replace"
+    public static let reverse = "reverse"
+    public static let misprint = "misprint"
+    public static let switchLayout = "switch"
+    public static let english = "en"
+    public static let russian = "ru"
+    public static let typedEnglish = "typeeng"
+    public static let typedRussian = "typerus"
+}
+
 public enum SoundFeedbackPolicy {
     public static let defaultSoundEffectsEnabled = false
     public static let legacyIsSoundOnKey = "isSoundOn"
@@ -38,38 +59,53 @@ public enum SoundFeedbackPolicy {
     ]
 
     public static let legacyBitmaskResourceOrder = [
-        "replace",
-        "reverse",
-        "misprint",
-        "switch",
-        "en",
-        "ru",
-        "typeeng",
-        "typerus"
+        SoundFeedbackResourceName.replace,
+        SoundFeedbackResourceName.reverse,
+        SoundFeedbackResourceName.misprint,
+        SoundFeedbackResourceName.switchLayout,
+        SoundFeedbackResourceName.english,
+        SoundFeedbackResourceName.russian,
+        SoundFeedbackResourceName.typedEnglish,
+        SoundFeedbackResourceName.typedRussian
     ]
 
     public static let legacyToggleResourceNamesByKey: [String: Set<String>] = [
-        legacyUseSoundLayoutSwitchToRussianKey: ["ru"],
-        legacyUseSoundLayoutSwitchToEnglishKey: ["en"],
-        legacyUseSoundConvertationKey: ["replace"],
-        legacyUseSoundMisprintKey: ["misprint"],
-        legacyUseSoundAutocorrectionKey: ["misprint"],
-        legacyUseSoundUndoKey: ["reverse"],
-        legacyUseSoundKeystrokesKey: ["typeeng", "typerus"]
+        legacyUseSoundLayoutSwitchToRussianKey: [SoundFeedbackResourceName.russian],
+        legacyUseSoundLayoutSwitchToEnglishKey: [SoundFeedbackResourceName.english],
+        legacyUseSoundConvertationKey: [SoundFeedbackResourceName.replace],
+        legacyUseSoundMisprintKey: [SoundFeedbackResourceName.misprint],
+        legacyUseSoundAutocorrectionKey: [SoundFeedbackResourceName.misprint],
+        legacyUseSoundUndoKey: [SoundFeedbackResourceName.reverse],
+        legacyUseSoundKeystrokesKey: [
+            SoundFeedbackResourceName.typedEnglish,
+            SoundFeedbackResourceName.typedRussian
+        ]
     ]
 
-    public static let requiredResourceNames: Set<String> = [
-        "replace",
-        "reverse",
-        "misprint",
-        "switch",
-        "en",
-        "ru",
-        "typeeng",
-        "typerus"
-    ]
+    public static let requiredResourceNames = Set(legacyBitmaskResourceOrder)
 
     public static let defaultEnabledResourceNames = requiredResourceNames
+
+    public static let displayRows: [[SoundResourceDisplayItem]] = [
+        [
+            SoundResourceDisplayItem(title: "Replace", resourceName: SoundFeedbackResourceName.replace),
+            SoundResourceDisplayItem(title: "Reverse", resourceName: SoundFeedbackResourceName.reverse)
+        ],
+        [
+            SoundResourceDisplayItem(title: "Misprint", resourceName: SoundFeedbackResourceName.misprint),
+            SoundResourceDisplayItem(title: "Switch", resourceName: SoundFeedbackResourceName.switchLayout)
+        ],
+        [
+            SoundResourceDisplayItem(title: "English", resourceName: SoundFeedbackResourceName.english),
+            SoundResourceDisplayItem(title: "Russian", resourceName: SoundFeedbackResourceName.russian)
+        ],
+        [
+            SoundResourceDisplayItem(title: "Typed EN", resourceName: SoundFeedbackResourceName.typedEnglish),
+            SoundResourceDisplayItem(title: "Typed RU", resourceName: SoundFeedbackResourceName.typedRussian)
+        ]
+    ]
+
+    public static let displayOrder = displayRows.flatMap { $0 }
 
     public static func normalizedEnabledResourceNames(_ names: Set<String>) -> Set<String> {
         names.intersection(requiredResourceNames)
@@ -164,28 +200,28 @@ public enum SoundFeedbackPolicy {
         let resourceName: String?
         switch event {
         case .layoutConversion:
-            resourceName = "replace"
+            resourceName = SoundFeedbackResourceName.replace
         case .undo:
-            resourceName = "reverse"
+            resourceName = SoundFeedbackResourceName.reverse
         case .toggleCase:
-            resourceName = "replace"
+            resourceName = SoundFeedbackResourceName.replace
         case .autoCorrection:
-            resourceName = "misprint"
+            resourceName = SoundFeedbackResourceName.misprint
         case .inputSourceSwitch(let layout):
             switch layout {
             case .english:
-                resourceName = "en"
+                resourceName = SoundFeedbackResourceName.english
             case .russian:
-                resourceName = "ru"
+                resourceName = SoundFeedbackResourceName.russian
             case .mixed, .unknown:
-                resourceName = "switch"
+                resourceName = SoundFeedbackResourceName.switchLayout
             }
         case .typedText(let layout):
             switch layout {
             case .english:
-                resourceName = "typeeng"
+                resourceName = SoundFeedbackResourceName.typedEnglish
             case .russian:
-                resourceName = "typerus"
+                resourceName = SoundFeedbackResourceName.typedRussian
             case .mixed, .unknown:
                 resourceName = nil
             }

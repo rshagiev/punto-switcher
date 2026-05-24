@@ -212,19 +212,12 @@ final class GeneralSettingsController: NSObject {
     }
 
     private func createSoundResourceTogglesGrid() -> NSView {
-        let rows: [[(title: String, resourceName: String)]] = [
-            [("Replace", "replace"), ("Reverse", "reverse")],
-            [("Misprint", "misprint"), ("Switch", "switch")],
-            [("English", "en"), ("Russian", "ru")],
-            [("Typed EN", "typeeng"), ("Typed RU", "typerus")]
-        ]
-
         let grid = NSGridView(numberOfColumns: 2, rows: 0)
         grid.rowSpacing = 4
         grid.columnSpacing = 18
         grid.translatesAutoresizingMaskIntoConstraints = false
 
-        for row in rows {
+        for row in SoundFeedbackPolicy.displayRows {
             grid.addRow(with: row.map { item in
                 let checkbox = NSButton(
                     checkboxWithTitle: item.title,
