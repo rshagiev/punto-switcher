@@ -123,10 +123,21 @@ public enum PuntoSwitcherObservedSurface {
     }
 
     public enum ProductStatistics {
+        public static let dayuseSettingsKey = "PSDayuseSettings"
+        public static let dayuseTypedWordsKey = "TypedWords"
+        public static let dayuseTypedSymbolsKey = "TypedSymbols"
+        public static let dayuseAutoSwitchesKey = "AutoSwitches"
+        public static let dayuseManualSwitchesKey = "ManualSwitches"
+        public static let dayuseRevertsKey = "Reverts"
+        public static let dayuseLastDayuseDateKey = "LastDayuseDate"
+        public static let dayuseLastProductStatDateKey = "LastProductStatDate"
         public static let dayuseStatClassName = "PSDayuseStat"
         public static let setDayuseSelector = "setDayuse:"
         public static let typedWordsAccessor = "typedWords"
         public static let typedSymbolsAccessor = "typedSymbols"
+        public static let automaticSwitchesAccessor = "automaticSwitches"
+        public static let manualSwitchesAccessor = "manualSwitches"
+        public static let revertsAccessor = "reverts"
         public static let lastDayuseDateAccessor = "lastDayuseDate"
         public static let lastProductStatDateAccessor = "lastProductStatDate"
         public static let setTypedWordsSelector = "setTypedWords:"
@@ -150,6 +161,16 @@ public enum PuntoSwitcherObservedSurface {
         public static let setIsClickSearchSelector = "setIsClickSearch:"
     }
 
+    public enum SearchbarSettings {
+        public static let settingsKey = "PSSearchbarSettings"
+        public static let activationShortcutKey = "ActivationShortcut"
+        public static let autoactivationKey = "Autoactivation"
+        public static let autoactivationExceptionsKey = "AutoactivationExceptions"
+        public static let alertShownInKey = "AlertShownIn"
+        public static let shouldSearchByDoubleClickKey = "ShouldSearchByDoubleClick"
+        public static let sitesearchPromptCounterKey = "SitesearchPromptCounter"
+    }
+
     public enum SecureInputDiagnostics {
         public static let plistFilename = "punto.SecureInput.plist"
         public static let secureInputStateKey = "SecureInputState"
@@ -170,6 +191,19 @@ public enum PuntoSwitcherObservedSurface {
         public static let setDisabledAppsPreferencesControllerSelector = "setDisabledAppsPreferencesController:"
         public static let setDontAutoconvertWithEnterOrTabSelector = "setDontAutoconvertWithEnterOrTab:"
         public static let dontAutoconvertWordAfterConvertionSelector = "dontAutoconvertWordAfterConvertion:"
+    }
+
+    public enum ApplicationUpdateSettings {
+        public static let configVersionKey = "configVersion"
+        public static let isFirstInstallationKey = "isFirstInstallation"
+        public static let isJustInstalledKey = "isJustInstalled"
+        public static let isJustUpdatedKey = "isJustUpdated"
+        public static let isUpdatingKey = "isUpdating"
+        public static let shouldCheckForUpdatesAutomaticallyKey = "shouldCheckForUpdatesAutomatically"
+        public static let updateRequestRateInDaysKey = "updateRequestRateInDays"
+        public static let lastStatisticsRequestDateKey = "lastStatisticsRequestDate"
+        public static let lastUpdateRequestDateKey = "lastUpdateRequestDate"
+        public static let lastUpdateShownDateKey = "lastUpdateShownDate"
     }
 
     public enum SoundFeedback {

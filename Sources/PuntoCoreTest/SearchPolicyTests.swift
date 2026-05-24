@@ -280,23 +280,23 @@ func runSearchbarSettingsPolicyTests() throws {
 
     try expect(
         SearchbarSettingsPolicy.snapshot(from: [
-            SearchbarSettingsPolicy.activationShortcutKey: [
+            SearchbarSettingsPolicy.legacyActivationShortcutKey: [
                 LegacyHotkeyPolicy.keyCodeKey: NSNumber(value: 6),
                 LegacyHotkeyPolicy.commandKey: NSNumber(value: true),
                 LegacyHotkeyPolicy.optionKey: NSNumber(value: false),
                 LegacyHotkeyPolicy.shiftKey: NSNumber(value: true),
                 LegacyHotkeyPolicy.controlKey: NSNumber(value: false)
             ],
-            SearchbarSettingsPolicy.autoactivationKey: NSNumber(value: false),
-            SearchbarSettingsPolicy.autoactivationExceptionsKey: [
+            SearchbarSettingsPolicy.legacyAutoactivationKey: NSNumber(value: false),
+            SearchbarSettingsPolicy.legacyAutoactivationExceptionsKey: [
                 " COM.Example.App ",
                 "",
                 "com.example.app",
                 "org.example.Editor"
             ],
-            SearchbarSettingsPolicy.alertShownInKey: NSNumber(value: 1_230_757_260),
-            SearchbarSettingsPolicy.shouldSearchByDoubleClickKey: NSNumber(value: true),
-            SearchbarSettingsPolicy.sitesearchPromptCounterKey: NSNumber(value: 7)
+            SearchbarSettingsPolicy.legacyAlertShownInKey: NSNumber(value: 1_230_757_260),
+            SearchbarSettingsPolicy.legacyShouldSearchByDoubleClickKey: NSNumber(value: true),
+            SearchbarSettingsPolicy.legacySitesearchPromptCounterKey: NSNumber(value: 7)
         ]),
         SearchbarSettingsSnapshot(
             activationShortcut: Hotkey(keyCode: 6, command: true, option: false, shift: true, control: false),
@@ -311,17 +311,17 @@ func runSearchbarSettingsPolicyTests() throws {
 
     try expect(
         SearchbarSettingsPolicy.snapshot(from: [
-            SearchbarSettingsPolicy.activationShortcutKey: [
+            SearchbarSettingsPolicy.legacyActivationShortcutKey: [
                 LegacyHotkeyPolicy.keyCodeKey: LegacyHotkeyPolicy.noKeyCode,
                 LegacyHotkeyPolicy.commandKey: true,
                 LegacyHotkeyPolicy.optionKey: true,
                 LegacyHotkeyPolicy.shiftKey: false,
                 LegacyHotkeyPolicy.controlKey: false
             ],
-            SearchbarSettingsPolicy.autoactivationKey: "yes",
-            SearchbarSettingsPolicy.alertShownInKey: "2009-01-01 00:00:00 +0300",
-            SearchbarSettingsPolicy.shouldSearchByDoubleClickKey: "0",
-            SearchbarSettingsPolicy.sitesearchPromptCounterKey: " 4 "
+            SearchbarSettingsPolicy.legacyAutoactivationKey: "yes",
+            SearchbarSettingsPolicy.legacyAlertShownInKey: "2009-01-01 00:00:00 +0300",
+            SearchbarSettingsPolicy.legacyShouldSearchByDoubleClickKey: "0",
+            SearchbarSettingsPolicy.legacySitesearchPromptCounterKey: " 4 "
         ]),
         SearchbarSettingsSnapshot(
             activationShortcut: Hotkey(
@@ -341,7 +341,7 @@ func runSearchbarSettingsPolicyTests() throws {
 
     try expect(
         SearchbarSettingsPolicy.snapshot(from: [
-            SearchbarSettingsPolicy.sitesearchPromptCounterKey: -2
+            SearchbarSettingsPolicy.legacySitesearchPromptCounterKey: -2
         ]),
         SearchbarSettingsSnapshot(
             activationShortcut: Hotkey.disabled,

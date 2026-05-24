@@ -20,12 +20,12 @@ func runAutoCorrectionRuleSourcePolicyTests() throws {
         "observed surface pins Punto Switcher old-rules accessor"
     )
     try expect(
-        AutoCorrectionRuleSourcePolicy.useOldRulesDefaultConfPath,
+        AutoCorrectionRuleSourcePolicy.legacyUseOldRulesDefaultConfPath,
         PuntoSwitcherObservedSurface.AutoCorrectionRuleSource.useOldRulesDefaultConfPath,
         "rule source policy keeps default-conf old-rules path aligned with reverse-audit anchor"
     )
     try expect(
-        AutoCorrectionRuleSourcePolicy.useOldRulesAccessor,
+        AutoCorrectionRuleSourcePolicy.legacyUseOldRulesAccessor,
         PuntoSwitcherObservedSurface.AutoCorrectionRuleSource.useOldRulesAccessor,
         "rule source policy keeps old-rules accessor aligned with reverse-audit anchor"
     )
@@ -121,4 +121,3 @@ func runAutoCorrectionRuleSourcePolicyTests() throws {
         "rule source policy falls back to starter catalog for unreadable persisted rules"
     )
 }
-

@@ -3,52 +3,52 @@ import PuntoCore
 
 func runApplicationUpdateSettingsPolicyTests() throws {
     try expect(
-        ApplicationUpdateSettingsPolicy.configVersionKey,
+        ApplicationUpdateSettingsPolicy.legacyConfigVersionKey,
         "configVersion",
         "update settings policy preserves observed config-version key"
     )
     try expect(
-        ApplicationUpdateSettingsPolicy.isFirstInstallationKey,
+        ApplicationUpdateSettingsPolicy.legacyIsFirstInstallationKey,
         "isFirstInstallation",
         "update settings policy preserves observed first-install key"
     )
     try expect(
-        ApplicationUpdateSettingsPolicy.isJustInstalledKey,
+        ApplicationUpdateSettingsPolicy.legacyIsJustInstalledKey,
         "isJustInstalled",
         "update settings policy preserves observed just-installed key"
     )
     try expect(
-        ApplicationUpdateSettingsPolicy.isJustUpdatedKey,
+        ApplicationUpdateSettingsPolicy.legacyIsJustUpdatedKey,
         "isJustUpdated",
         "update settings policy preserves observed just-updated key"
     )
     try expect(
-        ApplicationUpdateSettingsPolicy.isUpdatingKey,
+        ApplicationUpdateSettingsPolicy.legacyIsUpdatingKey,
         "isUpdating",
         "update settings policy preserves observed updating key"
     )
     try expect(
-        ApplicationUpdateSettingsPolicy.shouldCheckForUpdatesAutomaticallyKey,
+        ApplicationUpdateSettingsPolicy.legacyShouldCheckForUpdatesAutomaticallyKey,
         "shouldCheckForUpdatesAutomatically",
         "update settings policy preserves observed automatic-update-check key"
     )
     try expect(
-        ApplicationUpdateSettingsPolicy.updateRequestRateInDaysKey,
+        ApplicationUpdateSettingsPolicy.legacyUpdateRequestRateInDaysKey,
         "updateRequestRateInDays",
         "update settings policy preserves observed update-request-rate key"
     )
     try expect(
-        ApplicationUpdateSettingsPolicy.lastStatisticsRequestDateKey,
+        ApplicationUpdateSettingsPolicy.legacyLastStatisticsRequestDateKey,
         "lastStatisticsRequestDate",
         "update settings policy preserves observed statistics-request date key"
     )
     try expect(
-        ApplicationUpdateSettingsPolicy.lastUpdateRequestDateKey,
+        ApplicationUpdateSettingsPolicy.legacyLastUpdateRequestDateKey,
         "lastUpdateRequestDate",
         "update settings policy preserves observed update-request date key"
     )
     try expect(
-        ApplicationUpdateSettingsPolicy.lastUpdateShownDateKey,
+        ApplicationUpdateSettingsPolicy.legacyLastUpdateShownDateKey,
         "lastUpdateShownDate",
         "update settings policy preserves observed update-shown date key"
     )
@@ -79,15 +79,15 @@ func runApplicationUpdateSettingsPolicyTests() throws {
     )
     try expect(
         ApplicationUpdateSettingsPolicy.snapshot(from: [
-            ApplicationUpdateSettingsPolicy.configVersionKey: NSNumber(value: 8),
-            ApplicationUpdateSettingsPolicy.isFirstInstallationKey: NSNumber(value: true),
-            ApplicationUpdateSettingsPolicy.isJustInstalledKey: NSNumber(value: false),
-            ApplicationUpdateSettingsPolicy.isJustUpdatedKey: NSNumber(value: false),
-            ApplicationUpdateSettingsPolicy.isUpdatingKey: NSNumber(value: false),
-            ApplicationUpdateSettingsPolicy.shouldCheckForUpdatesAutomaticallyKey: NSNumber(value: true),
-            ApplicationUpdateSettingsPolicy.updateRequestRateInDaysKey: NSNumber(value: 0),
-            ApplicationUpdateSettingsPolicy.lastStatisticsRequestDateKey: "2008-12-31 21:00:00 +0000",
-            ApplicationUpdateSettingsPolicy.lastUpdateShownDateKey: "2008-12-31 21:00:00 +0000"
+            ApplicationUpdateSettingsPolicy.legacyConfigVersionKey: NSNumber(value: 8),
+            ApplicationUpdateSettingsPolicy.legacyIsFirstInstallationKey: NSNumber(value: true),
+            ApplicationUpdateSettingsPolicy.legacyIsJustInstalledKey: NSNumber(value: false),
+            ApplicationUpdateSettingsPolicy.legacyIsJustUpdatedKey: NSNumber(value: false),
+            ApplicationUpdateSettingsPolicy.legacyIsUpdatingKey: NSNumber(value: false),
+            ApplicationUpdateSettingsPolicy.legacyShouldCheckForUpdatesAutomaticallyKey: NSNumber(value: true),
+            ApplicationUpdateSettingsPolicy.legacyUpdateRequestRateInDaysKey: NSNumber(value: 0),
+            ApplicationUpdateSettingsPolicy.legacyLastStatisticsRequestDateKey: "2008-12-31 21:00:00 +0000",
+            ApplicationUpdateSettingsPolicy.legacyLastUpdateShownDateKey: "2008-12-31 21:00:00 +0000"
         ]),
         ApplicationUpdateSettingsPolicy.defaultSnapshot,
         "update settings policy reads observed Punto Switcher updater/install state"
@@ -95,16 +95,16 @@ func runApplicationUpdateSettingsPolicyTests() throws {
 
     let updateRequestDate = Date(timeIntervalSince1970: 1_768_132_509)
     let snapshot = ApplicationUpdateSettingsPolicy.snapshot(from: [
-        ApplicationUpdateSettingsPolicy.configVersionKey: "9",
-        ApplicationUpdateSettingsPolicy.isFirstInstallationKey: "0",
-        ApplicationUpdateSettingsPolicy.isJustInstalledKey: "yes",
-        ApplicationUpdateSettingsPolicy.isJustUpdatedKey: NSNumber(value: true),
-        ApplicationUpdateSettingsPolicy.isUpdatingKey: "false",
-        ApplicationUpdateSettingsPolicy.shouldCheckForUpdatesAutomaticallyKey: "no",
-        ApplicationUpdateSettingsPolicy.updateRequestRateInDaysKey: " 14 ",
-        ApplicationUpdateSettingsPolicy.lastStatisticsRequestDateKey: ApplicationUpdateSettingsPolicy.legacyInitialDate,
-        ApplicationUpdateSettingsPolicy.lastUpdateRequestDateKey: updateRequestDate.timeIntervalSince1970,
-        ApplicationUpdateSettingsPolicy.lastUpdateShownDateKey: "2008-12-31 21:00:00 +0000"
+        ApplicationUpdateSettingsPolicy.legacyConfigVersionKey: "9",
+        ApplicationUpdateSettingsPolicy.legacyIsFirstInstallationKey: "0",
+        ApplicationUpdateSettingsPolicy.legacyIsJustInstalledKey: "yes",
+        ApplicationUpdateSettingsPolicy.legacyIsJustUpdatedKey: NSNumber(value: true),
+        ApplicationUpdateSettingsPolicy.legacyIsUpdatingKey: "false",
+        ApplicationUpdateSettingsPolicy.legacyShouldCheckForUpdatesAutomaticallyKey: "no",
+        ApplicationUpdateSettingsPolicy.legacyUpdateRequestRateInDaysKey: " 14 ",
+        ApplicationUpdateSettingsPolicy.legacyLastStatisticsRequestDateKey: ApplicationUpdateSettingsPolicy.legacyInitialDate,
+        ApplicationUpdateSettingsPolicy.legacyLastUpdateRequestDateKey: updateRequestDate.timeIntervalSince1970,
+        ApplicationUpdateSettingsPolicy.legacyLastUpdateShownDateKey: "2008-12-31 21:00:00 +0000"
     ])
     try expect(snapshot.configVersion, 9, "update settings policy parses string config version")
     try expect(snapshot.isFirstInstallation, false, "update settings policy parses string first-install flag")
@@ -116,8 +116,8 @@ func runApplicationUpdateSettingsPolicyTests() throws {
     try expect(snapshot.lastUpdateRequestDate, updateRequestDate, "update settings policy parses numeric date")
 
     let clamped = ApplicationUpdateSettingsPolicy.snapshot(from: [
-        ApplicationUpdateSettingsPolicy.configVersionKey: -1,
-        ApplicationUpdateSettingsPolicy.updateRequestRateInDaysKey: -7
+        ApplicationUpdateSettingsPolicy.legacyConfigVersionKey: -1,
+        ApplicationUpdateSettingsPolicy.legacyUpdateRequestRateInDaysKey: -7
     ])
     try expect(clamped.configVersion, 0, "update settings policy clamps negative config version")
     try expect(clamped.updateRequestRateInDays, 0, "update settings policy clamps negative update request rate")

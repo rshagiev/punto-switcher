@@ -31,13 +31,13 @@ public struct SearchbarSettingsSnapshot: Codable, Equatable {
 }
 
 public enum SearchbarSettingsPolicy {
-    public static let settingsKey = "PSSearchbarSettings"
-    public static let activationShortcutKey = "ActivationShortcut"
-    public static let autoactivationKey = "Autoactivation"
-    public static let autoactivationExceptionsKey = "AutoactivationExceptions"
-    public static let alertShownInKey = "AlertShownIn"
-    public static let shouldSearchByDoubleClickKey = "ShouldSearchByDoubleClick"
-    public static let sitesearchPromptCounterKey = "SitesearchPromptCounter"
+    public static let legacySettingsKey = "PSSearchbarSettings"
+    public static let legacyActivationShortcutKey = "ActivationShortcut"
+    public static let legacyAutoactivationKey = "Autoactivation"
+    public static let legacyAutoactivationExceptionsKey = "AutoactivationExceptions"
+    public static let legacyAlertShownInKey = "AlertShownIn"
+    public static let legacyShouldSearchByDoubleClickKey = "ShouldSearchByDoubleClick"
+    public static let legacySitesearchPromptCounterKey = "SitesearchPromptCounter"
 
     public static let defaultActivationShortcut = Hotkey.disabled
     public static let legacyInitialDate = Date(timeIntervalSince1970: 1_230_757_200)
@@ -74,27 +74,27 @@ public enum SearchbarSettingsPolicy {
 
         return SearchbarSettingsSnapshot(
             activationShortcut: LegacyHotkeyPolicy.normalized(
-                dictionary[activationShortcutKey] as? [String: Any],
+                dictionary[legacyActivationShortcutKey] as? [String: Any],
                 fallback: defaultSnapshot.activationShortcut
             ),
             shouldOfferSearchbarAutoactivation: LegacyValuePolicy.bool(
-                dictionary[autoactivationKey],
+                dictionary[legacyAutoactivationKey],
                 defaultValue: defaultSnapshot.shouldOfferSearchbarAutoactivation
             ),
             autoactivationExceptions: LegacyValuePolicy.normalizedStringArray(
-                dictionary[autoactivationExceptionsKey]
+                dictionary[legacyAutoactivationExceptionsKey]
             ),
             alertShownIn: LegacyValuePolicy.date(
-                dictionary[alertShownInKey],
+                dictionary[legacyAlertShownInKey],
                 defaultValue: defaultSnapshot.alertShownIn,
                 allowNumericString: true
             ),
             shouldSearchByDoubleClick: LegacyValuePolicy.bool(
-                dictionary[shouldSearchByDoubleClickKey],
+                dictionary[legacyShouldSearchByDoubleClickKey],
                 defaultValue: defaultSnapshot.shouldSearchByDoubleClick
             ),
             sitesearchPromptCounter: LegacyValuePolicy.nonNegativeInt(
-                dictionary[sitesearchPromptCounterKey],
+                dictionary[legacySitesearchPromptCounterKey],
                 defaultValue: defaultSnapshot.sitesearchPromptCounter
             )
         )

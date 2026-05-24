@@ -38,16 +38,16 @@ public struct ApplicationUpdateSettingsSnapshot: Codable, Equatable {
 }
 
 public enum ApplicationUpdateSettingsPolicy {
-    public static let configVersionKey = "configVersion"
-    public static let isFirstInstallationKey = "isFirstInstallation"
-    public static let isJustInstalledKey = "isJustInstalled"
-    public static let isJustUpdatedKey = "isJustUpdated"
-    public static let isUpdatingKey = "isUpdating"
-    public static let shouldCheckForUpdatesAutomaticallyKey = "shouldCheckForUpdatesAutomatically"
-    public static let updateRequestRateInDaysKey = "updateRequestRateInDays"
-    public static let lastStatisticsRequestDateKey = "lastStatisticsRequestDate"
-    public static let lastUpdateRequestDateKey = "lastUpdateRequestDate"
-    public static let lastUpdateShownDateKey = "lastUpdateShownDate"
+    public static let legacyConfigVersionKey = "configVersion"
+    public static let legacyIsFirstInstallationKey = "isFirstInstallation"
+    public static let legacyIsJustInstalledKey = "isJustInstalled"
+    public static let legacyIsJustUpdatedKey = "isJustUpdated"
+    public static let legacyIsUpdatingKey = "isUpdating"
+    public static let legacyShouldCheckForUpdatesAutomaticallyKey = "shouldCheckForUpdatesAutomatically"
+    public static let legacyUpdateRequestRateInDaysKey = "updateRequestRateInDays"
+    public static let legacyLastStatisticsRequestDateKey = "lastStatisticsRequestDate"
+    public static let legacyLastUpdateRequestDateKey = "lastUpdateRequestDate"
+    public static let legacyLastUpdateShownDateKey = "lastUpdateShownDate"
 
     public static let legacyDefaultConfigVersion = 8
     public static let legacyInitialDate = Date(timeIntervalSince1970: 1_230_757_200)
@@ -68,38 +68,38 @@ public enum ApplicationUpdateSettingsPolicy {
     public static func snapshot(from dictionary: [String: Any]) -> ApplicationUpdateSettingsSnapshot {
         ApplicationUpdateSettingsSnapshot(
             configVersion: LegacyValuePolicy.nonNegativeInt(
-                dictionary[configVersionKey],
+                dictionary[legacyConfigVersionKey],
                 defaultValue: defaultSnapshot.configVersion
             ),
             isFirstInstallation: LegacyValuePolicy.bool(
-                dictionary[isFirstInstallationKey],
+                dictionary[legacyIsFirstInstallationKey],
                 defaultValue: defaultSnapshot.isFirstInstallation
             ),
             isJustInstalled: LegacyValuePolicy.bool(
-                dictionary[isJustInstalledKey],
+                dictionary[legacyIsJustInstalledKey],
                 defaultValue: defaultSnapshot.isJustInstalled
             ),
             isJustUpdated: LegacyValuePolicy.bool(
-                dictionary[isJustUpdatedKey],
+                dictionary[legacyIsJustUpdatedKey],
                 defaultValue: defaultSnapshot.isJustUpdated
             ),
             isUpdating: LegacyValuePolicy.bool(
-                dictionary[isUpdatingKey],
+                dictionary[legacyIsUpdatingKey],
                 defaultValue: defaultSnapshot.isUpdating
             ),
             shouldCheckForUpdatesAutomatically: LegacyValuePolicy.bool(
-                dictionary[shouldCheckForUpdatesAutomaticallyKey],
+                dictionary[legacyShouldCheckForUpdatesAutomaticallyKey],
                 defaultValue: defaultSnapshot.shouldCheckForUpdatesAutomatically
             ),
             updateRequestRateInDays: LegacyValuePolicy.nonNegativeInt(
-                dictionary[updateRequestRateInDaysKey],
+                dictionary[legacyUpdateRequestRateInDaysKey],
                 defaultValue: defaultSnapshot.updateRequestRateInDays
             ),
-            lastStatisticsRequestDate: LegacyValuePolicy.date(dictionary[lastStatisticsRequestDateKey])
+            lastStatisticsRequestDate: LegacyValuePolicy.date(dictionary[legacyLastStatisticsRequestDateKey])
                 ?? defaultSnapshot.lastStatisticsRequestDate,
-            lastUpdateRequestDate: LegacyValuePolicy.date(dictionary[lastUpdateRequestDateKey])
+            lastUpdateRequestDate: LegacyValuePolicy.date(dictionary[legacyLastUpdateRequestDateKey])
                 ?? defaultSnapshot.lastUpdateRequestDate,
-            lastUpdateShownDate: LegacyValuePolicy.date(dictionary[lastUpdateShownDateKey])
+            lastUpdateShownDate: LegacyValuePolicy.date(dictionary[legacyLastUpdateShownDateKey])
                 ?? defaultSnapshot.lastUpdateShownDate
         )
     }

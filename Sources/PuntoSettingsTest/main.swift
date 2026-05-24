@@ -45,8 +45,8 @@ final class DefaultsFixture {
 func runSearchbarImportTests() throws {
     let fixture = try DefaultsFixture("searchbar")
     fixture.defaults.set([
-        SearchbarSettingsPolicy.shouldSearchByDoubleClickKey: true
-    ], forKey: SearchbarSettingsPolicy.settingsKey)
+        SearchbarSettingsPolicy.legacyShouldSearchByDoubleClickKey: true
+    ], forKey: SearchbarSettingsPolicy.legacySettingsKey)
 
     var settings = fixture.manager()
     try expect(settings.searchSelectedTextByDoubleClick, "settings manager imports legacy double-click search")
@@ -55,8 +55,8 @@ func runSearchbarImportTests() throws {
     settings = fixture.manager()
     try expect(!settings.searchSelectedTextByDoubleClick, "settings manager prefers native double-click search")
     try expect(
-        (fixture.defaults.dictionary(forKey: SearchbarSettingsPolicy.settingsKey)?[
-            SearchbarSettingsPolicy.shouldSearchByDoubleClickKey
+        (fixture.defaults.dictionary(forKey: SearchbarSettingsPolicy.legacySettingsKey)?[
+            SearchbarSettingsPolicy.legacyShouldSearchByDoubleClickKey
         ] as? Bool) == true,
         "settings manager keeps legacy searchbar dictionary read-only"
     )
@@ -153,8 +153,8 @@ func runStatisticsImportTests() throws {
 
 func runUpdateImportTests() throws {
     let fixture = try DefaultsFixture("update")
-    fixture.defaults.set(12, forKey: ApplicationUpdateSettingsPolicy.configVersionKey)
-    fixture.defaults.set(true, forKey: ApplicationUpdateSettingsPolicy.isJustUpdatedKey)
+    fixture.defaults.set(12, forKey: ApplicationUpdateSettingsPolicy.legacyConfigVersionKey)
+    fixture.defaults.set(true, forKey: ApplicationUpdateSettingsPolicy.legacyIsJustUpdatedKey)
 
     var settings = fixture.manager()
     try expect(settings.applicationUpdateSettings.configVersion == 12, "settings manager imports legacy update config")
@@ -175,7 +175,7 @@ func runUpdateImportTests() throws {
     settings = fixture.manager()
     try expect(settings.applicationUpdateSettings.configVersion == 21, "settings manager prefers native update snapshot")
     try expect(
-        fixture.defaults.integer(forKey: ApplicationUpdateSettingsPolicy.configVersionKey) == 12,
+        fixture.defaults.integer(forKey: ApplicationUpdateSettingsPolicy.legacyConfigVersionKey) == 12,
         "settings manager keeps legacy update config read-only"
     )
 }

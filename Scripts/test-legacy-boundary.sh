@@ -1006,6 +1006,41 @@ if rg -n "observed[A-Za-z0-9]*(BundleID|Role|Roles|Notification|Notifications|Ap
 fi
 echo "PASS runtime accessibility policy constants use native names"
 
+legacy_import_key_name_files=(
+    Sources/PuntoCore/ApplicationUpdateSettingsPolicy.swift
+    Sources/PuntoCore/AutoCorrectionRuleSourcePolicy.swift
+    Sources/PuntoCore/SearchbarSettingsPolicy.swift
+)
+legacy_import_key_generic_names=(
+    "configVersionKey"
+    "isFirstInstallationKey"
+    "isJustInstalledKey"
+    "isJustUpdatedKey"
+    "isUpdatingKey"
+    "shouldCheckForUpdatesAutomaticallyKey"
+    "updateRequestRateInDaysKey"
+    "lastStatisticsRequestDateKey"
+    "lastUpdateRequestDateKey"
+    "lastUpdateShownDateKey"
+    "useOldRulesDefaultConfPath"
+    "useOldRulesAccessor"
+    "settingsKey"
+    "activationShortcutKey"
+    "autoactivationKey"
+    "autoactivationExceptionsKey"
+    "alertShownInKey"
+    "shouldSearchByDoubleClickKey"
+    "sitesearchPromptCounterKey"
+)
+
+for name in "${legacy_import_key_generic_names[@]}"; do
+    if rg --quiet "\\bpublic static let ${name}\\b" "${legacy_import_key_name_files[@]}"; then
+        echo "legacy boundary failed: import-only key lacks legacy prefix: $name" >&2
+        exit 1
+    fi
+    echo "PASS import-only key uses legacy prefix: $name"
+done
+
 if rg -n "PuntoSwitcherObservedSurface" "${behavior_policy_observed_surface_files[@]}"; then
     echo "legacy boundary failed: behavior policy depends directly on reverse-audit-only observed surface" >&2
     exit 1

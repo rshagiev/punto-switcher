@@ -40,7 +40,7 @@ enum SettingsStorageKeys {
 }
 
 enum SettingsImportKeys {
-    static let isFirstInstallation = ApplicationUpdateSettingsPolicy.isFirstInstallationKey
+    static let isFirstInstallation = ApplicationUpdateSettingsPolicy.legacyIsFirstInstallationKey
     static let launchesOnStartup = LoginItemPolicy.legacyLaunchesOnStartupKey
     static let shortcutChangeLayout = LegacyHotkeyPolicy.legacyShortcutChangeLayoutKey
     static let shortcutChangeCase = LegacyHotkeyPolicy.legacyShortcutChangeCaseKey
@@ -48,7 +48,7 @@ enum SettingsImportKeys {
     static let shortcutCancelLayoutChange = LegacyHotkeyPolicy.legacyShortcutCancelLayoutChangeKey
     static let shortcutFindInYandex = LegacyHotkeyPolicy.legacyShortcutFindInYandexKey
     static let shortcutFindInSlovari = LegacyHotkeyPolicy.legacyShortcutFindInSlovariKey
-    static let searchbarSettings = SearchbarSettingsPolicy.settingsKey
+    static let searchbarSettings = SearchbarSettingsPolicy.legacySettingsKey
     static let switchLayoutOnSelectedTextSwitch = LayoutSwitchPolicy.legacySwitchLayoutOnSelectedTextSwitchKey
     static let isManualConversionDisabled = TextActionPreflightPolicy.legacyIsManualConversionDisabledKey
     static let kbdLayoutType = KeyboardLayoutTypePolicy.legacyRussianKeyboardLayoutTypeKey
@@ -59,8 +59,8 @@ enum SettingsImportKeys {
     static let completelyDisableInExceptionApps = ApplicationDisablePolicy.legacyCompletelyDisableInExceptionApplicationsKey
     static let switcherResetOnReturn = ApplicationReturnKeyPolicy.legacyResetOnReturnKey
     static let isAutocorrectionActive = AutoCorrectionPreflightPolicy.legacyIsAutocorrectionActiveKey
-    static let switcherUseOldRulesDefaultConf = AutoCorrectionRuleSourcePolicy.useOldRulesDefaultConfPath
-    static let switcherUseOldRulesAccessor = AutoCorrectionRuleSourcePolicy.useOldRulesAccessor
+    static let switcherUseOldRulesDefaultConf = AutoCorrectionRuleSourcePolicy.legacyUseOldRulesDefaultConfPath
+    static let switcherUseOldRulesAccessor = AutoCorrectionRuleSourcePolicy.legacyUseOldRulesAccessor
     static let shouldNotAutoconvertWithTabOrEnter = AutoCorrectionPreflightPolicy.legacyShouldNotAutoconvertWithTabOrEnterKey
     static let undoLearning = UndoLearningSettingsPolicy.settingsKey
     static let shouldNotAutoconvertAfterConvertion = TextReplacementCommitPolicy.legacyShouldNotAutoconvertAfterConvertionKey
@@ -75,13 +75,13 @@ enum SettingsImportKeys {
     static let manualSwitches = ProductStatisticsPolicy.legacyManualSwitchesKey
     static let reverts = ProductStatisticsPolicy.legacyRevertsKey
     static let dayuseSettings = ProductStatisticsPolicy.dayuseSettingsKey
-    static let configVersion = ApplicationUpdateSettingsPolicy.configVersionKey
-    static let isJustInstalled = ApplicationUpdateSettingsPolicy.isJustInstalledKey
-    static let isJustUpdated = ApplicationUpdateSettingsPolicy.isJustUpdatedKey
-    static let isUpdating = ApplicationUpdateSettingsPolicy.isUpdatingKey
-    static let shouldCheckForUpdatesAutomatically = ApplicationUpdateSettingsPolicy.shouldCheckForUpdatesAutomaticallyKey
-    static let updateRequestRateInDays = ApplicationUpdateSettingsPolicy.updateRequestRateInDaysKey
-    static let lastStatisticsRequestDate = ApplicationUpdateSettingsPolicy.lastStatisticsRequestDateKey
-    static let lastUpdateRequestDate = ApplicationUpdateSettingsPolicy.lastUpdateRequestDateKey
-    static let lastUpdateShownDate = ApplicationUpdateSettingsPolicy.lastUpdateShownDateKey
+    static let configVersion = ApplicationUpdateSettingsPolicy.legacyConfigVersionKey
+    static let isJustInstalled = ApplicationUpdateSettingsPolicy.legacyIsJustInstalledKey
+    static let isJustUpdated = ApplicationUpdateSettingsPolicy.legacyIsJustUpdatedKey
+    static let isUpdating = ApplicationUpdateSettingsPolicy.legacyIsUpdatingKey
+    static let shouldCheckForUpdatesAutomatically = ApplicationUpdateSettingsPolicy.legacyShouldCheckForUpdatesAutomaticallyKey
+    static let updateRequestRateInDays = ApplicationUpdateSettingsPolicy.legacyUpdateRequestRateInDaysKey
+    static let lastStatisticsRequestDate = ApplicationUpdateSettingsPolicy.legacyLastStatisticsRequestDateKey
+    static let lastUpdateRequestDate = ApplicationUpdateSettingsPolicy.legacyLastUpdateRequestDateKey
+    static let lastUpdateShownDate = ApplicationUpdateSettingsPolicy.legacyLastUpdateShownDateKey
 }

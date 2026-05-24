@@ -2,8 +2,8 @@ import Foundation
 
 public enum AutoCorrectionRuleSourcePolicy {
     public static let defaultStarterRulesEnabled = true
-    public static let useOldRulesDefaultConfPath = "switcher.use_old_rules"
-    public static let useOldRulesAccessor = "switcherUseOldRules"
+    public static let legacyUseOldRulesDefaultConfPath = "switcher.use_old_rules"
+    public static let legacyUseOldRulesAccessor = "switcherUseOldRules"
 
     public static func effectiveRules(
         hasPersistedRules: Bool,
