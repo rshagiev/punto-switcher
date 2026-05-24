@@ -136,16 +136,19 @@ test targets create a false green surface; the boundary script now fails if that
 placeholder comes back.
 
 `SettingsManager` now keeps native primary keys and Punto Switcher import aliases
-in separate namespaces inside the importable `PuntoSettings` target. `Keys` is the
-native write surface; `ImportKeys` is read-only import evidence, with the only
-writer exceptions being one-shot consumption of imported first-run/update
-presentation flags. Low-level `UserDefaults` access sits behind
-`SettingsDefaultsStore`, so typed persistence, Codable payloads, injected test
-domains, and persistent-domain checks do not spread through the settings
-composition layer. Native-vs-import resolution sits behind `SettingsValueResolver`,
-so the manager does not rebuild alias precedence, inverted legacy booleans, hotkey
-fallbacks, input-source fallbacks, searchbar snapshots, sound/import toggle scans,
-legacy statistics snapshots, updater snapshots, or imported user-rule merges inline.
+in separate namespaces inside the importable `PuntoSettings` target.
+`SettingsStorageKeys` is the native write surface; `SettingsImportKeys` is
+read-only import evidence, with the only writer exceptions being one-shot
+consumption of imported first-run/update presentation flags. Boolean and hotkey
+slot metadata lives in `SettingsBoolSlotRegistry` and `SettingsHotkeySlotRegistry`,
+so the manager does not rebuild defaults, native keys, or import alias precedence
+inline. Low-level `UserDefaults` access sits behind `SettingsDefaultsStore`, so
+typed persistence, Codable payloads, injected test domains, and persistent-domain
+checks do not spread through the settings composition layer. Native-vs-import
+resolution sits behind `SettingsValueResolver`, so the manager does not rebuild
+alias precedence, inverted legacy booleans, hotkey fallbacks, input-source
+fallbacks, searchbar snapshots, sound/import toggle scans, legacy statistics
+snapshots, updater snapshots, or imported user-rule merges inline.
 `PuntoSettingsTest` now exercises the real manager against isolated `UserDefaults`
 suites, while the boundary script fails if imported aliases leak back into the
 routine key namespace, if routine code starts writing import-only keys again, or if

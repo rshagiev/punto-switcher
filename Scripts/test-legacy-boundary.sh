@@ -481,6 +481,23 @@ for pattern in "${app_delegate_application_runtime_patterns[@]}"; do
     echo "PASS AppDelegate application runtime coordination absent: $pattern"
 done
 
+hotkey_manager_policy_patterns=(
+    "ModifierOnlyHotkeyStateMachine("
+    "PointerEventPolicy.action("
+    "SearchClickPolicy.shouldScheduleSelectedTextSearchAfterClick"
+    "KeyDownEventPolicy.action("
+    "HotkeyRoutingPolicy.action("
+    "keyboardGetUnicodeString"
+)
+
+for pattern in "${hotkey_manager_policy_patterns[@]}"; do
+    if rg --fixed-strings --quiet "$pattern" Sources/PuntoRuntime/HotkeyManager.swift; then
+        echo "legacy boundary failed: HotkeyManager reopened hotkey routing internals: $pattern" >&2
+        exit 1
+    fi
+    echo "PASS HotkeyManager hotkey routing internals absent: $pattern"
+done
+
 app_delegate_key_press_runtime_patterns=(
     "KeyTrackingRuntimePolicy."
     ".trackKeyPress("

@@ -10,16 +10,7 @@ public final class HotkeyManager {
     private var runLoopSource: CFRunLoopSource?
 
     private let settingsManager: SettingsManager
-    private let onConvertLayout: () -> Void
-    private let onToggleCase: () -> Void
-    private let onToggleAutoCorrection: () -> Void
-    private let onCancelLayoutChange: () -> Void
-    private let onFindInYandex: () -> Void
-    private let onFindInSlovari: () -> Void
-    private let onSearchClick: () -> Void
-    private let onClearTrackedText: (String) -> Void
-    private let onKeyPress: (UInt16, String?) -> Void
-    private let isCurrentApplicationDisabled: () -> Bool
+    private let eventRouter: HotkeyEventRouter
 
     private var isRunning = false
 
@@ -38,9 +29,6 @@ public final class HotkeyManager {
         }
     }
 
-    // Track modifier state for modifier-only hotkeys (accessed from event tap thread)
-    private let modifierOnlyStateMachine = ModifierOnlyHotkeyStateMachine()
-
     public init(
         settingsManager: SettingsManager,
         onConvertLayout: @escaping () -> Void,
@@ -55,16 +43,19 @@ public final class HotkeyManager {
         isCurrentApplicationDisabled: @escaping () -> Bool
     ) {
         self.settingsManager = settingsManager
-        self.onConvertLayout = onConvertLayout
-        self.onToggleCase = onToggleCase
-        self.onToggleAutoCorrection = onToggleAutoCorrection
-        self.onCancelLayoutChange = onCancelLayoutChange
-        self.onFindInYandex = onFindInYandex
-        self.onFindInSlovari = onFindInSlovari
-        self.onSearchClick = onSearchClick
-        self.onClearTrackedText = onClearTrackedText
-        self.onKeyPress = onKeyPress
-        self.isCurrentApplicationDisabled = isCurrentApplicationDisabled
+        self.eventRouter = HotkeyEventRouter(
+            settingsManager: settingsManager,
+            onConvertLayout: onConvertLayout,
+            onToggleCase: onToggleCase,
+            onToggleAutoCorrection: onToggleAutoCorrection,
+            onCancelLayoutChange: onCancelLayoutChange,
+            onFindInYandex: onFindInYandex,
+            onFindInSlovari: onFindInSlovari,
+            onSearchClick: onSearchClick,
+            onClearTrackedText: onClearTrackedText,
+            onKeyPress: onKeyPress,
+            isCurrentApplicationDisabled: isCurrentApplicationDisabled
+        )
     }
 
     deinit {
@@ -179,192 +170,6 @@ public final class HotkeyManager {
             break
         }
 
-        switch PointerEventPolicy.action(eventTypeRawValue: type.rawValue) {
-        case .clearTrackedText(let reason):
-            PuntoLog.info("Pointer event detected - will clear tracked text (\(reason))")
-            let clickCount = Int(event.getIntegerValueField(.mouseEventClickState))
-            let shouldSearchClick = SearchClickPolicy.shouldScheduleSelectedTextSearchAfterClick(
-                eventTypeRawValue: type.rawValue,
-                clickCount: clickCount,
-                shouldSearchByDoubleClick: settingsManager.searchSelectedTextByDoubleClick
-            )
-            DispatchQueue.main.async { [weak self] in
-                self?.onClearTrackedText(reason)
-            }
-            if shouldSearchClick {
-                PuntoLog.info("Search click triggered after left double click")
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
-                    self?.onSearchClick()
-                }
-            }
-            return Unmanaged.passUnretained(event)
-        case .ignore:
-            break
-        }
-
-        let flags = event.flags
-        let hasCmd = flags.contains(.maskCommand)
-        let hasOpt = flags.contains(.maskAlternate)
-        let hasShift = flags.contains(.maskShift)
-        let hasControl = flags.contains(.maskControl)
-        let modifierFlags = ModifierFlagsSnapshot(
-            command: hasCmd,
-            option: hasOpt,
-            shift: hasShift,
-            control: hasControl
-        )
-
-        // Handle flagsChanged for modifier-only hotkeys
-        if type == .flagsChanged {
-            let convertHotkey = settingsManager.convertLayoutHotkey
-
-            if modifierOnlyStateMachine.handleFlagsChanged(flags: modifierFlags, hotkey: convertHotkey) {
-                switch HotkeyRoutingPolicy.action(
-                    kind: .modifierOnlyConvertLayout,
-                    isEnabled: settingsManager.isEnabled,
-                    isCurrentApplicationDisabled: isCurrentApplicationDisabled(),
-                    displayString: convertHotkey.displayString
-                ) {
-                case .passThrough(let logMessage):
-                    PuntoLog.info(logMessage)
-                case .handle(let logMessage):
-                    PuntoLog.info(logMessage)
-                    DispatchQueue.main.asyncAfter(deadline: .now() + ModifierOnlyHotkeyStateMachine.actionDelay) { [weak self] in
-                        self?.onConvertLayout()
-                    }
-                }
-            }
-
-            return Unmanaged.passUnretained(event)
-        }
-
-        // Process keyDown events
-        guard type == .keyDown else {
-            return Unmanaged.passUnretained(event)
-        }
-
-        // Any key press cancels modifier-only hotkey detection
-        // This prevents Cmd+V from triggering the hotkey
-        modifierOnlyStateMachine.cancelPendingModifierOnlyChord()
-
-        let keyCode = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
-
-        switch KeyDownEventPolicy.action(
-            keyCode: keyCode,
-            flags: modifierFlags,
-            hotkeyAssignments: settingsManager.hotkeyAssignments
-        ) {
-        case .convertLayoutHotkey:
-            return routeKeyBasedHotkey(kind: .convertLayout, keyCode: keyCode, event: event) { [weak self] in
-                self?.onConvertLayout()
-            }
-
-        case .toggleCaseHotkey:
-            return routeKeyBasedHotkey(kind: .toggleCase, keyCode: keyCode, event: event) { [weak self] in
-                self?.onToggleCase()
-            }
-
-        case .toggleAutoCorrectionHotkey:
-            return routeKeyBasedHotkey(kind: .toggleAutoCorrection, keyCode: keyCode, event: event) { [weak self] in
-                self?.onToggleAutoCorrection()
-            }
-
-        case .cancelLayoutChangeHotkey:
-            return routeKeyBasedHotkey(kind: .cancelLayoutChange, keyCode: keyCode, event: event) { [weak self] in
-                self?.onCancelLayoutChange()
-            }
-
-        case .findInYandexHotkey:
-            return routeKeyBasedHotkey(kind: .findInYandex, keyCode: keyCode, event: event) { [weak self] in
-                self?.onFindInYandex()
-            }
-
-        case .findInSlovariHotkey:
-            return routeKeyBasedHotkey(kind: .findInSlovari, keyCode: keyCode, event: event) { [weak self] in
-                self?.onFindInSlovari()
-            }
-
-        case .clearTrackedText(let reason):
-            PuntoLog.info("\(Self.clearTrackedTextLabel(for: reason)) detected - will clear WordTracker (\(reason))")
-            DispatchQueue.main.async { [weak self] in
-                self?.onClearTrackedText(reason)
-            }
-            return Unmanaged.passUnretained(event)
-
-        case .trackKeyPress:
-            let characters = getCharacters(from: event)
-            PuntoLog.info("KeyDown: keyCode=\(keyCode), chars='\(characters ?? "nil")'")
-            DispatchQueue.main.async { [weak self] in
-                self?.onKeyPress(keyCode, characters)
-            }
-
-        case .ignore:
-            break
-        }
-
-        return Unmanaged.passUnretained(event)
-    }
-
-    private func getCharacters(from event: CGEvent) -> String? {
-        var length = 0
-        event.keyboardGetUnicodeString(maxStringLength: 0, actualStringLength: &length, unicodeString: nil)
-
-        guard length > 0 else { return nil }
-
-        var chars = [UniChar](repeating: 0, count: length)
-        event.keyboardGetUnicodeString(maxStringLength: length, actualStringLength: &length, unicodeString: &chars)
-
-        return String(utf16CodeUnits: chars, count: length)
-    }
-
-    private func scheduleKeyBasedHotkeyAction(_ action: @escaping () -> Void) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + KeyDownEventPolicy.keyBasedHotkeyActionDelay) {
-            action()
-        }
-    }
-
-    private func routeKeyBasedHotkey(
-        kind: HotkeyRoutingKind,
-        keyCode: UInt16,
-        event: CGEvent,
-        action: @escaping () -> Void
-    ) -> Unmanaged<CGEvent>? {
-        switch HotkeyRoutingPolicy.action(
-            kind: kind,
-            isEnabled: settingsManager.isEnabled,
-            isCurrentApplicationDisabled: isCurrentApplicationDisabled(),
-            keyCode: keyCode
-        ) {
-        case .passThrough(let logMessage):
-            PuntoLog.info(logMessage)
-            return Unmanaged.passUnretained(event)
-        case .handle(let logMessage):
-            PuntoLog.info(logMessage)
-            scheduleKeyBasedHotkeyAction(action)
-            return nil
-        }
-    }
-
-    private static func clearTrackedTextLabel(for reason: String) -> String {
-        switch reason {
-        case "paste":
-            return "Cmd+V"
-        case "copy":
-            return "Cmd+C"
-        case "undo":
-            return "Cmd+Z"
-        case "cut":
-            return "Cmd+X"
-        case "selection":
-            return "Cmd+A"
-        case "modified deletion":
-            return "modified deletion"
-        case "modified navigation":
-            return "modified navigation"
-        case "modified shortcut":
-            return "modified shortcut"
-        default:
-            return reason
-        }
+        return eventRouter.route(type: type, event: event)
     }
 }
