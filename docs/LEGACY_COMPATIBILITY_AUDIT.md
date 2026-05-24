@@ -109,10 +109,11 @@ consumption of imported first-run/update presentation flags. Low-level
 Codable payloads, and persistent-domain checks do not spread through the settings
 composition layer. Native-vs-import resolution sits behind `SettingsValueResolver`,
 so the manager does not rebuild alias precedence, inverted legacy booleans, hotkey
-fallbacks, input-source fallbacks, or sound/import toggle scans inline. The boundary
-script fails if imported aliases leak back into the routine key namespace, if routine
-code starts writing import-only keys again, or if the manager reopens direct
-native/import resolution helpers.
+fallbacks, input-source fallbacks, searchbar snapshots, sound/import toggle scans,
+legacy statistics snapshots, updater snapshots, or imported user-rule merges inline.
+The boundary script fails if imported aliases leak back into the routine key
+namespace, if routine code starts writing import-only keys again, or if the manager
+reopens direct native/import resolution helpers.
 
 Legacy scalar parsing is centralized in `LegacyValuePolicy` instead of being
 reimplemented per feature. Searchbar settings, update/install settings, product

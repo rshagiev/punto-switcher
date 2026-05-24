@@ -240,10 +240,9 @@ final class SettingsManager {
 
     var searchSelectedTextByDoubleClick: Bool {
         get {
-            SearchbarSettingsPolicy.effectiveShouldSearchByDoubleClick(
-                hasNativeValue: resolver.hasStoredValue(Keys.searchSelectedTextByDoubleClick),
-                nativeValue: store.bool(forKey: Keys.searchSelectedTextByDoubleClick),
-                legacySnapshot: SearchbarSettingsPolicy.snapshot(from: store.dictionary(forKey: ImportKeys.searchbarSettings))
+            resolver.searchSelectedTextByDoubleClick(
+                nativeKey: Keys.searchSelectedTextByDoubleClick,
+                legacyKey: ImportKeys.searchbarSettings
             )
         }
         set {
@@ -447,23 +446,11 @@ final class SettingsManager {
 
     var enabledSoundResourceNames: Set<String> {
         get {
-            if store.object(forKey: Keys.enabledSoundResourceNames) != nil {
-                return SoundFeedbackPolicy.normalizedEnabledResourceNames(
-                    Set(store.stringArray(forKey: Keys.enabledSoundResourceNames) ?? [])
-                )
-            }
-            if store.object(forKey: ImportKeys.enabledSounds) != nil,
-               let legacyNames = SoundFeedbackPolicy.enabledResourceNames(
-                fromLegacyBitmask: store.integer(forKey: ImportKeys.enabledSounds)
-               ) {
-                return legacyNames
-            }
-            if let legacyToggleNames = SoundFeedbackPolicy.enabledResourceNames(
-                fromLegacyToggles: legacySoundResourceToggles()
-            ) {
-                return legacyToggleNames
-            }
-            return SoundFeedbackPolicy.defaultEnabledResourceNames
+            resolver.enabledSoundResourceNames(
+                nativeKey: Keys.enabledSoundResourceNames,
+                legacyBitmaskKey: ImportKeys.enabledSounds,
+                legacyToggleKeys: SoundFeedbackPolicy.legacyPerResourceToggleKeys
+            )
         }
         set {
             let normalized = SoundFeedbackPolicy.normalizedEnabledResourceNames(newValue)
@@ -494,18 +481,14 @@ final class SettingsManager {
 
     var productStatistics: ProductStatisticsSnapshot {
         get {
-            let persistedSnapshot = store.decode(ProductStatisticsSnapshot.self, forKey: Keys.productStatistics)
-            let legacyCountersSnapshot = ProductStatisticsPolicy.snapshotFromLegacySources(
-                typedWords: store.integer(forKey: ImportKeys.typedWords),
-                typedSymbols: store.integer(forKey: ImportKeys.typedSymbols),
-                automaticSwitches: store.integer(forKey: ImportKeys.automaticSwitches),
-                manualSwitches: store.integer(forKey: ImportKeys.manualSwitches),
-                reverts: store.integer(forKey: ImportKeys.reverts),
-                dayuseSettings: store.dictionary(forKey: ImportKeys.dayuseSettings)
-            )
-            return ProductStatisticsPolicy.effectiveSnapshot(
-                persistedSnapshot: persistedSnapshot,
-                legacyCountersSnapshot: legacyCountersSnapshot
+            resolver.productStatistics(
+                nativeKey: Keys.productStatistics,
+                typedWordsKey: ImportKeys.typedWords,
+                typedSymbolsKey: ImportKeys.typedSymbols,
+                automaticSwitchesKey: ImportKeys.automaticSwitches,
+                manualSwitchesKey: ImportKeys.manualSwitches,
+                revertsKey: ImportKeys.reverts,
+                dayuseSettingsKey: ImportKeys.dayuseSettings
             )
         }
         set {
@@ -519,32 +502,18 @@ final class SettingsManager {
     }
 
     var applicationUpdateSettings: ApplicationUpdateSettingsSnapshot {
-        get {
-            if let snapshot = store.decode(ApplicationUpdateSettingsSnapshot.self, forKey: Keys.applicationUpdateSettings) {
-                return ApplicationUpdateSettingsPolicy.normalized(snapshot)
-            }
-            return ApplicationUpdateSettingsPolicy.snapshot(from: store.storedDefaults)
-        }
+        get { resolver.applicationUpdateSettings(nativeKey: Keys.applicationUpdateSettings) }
         set {
             let normalized = ApplicationUpdateSettingsPolicy.normalized(newValue)
             store.encodeAndSet(normalized, forKey: Keys.applicationUpdateSettings)
         }
     }
 
-    private func legacySoundResourceToggles() -> [String: Bool] {
-        resolver.soundResourceToggles(keys: SoundFeedbackPolicy.legacyPerResourceToggleKeys)
-    }
-
     var autoCorrectionRules: [AutoCorrectionRule] {
         get {
-            let hasPersistedRules = store.object(forKey: Keys.autoCorrectionRules) != nil
-            let rules = store.decode([AutoCorrectionRule].self, forKey: Keys.autoCorrectionRules)
-                .map(AutoCorrectionRuleStore.normalizedRules)
-            let legacyRules = LegacyUserRulePolicy.rules(from: store.object(forKey: ImportKeys.userRulesDictionary))
-            return AutoCorrectionRuleSourcePolicy.effectiveRules(
-                hasPersistedRules: hasPersistedRules,
-                persistedRules: rules,
-                legacyUserRules: legacyRules,
+            resolver.autoCorrectionRules(
+                nativeKey: Keys.autoCorrectionRules,
+                legacyUserRulesKey: ImportKeys.userRulesDictionary,
                 useStarterRules: autoCorrectionStarterRulesEnabled
             )
         }

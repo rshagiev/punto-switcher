@@ -114,6 +114,86 @@ final class SettingsValueResolver {
         )
     }
 
+    func searchSelectedTextByDoubleClick(nativeKey: String, legacyKey: String) -> Bool {
+        SearchbarSettingsPolicy.effectiveShouldSearchByDoubleClick(
+            hasNativeValue: hasStoredValue(nativeKey),
+            nativeValue: store.bool(forKey: nativeKey),
+            legacySnapshot: SearchbarSettingsPolicy.snapshot(from: store.dictionary(forKey: legacyKey))
+        )
+    }
+
+    func enabledSoundResourceNames(
+        nativeKey: String,
+        legacyBitmaskKey: String,
+        legacyToggleKeys: [String]
+    ) -> Set<String> {
+        if store.object(forKey: nativeKey) != nil {
+            return SoundFeedbackPolicy.normalizedEnabledResourceNames(
+                Set(store.stringArray(forKey: nativeKey) ?? [])
+            )
+        }
+        if store.object(forKey: legacyBitmaskKey) != nil,
+           let legacyNames = SoundFeedbackPolicy.enabledResourceNames(
+            fromLegacyBitmask: store.integer(forKey: legacyBitmaskKey)
+           ) {
+            return legacyNames
+        }
+        if let legacyToggleNames = SoundFeedbackPolicy.enabledResourceNames(
+            fromLegacyToggles: soundResourceToggles(keys: legacyToggleKeys)
+        ) {
+            return legacyToggleNames
+        }
+        return SoundFeedbackPolicy.defaultEnabledResourceNames
+    }
+
+    func productStatistics(
+        nativeKey: String,
+        typedWordsKey: String,
+        typedSymbolsKey: String,
+        automaticSwitchesKey: String,
+        manualSwitchesKey: String,
+        revertsKey: String,
+        dayuseSettingsKey: String
+    ) -> ProductStatisticsSnapshot {
+        let persistedSnapshot = store.decode(ProductStatisticsSnapshot.self, forKey: nativeKey)
+        let legacyCountersSnapshot = ProductStatisticsPolicy.snapshotFromLegacySources(
+            typedWords: store.integer(forKey: typedWordsKey),
+            typedSymbols: store.integer(forKey: typedSymbolsKey),
+            automaticSwitches: store.integer(forKey: automaticSwitchesKey),
+            manualSwitches: store.integer(forKey: manualSwitchesKey),
+            reverts: store.integer(forKey: revertsKey),
+            dayuseSettings: store.dictionary(forKey: dayuseSettingsKey)
+        )
+        return ProductStatisticsPolicy.effectiveSnapshot(
+            persistedSnapshot: persistedSnapshot,
+            legacyCountersSnapshot: legacyCountersSnapshot
+        )
+    }
+
+    func applicationUpdateSettings(nativeKey: String) -> ApplicationUpdateSettingsSnapshot {
+        if let snapshot = store.decode(ApplicationUpdateSettingsSnapshot.self, forKey: nativeKey) {
+            return ApplicationUpdateSettingsPolicy.normalized(snapshot)
+        }
+        return ApplicationUpdateSettingsPolicy.snapshot(from: store.storedDefaults)
+    }
+
+    func autoCorrectionRules(
+        nativeKey: String,
+        legacyUserRulesKey: String,
+        useStarterRules: Bool
+    ) -> [AutoCorrectionRule] {
+        let hasPersistedRules = store.object(forKey: nativeKey) != nil
+        let rules = store.decode([AutoCorrectionRule].self, forKey: nativeKey)
+            .map(AutoCorrectionRuleStore.normalizedRules)
+        let legacyRules = LegacyUserRulePolicy.rules(from: store.object(forKey: legacyUserRulesKey))
+        return AutoCorrectionRuleSourcePolicy.effectiveRules(
+            hasPersistedRules: hasPersistedRules,
+            persistedRules: rules,
+            legacyUserRules: legacyRules,
+            useStarterRules: useStarterRules
+        )
+    }
+
     func soundResourceToggles(keys: [String]) -> [String: Bool] {
         var toggles: [String: Bool] = [:]
         for key in keys where hasStoredValue(key) {
