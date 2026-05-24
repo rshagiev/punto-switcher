@@ -1,16 +1,16 @@
 import Foundation
 
 public enum LegacyUserRulePolicy {
-    public static let userRulesDictionaryKey = "userRulesDictionary"
-    public static let ruleStringKey = "rule_string"
-    public static let stringKey = "string"
-    public static let ruleKey = "rule"
-    public static let isActiveKey = "is_active"
-    public static let isRuleActiveKey = "isRuleActive"
-    public static let isRegExpKey = "is_regexp"
-    public static let isRegExpCamelKey = "isRegExp"
-    public static let doReplaceKey = "do_replace"
-    public static let shouldSwitchLayoutKey = "shouldSwitchLayout"
+    public static let legacyUserRulesDictionaryKey = "userRulesDictionary"
+    public static let legacyRuleStringKey = "rule_string"
+    public static let legacyStringKey = "string"
+    public static let legacyRuleKey = "rule"
+    public static let legacyIsActiveKey = "is_active"
+    public static let legacyIsRuleActiveKey = "isRuleActive"
+    public static let legacyIsRegExpKey = "is_regexp"
+    public static let legacyIsRegExpCamelKey = "isRegExp"
+    public static let legacyDoReplaceKey = "do_replace"
+    public static let legacyShouldSwitchLayoutKey = "shouldSwitchLayout"
 
     public static func rules(from legacyRules: Any?) -> [AutoCorrectionRule]? {
         guard let entries = legacyRules as? [Any] else {
@@ -26,21 +26,21 @@ public enum LegacyUserRulePolicy {
             return nil
         }
 
-        guard boolValue(dictionary[isActiveKey] ?? dictionary[isRuleActiveKey], defaultValue: true) else {
+        guard boolValue(dictionary[legacyIsActiveKey] ?? dictionary[legacyIsRuleActiveKey], defaultValue: true) else {
             return nil
         }
 
-        guard !boolValue(dictionary[isRegExpKey] ?? dictionary[isRegExpCamelKey], defaultValue: false) else {
+        guard !boolValue(dictionary[legacyIsRegExpKey] ?? dictionary[legacyIsRegExpCamelKey], defaultValue: false) else {
             return nil
         }
 
-        if let shouldReplace = boolValue(dictionary[doReplaceKey]) ?? boolValue(dictionary[shouldSwitchLayoutKey]),
+        if let shouldReplace = boolValue(dictionary[legacyDoReplaceKey]) ?? boolValue(dictionary[legacyShouldSwitchLayoutKey]),
            !shouldReplace {
             return nil
         }
 
-        guard let trigger = stringValue(dictionary[ruleStringKey] ?? dictionary[stringKey])?.trimmingCharacters(in: .whitespacesAndNewlines),
-              let replacement = stringValue(dictionary[ruleKey])?.trimmingCharacters(in: .whitespacesAndNewlines),
+        guard let trigger = stringValue(dictionary[legacyRuleStringKey] ?? dictionary[legacyStringKey])?.trimmingCharacters(in: .whitespacesAndNewlines),
+              let replacement = stringValue(dictionary[legacyRuleKey])?.trimmingCharacters(in: .whitespacesAndNewlines),
               !trigger.isEmpty,
               !replacement.isEmpty else {
             return nil

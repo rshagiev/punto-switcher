@@ -1032,6 +1032,7 @@ echo "PASS runtime accessibility policy constants use native names"
 legacy_import_key_name_files=(
     Sources/PuntoCore/ApplicationUpdateSettingsPolicy.swift
     Sources/PuntoCore/AutoCorrectionRuleSourcePolicy.swift
+    Sources/PuntoCore/LegacyUserRulePolicy.swift
     Sources/PuntoCore/ProductStatisticsPolicy.swift
     Sources/PuntoCore/SearchbarSettingsPolicy.swift
 )
@@ -1048,6 +1049,16 @@ legacy_import_key_generic_names=(
     "lastUpdateShownDateKey"
     "useOldRulesDefaultConfPath"
     "useOldRulesAccessor"
+    "userRulesDictionaryKey"
+    "ruleStringKey"
+    "stringKey"
+    "ruleKey"
+    "isActiveKey"
+    "isRuleActiveKey"
+    "isRegExpKey"
+    "isRegExpCamelKey"
+    "doReplaceKey"
+    "shouldSwitchLayoutKey"
     "settingsKey"
     "activationShortcutKey"
     "autoactivationKey"

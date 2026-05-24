@@ -306,6 +306,16 @@ public enum PuntoSwitcherObservedSurface {
     }
 
     public enum UserRules {
+        public static let userRulesDictionaryKey = "userRulesDictionary"
+        public static let ruleStringKey = "rule_string"
+        public static let stringKey = "string"
+        public static let ruleKey = "rule"
+        public static let isActiveKey = "is_active"
+        public static let isRuleActiveKey = "isRuleActive"
+        public static let isRegExpKey = "is_regexp"
+        public static let isRegExpCamelKey = "isRegExp"
+        public static let doReplaceKey = "do_replace"
+        public static let shouldSwitchLayoutKey = "shouldSwitchLayout"
         public static let createUserRuleSelector = "createUserRule"
         public static let modifyUserRuleSelector = "modifyUserRule"
         public static let removeUserRuleWithIndexSelector = "removeUserRuleWithIndex:"

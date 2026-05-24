@@ -184,13 +184,13 @@ func runUserRuleImportTests() throws {
     let fixture = try DefaultsFixture("rules")
     fixture.defaults.set([
         [
-            LegacyUserRulePolicy.ruleStringKey: "custom",
-            LegacyUserRulePolicy.ruleKey: "замена",
-            LegacyUserRulePolicy.isActiveKey: true,
-            LegacyUserRulePolicy.doReplaceKey: true,
-            LegacyUserRulePolicy.isRegExpKey: false
+            LegacyUserRulePolicy.legacyRuleStringKey: "custom",
+            LegacyUserRulePolicy.legacyRuleKey: "замена",
+            LegacyUserRulePolicy.legacyIsActiveKey: true,
+            LegacyUserRulePolicy.legacyDoReplaceKey: true,
+            LegacyUserRulePolicy.legacyIsRegExpKey: false
         ]
-    ], forKey: LegacyUserRulePolicy.userRulesDictionaryKey)
+    ], forKey: LegacyUserRulePolicy.legacyUserRulesDictionaryKey)
 
     var settings = fixture.manager()
     try expect(
@@ -203,7 +203,7 @@ func runUserRuleImportTests() throws {
     try expect(settings.autoCorrectionRules == [AutoCorrectionRule(trigger: "native", replacement: "правило")],
         "settings manager prefers native user rules")
     try expect(
-        fixture.defaults.object(forKey: LegacyUserRulePolicy.userRulesDictionaryKey) != nil,
+        fixture.defaults.object(forKey: LegacyUserRulePolicy.legacyUserRulesDictionaryKey) != nil,
         "settings manager keeps legacy user rules read-only"
     )
 }

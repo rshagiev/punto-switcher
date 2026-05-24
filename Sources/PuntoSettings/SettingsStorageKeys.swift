@@ -65,7 +65,7 @@ enum SettingsImportKeys {
     static let undoLearning = UndoLearningSettingsPolicy.legacySettingsKey
     static let shouldNotAutoconvertAfterConvertion = TextReplacementCommitPolicy.legacyShouldNotAutoconvertAfterConvertionKey
     static let cancellingKeys = AutoCorrectionCancellingKeyPolicy.legacyCancellingKeysBitmaskKey
-    static let userRulesDictionary = LegacyUserRulePolicy.userRulesDictionaryKey
+    static let userRulesDictionary = LegacyUserRulePolicy.legacyUserRulesDictionaryKey
     static let isSoundOn = SoundFeedbackPolicy.legacyIsSoundOnKey
     static let enabledSounds = SoundFeedbackPolicy.legacyEnabledSoundsKey
     static let shouldRestorePasteboard = ClipboardReplacementPolicy.legacyShouldRestorePasteboardKey
