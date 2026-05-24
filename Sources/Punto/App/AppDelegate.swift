@@ -1,5 +1,4 @@
 import AppKit
-import ApplicationServices
 import Carbon
 import PuntoCore
 
@@ -15,7 +14,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsWindowController: SettingsWindowController?
     private var soundFeedbackController: SoundFeedbackController?
     private var accessibilityStateObserver: AccessibilityStateObserver?
-    private var permissionCheckTimer: Timer?
     private var inputSourceManager: InputSourceManager?
     private var textState: TextRuntimeStateCoordinator?
     private var appRuntime: ApplicationRuntimeCoordinator?
@@ -25,6 +23,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var undoRuntime: UndoRuntimeCoordinator?
     private var manualTextActionRuntime: ManualTextActionRuntimeCoordinator?
     private var commandRuntime: ApplicationCommandRuntimeCoordinator?
+    private var startupRuntime: StartupRuntimeCoordinator?
 
     private var isConversionInProgress: Bool {
         textState?.isConversionInProgress == true
@@ -60,6 +59,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Initialize settings manager first
         settingsManager = SettingsManager()
         PuntoLog.info("Settings manager initialized")
+        startupRuntime = StartupRuntimeCoordinator(settingsManager: settingsManager!) { [weak self] in
+            self?.startHotkeyManager()
+        }
 
         // Initialize core components
         layoutConverter = LayoutConverter()
@@ -218,41 +220,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         PuntoLog.info("Status bar initialized")
 
-        var updateSettings: ApplicationUpdateSettingsSnapshot
-        if StartupPresentationPolicy.shouldHandleInstallArgument(CommandLine.arguments) {
-            PuntoLog.info(PuntoSwitcherObservedSurface.StartupPresentation.handleInstallArgumentSelector)
-            updateSettings = StartupPresentationPolicy.updateSettingsAfterInstallArgument(settingsManager!.applicationUpdateSettings)
-            settingsManager!.applicationUpdateSettings = updateSettings
-            PuntoLog.info(StartupPresentationPolicy.nativeInstalledTooltipMessage)
-        } else {
-            updateSettings = settingsManager!.applicationUpdateSettings
-        }
-
-        if StartupPresentationPolicy.shouldDisplayWelcome(
-            isFirstLaunch: settingsManager!.isFirstLaunch,
-            updateSettings: updateSettings
-        ) {
-            PuntoLog.info(StartupPresentationPolicy.observedWelcomeLogMessage)
-            showOnboardingAlert()
-            settingsManager!.consumeFirstLaunchPresentationFlags()
-            updateSettings = StartupPresentationPolicy.updateSettingsAfterWelcome(updateSettings)
-            settingsManager!.applicationUpdateSettings = updateSettings
-        }
-
-        if StartupPresentationPolicy.shouldDisplayUpdateFinishedTooltip(updateSettings: updateSettings) {
-            PuntoLog.info(PuntoSwitcherObservedSurface.StartupPresentation.showUpdateFinishedTooltipSelector)
-            PuntoLog.info(StartupPresentationPolicy.nativeUpdatedTooltipMessage)
-            updateSettings = StartupPresentationPolicy.updateSettingsAfterUpdateFinishedTooltip(updateSettings)
-            settingsManager!.applicationUpdateSettings = updateSettings
-        }
-
-        // Check permissions
-        let trusted = requestAccessibilityTrustIfNeeded()
-        PuntoLog.info("Accessibility trusted: \(trusted)")
-        PuntoLog.info(trusted
-            ? StartupPresentationPolicy.observedAccessibilityEnabledLogMessage
-            : StartupPresentationPolicy.observedAccessibilityDisabledLogMessage
-        )
+        _ = startupRuntime?.runStartupPresentationAndPermissionFlow()
 
         // Always try to start hotkey manager
         startHotkeyManager()
@@ -287,20 +255,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         PuntoLog.info("Subscribed to input source preference changes")
 
-        // Show alert if permissions not granted and start checking periodically
-        if !trusted {
-            DispatchQueue.main.asyncAfter(deadline: ConversionProtectionPolicy.startupPermissionAlertDeadline(now: .now())) { [weak self] in
-                self?.showPermissionAlert()
-            }
-            startPermissionCheckTimer()
-        }
-
         PuntoLog.info("=== Punto Started ===")
     }
 
     func applicationWillTerminate(_ notification: Notification) {
         PuntoLog.info("Punto terminating")
-        permissionCheckTimer?.invalidate()
+        startupRuntime?.invalidate()
         accessibilityStateObserver?.stop()
         hotkeyManager?.stop()
         DistributedNotificationCenter.default().removeObserver(self)
@@ -361,70 +321,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             conversionSessionReason: action.clearConversionSessionReason
         )
         PuntoLog.info(action.logMessage)
-    }
-
-    // MARK: - Permission Monitoring
-
-    private func startPermissionCheckTimer() {
-        permissionCheckTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
-            self?.checkPermissionsAndStart()
-        }
-    }
-
-    private func checkPermissionsAndStart() {
-        if AXIsProcessTrusted() {
-            PuntoLog.info("Accessibility permissions granted!")
-            permissionCheckTimer?.invalidate()
-            permissionCheckTimer = nil
-            startHotkeyManager()
-        }
-    }
-
-    // MARK: - Permissions
-
-    private func requestAccessibilityTrustIfNeeded() -> Bool {
-        let options = [
-            kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true
-        ] as CFDictionary
-        return AXIsProcessTrustedWithOptions(options)
-    }
-
-    private func showOnboardingAlert() {
-        OnboardingAlert.show { [weak self] openSettings in
-            if openSettings {
-                self?.openAccessibilitySettings()
-            }
-        }
-    }
-
-    private func showPermissionAlert() {
-        let alert = NSAlert()
-        alert.messageText = AccessibilityPreferencesPolicy.permissionRequiredTitle
-        alert.informativeText = AccessibilityPreferencesPolicy.permissionRequiredMessage
-        alert.alertStyle = .warning
-        alert.addButton(withTitle: AccessibilityPreferencesPolicy.openSettingsButtonTitle)
-        alert.addButton(withTitle: AccessibilityPreferencesPolicy.laterButtonTitle)
-
-        let response = alert.runModal()
-        if response == .alertFirstButtonReturn {
-            openAccessibilitySettings()
-        }
-    }
-
-    private func openAccessibilitySettings() {
-        let opened = NSWorkspace.shared.open(AccessibilityPreferencesPolicy.preferencesURL)
-        guard AccessibilityPreferencesPolicy.shouldRunLegacyFallback(openedURL: opened) else {
-            return
-        }
-
-        var error: NSDictionary?
-        if let script = NSAppleScript(source: AccessibilityPreferencesPolicy.legacyAppleScriptSource) {
-            script.executeAndReturnError(&error)
-        }
-
-        if let error {
-            PuntoLog.error("Failed to open Accessibility preferences fallback: \(error)")
-        }
     }
 
     // MARK: - Hotkey Manager
