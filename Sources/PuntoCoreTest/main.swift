@@ -6093,6 +6093,33 @@ private func runInputSourceLanguagePolicyTests() throws {
         "keyboard layout variant policy resolves default English variant"
     )
     try expect(
+        KeyboardLayoutVariantPolicy.effectiveEnglishLayoutVariant(
+            currentSourceID: "com.apple.keylayout.Dvorak",
+            selectedEnglishSourceID: "com.apple.keylayout.ABC",
+            preferredEnglishSourceID: nil
+        ),
+        .dvorak,
+        "keyboard layout variant policy lets active Dvorak source override selected default English"
+    )
+    try expect(
+        KeyboardLayoutVariantPolicy.effectiveEnglishLayoutVariant(
+            currentSourceID: "com.apple.keylayout.Russian",
+            selectedEnglishSourceID: "com.apple.keylayout.Dvorak",
+            preferredEnglishSourceID: "com.apple.keylayout.ABC"
+        ),
+        .dvorak,
+        "keyboard layout variant policy falls back to selected English source when current source is Russian"
+    )
+    try expect(
+        KeyboardLayoutVariantPolicy.effectiveEnglishLayoutVariant(
+            currentSourceID: "com.apple.keylayout.Russian",
+            selectedEnglishSourceID: nil,
+            preferredEnglishSourceID: "com.apple.keylayout.Dvorak"
+        ),
+        .dvorak,
+        "keyboard layout variant policy falls back to preferred English source before defaulting"
+    )
+    try expect(
         KeyboardLayoutVariantPolicy.isAppleRussianSource(" com.apple.keylayout.Russian "),
         true,
         "keyboard layout variant policy detects normalized Apple Russian layout"

@@ -31,6 +31,17 @@ public enum KeyboardLayoutVariantPolicy {
         return defaultEnglishLayoutVariant
     }
 
+    public static func effectiveEnglishLayoutVariant(
+        currentSourceID: String?,
+        selectedEnglishSourceID: String?,
+        preferredEnglishSourceID: String?
+    ) -> KeyboardLayoutVariant {
+        if isDvorakEnglishSource(currentSourceID ?? "") {
+            return .dvorak
+        }
+        return englishLayoutVariant(for: selectedEnglishSourceID ?? preferredEnglishSourceID)
+    }
+
     private static func normalizedTokens(_ sourceID: String) -> Set<String> {
         Set(sourceID
             .trimmingCharacters(in: .whitespacesAndNewlines)

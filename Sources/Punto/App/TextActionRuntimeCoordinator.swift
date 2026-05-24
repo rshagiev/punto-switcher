@@ -57,9 +57,10 @@ final class TextActionRuntimeCoordinator {
     }
 
     func currentEnglishLayoutVariant() -> KeyboardLayoutVariant {
-        KeyboardLayoutVariantPolicy.englishLayoutVariant(
-            for: inputSourceManager.languageLayoutID(.english)
-                ?? settingsManager.preferredEnglishInputSourceID
+        KeyboardLayoutVariantPolicy.effectiveEnglishLayoutVariant(
+            currentSourceID: inputSourceManager.currentLayoutID(),
+            selectedEnglishSourceID: inputSourceManager.languageLayoutID(.english),
+            preferredEnglishSourceID: settingsManager.preferredEnglishInputSourceID
         )
     }
 
