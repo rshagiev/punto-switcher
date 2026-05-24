@@ -17,11 +17,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var accessibilityStateObserver: AccessibilityStateObserver?
     private var permissionCheckTimer: Timer?
     private var inputSourceManager: InputSourceManager?
-    private var autoCorrectionEngine = AutoCorrectionEngine(rules: [])
     private var textState: TextRuntimeStateCoordinator?
     private var appRuntime: ApplicationRuntimeCoordinator?
     private var keyPressRuntime: KeyPressRuntimeCoordinator?
     private var textActionRuntime: TextActionRuntimeCoordinator?
+    private var autoCorrectionRuntime: AutoCorrectionRuntimeCoordinator?
 
     private var conversionSession: ConversionSession {
         guard let textState else {
@@ -115,6 +115,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.statusBarController?.flashIcon()
             }
         )
+        autoCorrectionRuntime = AutoCorrectionRuntimeCoordinator(
+            settingsManager: settingsManager!,
+            wordTracker: wordTracker!,
+            textState: textState!,
+            textAccessor: textAccessor!,
+            textActionRuntime: textActionRuntime!,
+            currentApplicationBundleID: { [weak self] in
+                self?.activeApplicationBundleID ?? NSWorkspace.shared.frontmostApplication?.bundleIdentifier
+            },
+            isCurrentApplicationDisabled: { [weak self] in
+                self?.isCurrentApplicationDisabled() ?? false
+            }
+        )
         keyPressRuntime = KeyPressRuntimeCoordinator(
             settingsManager: settingsManager!,
             wordTracker: wordTracker!,
@@ -132,7 +145,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.textActionRuntime?.clearTextStateForSecureInput(context: context)
             },
             runAutoCorrectionIfNeeded: { [weak self] in
-                self?.handleAutoCorrectionIfNeeded()
+                self?.autoCorrectionRuntime?.handleAutoCorrectionIfNeeded()
             }
         )
         accessibilityStateObserver = AccessibilityStateObserver { [weak self] notificationName, observedBundleID in
@@ -212,7 +225,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         appRuntime?.setInitialActiveApplication(NSWorkspace.shared.frontmostApplication)
         accessibilityStateObserver?.observe(runningApplication: NSWorkspace.shared.frontmostApplication)
         appRuntime?.loadRememberedLayouts()
-        reloadAutoCorrectionRules()
+        autoCorrectionRuntime?.reloadRules()
 
         // Subscribe to input source changes to clear WordTracker
         // This prevents buffer corruption when user switches keyboard layout
@@ -659,7 +672,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
             if let learnedRules = commitPlan.learnedAutoCorrectionRules {
                 settingsManager?.autoCorrectionRules = learnedRules
-                reloadAutoCorrectionRules()
+                autoCorrectionRuntime?.reloadRules()
                 if let learnedRuleLogMessage = commitPlan.learnedRuleLogMessage {
                     PuntoLog.info(learnedRuleLogMessage)
                 }
@@ -668,94 +681,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             conversionSession.record(commitPlan.conversionRecordCommit, contextID: contextID)
 
             return true
-        }
-    }
-
-    private func reloadAutoCorrectionRules() {
-        autoCorrectionEngine = AutoCorrectionEngine(rules: settingsManager?.autoCorrectionRules ?? [])
-    }
-
-    private func handleAutoCorrectionIfNeeded() {
-        let token = wordTracker?.consumeCompletedToken()
-        let gatePlan = AutoCorrectionRuntimePolicy.gatePlan(
-            token: token,
-            isEnabled: settingsManager?.isEnabled == true,
-            autoCorrectionEnabled: settingsManager?.autoCorrectionEnabled == true,
-            autoCorrectOnEnterAndTab: settingsManager?.autoCorrectOnEnterAndTab
-                ?? SettingsPersistencePolicy.defaultAutoCorrectOnEnterAndTab,
-            isConversionInProgress: isConversionInProgress,
-            isCurrentApplicationDisabled: isCurrentApplicationDisabled(),
-            isSecureInputEnabled: textAccessor?.isSecureInputEnabled() == true,
-            isPasswordField: textAccessor?.isPasswordField() == true
-        )
-
-        func recordCompletedTokenStatistics(_ event: ProductStatisticsEvent?) {
-            if let event {
-                settingsManager?.recordProductStatisticsEvent(event)
-            }
-        }
-
-        let plan: AutoCorrectionRuntimeAttemptPlan
-        switch gatePlan {
-        case .skipped(let completedTokenStatisticsEvent, let logMessage):
-            recordCompletedTokenStatistics(completedTokenStatisticsEvent)
-            if let logMessage {
-                PuntoLog.info(logMessage)
-            }
-            return
-
-        case .blockAndClear(let completedTokenStatisticsEvent, let reason, let logMessage):
-            recordCompletedTokenStatistics(completedTokenStatisticsEvent)
-            textActionRuntime?.clearTextStateForSecureInput(context: reason)
-            if let logMessage {
-                PuntoLog.info(logMessage)
-            }
-            return
-
-        case .proceed(let completedTokenStatisticsEvent, let token):
-            reloadAutoCorrectionRules()
-            plan = AutoCorrectionRuntimePolicy.runtimeAttemptPlan(
-                token: token,
-                completedTokenStatisticsEvent: completedTokenStatisticsEvent,
-                trackedTailBeforeCorrection: wordTracker?.getTypedTailPreservingBoundaryWhitespace(),
-                engine: autoCorrectionEngine
-            )
-        }
-
-        switch plan {
-        case .noCorrection(let completedTokenStatisticsEvent):
-            recordCompletedTokenStatistics(completedTokenStatisticsEvent)
-            return
-        case .planFailure(let completedTokenStatisticsEvent, let logMessage, let conversionSessionClearReason):
-            recordCompletedTokenStatistics(completedTokenStatisticsEvent)
-            PuntoLog.info(logMessage)
-            if let conversionSessionClearReason {
-                textState?.clearConversionSession(reason: conversionSessionClearReason)
-            }
-            return
-
-        case .replacement(let completedTokenStatisticsEvent, let logMessage, let replacement, let commitPlan):
-            recordCompletedTokenStatistics(completedTokenStatisticsEvent)
-            PuntoLog.info(logMessage)
-
-            _ = textActionRuntime?.beginReplacementWindow()
-            defer {
-                textActionRuntime?.finishReplacementWindow()
-            }
-
-            let applied = textAccessor?.replaceRecentText(
-                length: replacement.replacementLength,
-                with: replacement.replacementText
-            ) ?? false
-            if applied {
-                textActionRuntime?.commitSuccessfulTextReplacement(
-                    commitPlan,
-                    contextID: activeApplicationBundleID ?? NSWorkspace.shared.frontmostApplication?.bundleIdentifier
-                )
-            } else {
-                PuntoLog.info("Auto-correction replacement aborted")
-                textActionRuntime?.clearTrackedTextAfterFailedReplacement(method: replacement.undoMethod)
-            }
         }
     }
 
