@@ -14,17 +14,17 @@ func runAccessibilityPreferencesPolicyTests() throws {
     )
     try expect(
         AccessibilityPreferencesPolicy.securityPrivacyPaneID,
-        "com.apple.preference.security",
-        "accessibility preferences policy preserves observed security pane id"
+        PuntoSwitcherObservedSurface.AccessibilityPreferences.legacySecurityPrivacyPaneID,
+        "accessibility preferences policy keeps security pane id aligned with reverse-audit anchor"
     )
     try expect(
         AccessibilityPreferencesPolicy.accessibilityPrivacyAnchor,
-        "Privacy_Accessibility",
-        "accessibility preferences policy preserves observed accessibility anchor"
+        PuntoSwitcherObservedSurface.AccessibilityPreferences.legacyAccessibilityPrivacyAnchor,
+        "accessibility preferences policy keeps accessibility anchor aligned with reverse-audit anchor"
     )
     try expect(
         AccessibilityPreferencesPolicy.preferencesURL.absoluteString,
-        "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility",
+        PuntoSwitcherObservedSurface.AccessibilityPreferences.preferencesURLString,
         "accessibility preferences policy builds observed System Settings URL"
     )
     try expect(
@@ -48,12 +48,16 @@ func runAccessibilityPreferencesPolicyTests() throws {
         "accessibility preferences policy centralizes open-settings button copy"
     )
     try expect(
-        AccessibilityPreferencesPolicy.legacyAppleScriptSource.contains("tell application \"System Preferences\""),
+        AccessibilityPreferencesPolicy.legacyAppleScriptSource.contains(
+            "tell application \"\(PuntoSwitcherObservedSurface.AccessibilityPreferences.legacySystemPreferencesApplicationName)\""
+        ),
         true,
         "accessibility preferences policy preserves observed System Preferences fallback"
     )
     try expect(
-        AccessibilityPreferencesPolicy.legacyAppleScriptSource.contains("reveal anchor \"Privacy_Accessibility\" of pane id \"com.apple.preference.security\""),
+        AccessibilityPreferencesPolicy.legacyAppleScriptSource.contains(
+            "reveal anchor \"\(PuntoSwitcherObservedSurface.AccessibilityPreferences.legacyAccessibilityPrivacyAnchor)\" of pane id \"\(PuntoSwitcherObservedSurface.AccessibilityPreferences.legacySecurityPrivacyPaneID)\""
+        ),
         true,
         "accessibility preferences policy reveals observed Accessibility privacy anchor"
     )

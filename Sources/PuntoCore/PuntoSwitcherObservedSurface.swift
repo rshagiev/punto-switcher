@@ -36,6 +36,10 @@ public enum PuntoSwitcherObservedSurface {
     public enum AccessibilityPreferences {
         public static let launchAccessibilityPreferencesSelector = "launchAccessibilityPreferences"
         public static let openAccessibilityPrefPaneSelector = "openAccesibilityPrefPane:"
+        public static let preferencesURLString = "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+        public static let legacySystemPreferencesApplicationName = "System Preferences"
+        public static let legacyAccessibilityPrivacyAnchor = "Privacy_Accessibility"
+        public static let legacySecurityPrivacyPaneID = "com.apple.preference.security"
         public static let accessibilityAlertMessageKey = "accessibility-alert-message"
         public static let accessibilityAlertLegacyMessageKey = "accessibility-alert-messageLegacy"
     }
@@ -213,12 +217,16 @@ public enum PuntoSwitcherObservedSurface {
     }
 
     public enum StartupPresentation {
+        public static let installArgument = "--install"
         public static let handleInstallArgumentSelector = "handleInstallArgument"
         public static let openWindowAfterInstallerSelector = "openWindowAfterInstaller"
         public static let showInstallationFinishedTooltipSelector = "showInstallationFinishedTooltip"
         public static let showUpdateFinishedTooltipSelector = "showUpdateFinishedTooltip"
         public static let installedTooltipKey = "tooltip-app-installed"
         public static let shouldDisplayWelcomeSelector = "shouldDisplayWelcome"
+        public static let welcomeLogMessage = "Displaying welcome screen..."
+        public static let accessibilityEnabledLogMessage = "Accessibility API enabled. Initializing services."
+        public static let accessibilityDisabledLogMessage = "Accessibility API disabled. Showing accessibility preference window."
     }
 
     public enum AutoCorrectionRuleSource {

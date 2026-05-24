@@ -183,7 +183,9 @@ keeping their native write targets separate.
 
 - Continue splitting only the remaining constants where the policy currently
   uses reverse-audit naming for a runtime alias, URL fragment, default, or
-  sentinel value.
+  sentinel value. The input-source `UNDEFINED` sentinel, Accessibility
+  System Settings URL fragments, and startup/accessibility log aliases are now
+  covered by audit-only anchors plus behavior-policy alignment tests.
 - Add an explicit export path if we ever need to generate Punto Switcher-shaped
   settings intentionally; keep routine runtime writes native-only.
 - Keep searchbar/click-search split this way: selected-text Yandex shortcuts and

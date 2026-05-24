@@ -4,8 +4,8 @@ import PuntoCore
 func runStartupPresentationPolicyTests() throws {
     try expect(
         StartupPresentationPolicy.installArgument,
-        "--install",
-        "startup presentation policy preserves observed installer argument"
+        PuntoSwitcherObservedSurface.StartupPresentation.installArgument,
+        "startup presentation policy keeps installer argument aligned with reverse-audit anchor"
     )
     try expect(
         PuntoSwitcherObservedSurface.StartupPresentation.handleInstallArgumentSelector,
@@ -39,8 +39,18 @@ func runStartupPresentationPolicyTests() throws {
     )
     try expect(
         StartupPresentationPolicy.welcomeLogMessage,
-        "Displaying welcome screen...",
-        "startup presentation policy preserves observed welcome log"
+        PuntoSwitcherObservedSurface.StartupPresentation.welcomeLogMessage,
+        "startup presentation policy keeps welcome log aligned with reverse-audit anchor"
+    )
+    try expect(
+        StartupPresentationPolicy.accessibilityEnabledLogMessage,
+        PuntoSwitcherObservedSurface.StartupPresentation.accessibilityEnabledLogMessage,
+        "startup presentation policy keeps accessibility-enabled log aligned with reverse-audit anchor"
+    )
+    try expect(
+        StartupPresentationPolicy.accessibilityDisabledLogMessage,
+        PuntoSwitcherObservedSurface.StartupPresentation.accessibilityDisabledLogMessage,
+        "startup presentation policy keeps accessibility-disabled log aligned with reverse-audit anchor"
     )
     try expect(
         StartupPresentationPolicy.shouldDisplayWelcome(
