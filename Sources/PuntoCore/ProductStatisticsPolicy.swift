@@ -6,6 +6,8 @@ public struct ProductStatisticsSnapshot: Codable, Equatable {
     public let automaticSwitches: Int
     public let manualSwitches: Int
     public let reverts: Int
+    public let lastDayuseDate: Date?
+    public let lastProductStatDate: Date?
 
     private enum CodingKeys: String, CodingKey {
         case typedWords
@@ -13,6 +15,8 @@ public struct ProductStatisticsSnapshot: Codable, Equatable {
         case automaticSwitches
         case manualSwitches
         case reverts
+        case lastDayuseDate
+        case lastProductStatDate
     }
 
     public init(
@@ -20,13 +24,17 @@ public struct ProductStatisticsSnapshot: Codable, Equatable {
         typedSymbols: Int = 0,
         automaticSwitches: Int = 0,
         manualSwitches: Int = 0,
-        reverts: Int = 0
+        reverts: Int = 0,
+        lastDayuseDate: Date? = nil,
+        lastProductStatDate: Date? = nil
     ) {
         self.typedWords = typedWords
         self.typedSymbols = typedSymbols
         self.automaticSwitches = automaticSwitches
         self.manualSwitches = manualSwitches
         self.reverts = reverts
+        self.lastDayuseDate = lastDayuseDate
+        self.lastProductStatDate = lastProductStatDate
     }
 
     public init(from decoder: Decoder) throws {
@@ -36,6 +44,8 @@ public struct ProductStatisticsSnapshot: Codable, Equatable {
         self.automaticSwitches = try container.decodeIfPresent(Int.self, forKey: .automaticSwitches) ?? 0
         self.manualSwitches = try container.decodeIfPresent(Int.self, forKey: .manualSwitches) ?? 0
         self.reverts = try container.decodeIfPresent(Int.self, forKey: .reverts) ?? 0
+        self.lastDayuseDate = try container.decodeIfPresent(Date.self, forKey: .lastDayuseDate)
+        self.lastProductStatDate = try container.decodeIfPresent(Date.self, forKey: .lastProductStatDate)
     }
 }
 
@@ -64,20 +74,33 @@ public enum ProductStatisticsPolicy {
             typedSymbols: max(0, snapshot.typedSymbols),
             automaticSwitches: max(0, snapshot.automaticSwitches),
             manualSwitches: max(0, snapshot.manualSwitches),
-            reverts: max(0, snapshot.reverts)
+            reverts: max(0, snapshot.reverts),
+            lastDayuseDate: snapshot.lastDayuseDate,
+            lastProductStatDate: snapshot.lastProductStatDate
         )
     }
 
-    public static func snapshot(after event: ProductStatisticsEvent, current: ProductStatisticsSnapshot) -> ProductStatisticsSnapshot {
-        let current = normalized(current)
+    public static func snapshot(
+        after event: ProductStatisticsEvent,
+        current: ProductStatisticsSnapshot,
+        now: Date = Date(),
+        calendar: Calendar = .current
+    ) -> ProductStatisticsSnapshot {
+        let current = snapshotForCurrentDay(normalized(current), now: now, calendar: calendar)
         switch event {
         case .typedText(let text):
+            let symbolCount = typedSymbolCount(text)
+            guard symbolCount > 0 else {
+                return current
+            }
             return ProductStatisticsSnapshot(
                 typedWords: current.typedWords,
-                typedSymbols: current.typedSymbols + typedSymbolCount(text),
+                typedSymbols: current.typedSymbols + symbolCount,
                 automaticSwitches: current.automaticSwitches,
                 manualSwitches: current.manualSwitches,
-                reverts: current.reverts
+                reverts: current.reverts,
+                lastDayuseDate: now,
+                lastProductStatDate: current.lastProductStatDate
             )
         case .completedWord:
             return ProductStatisticsSnapshot(
@@ -85,7 +108,9 @@ public enum ProductStatisticsPolicy {
                 typedSymbols: current.typedSymbols,
                 automaticSwitches: current.automaticSwitches,
                 manualSwitches: current.manualSwitches,
-                reverts: current.reverts
+                reverts: current.reverts,
+                lastDayuseDate: now,
+                lastProductStatDate: current.lastProductStatDate
             )
         case .manualSwitch:
             return ProductStatisticsSnapshot(
@@ -93,7 +118,9 @@ public enum ProductStatisticsPolicy {
                 typedSymbols: current.typedSymbols,
                 automaticSwitches: current.automaticSwitches,
                 manualSwitches: current.manualSwitches + 1,
-                reverts: current.reverts
+                reverts: current.reverts,
+                lastDayuseDate: now,
+                lastProductStatDate: current.lastProductStatDate
             )
         case .automaticSwitch:
             return ProductStatisticsSnapshot(
@@ -101,7 +128,9 @@ public enum ProductStatisticsPolicy {
                 typedSymbols: current.typedSymbols,
                 automaticSwitches: current.automaticSwitches + 1,
                 manualSwitches: current.manualSwitches,
-                reverts: current.reverts
+                reverts: current.reverts,
+                lastDayuseDate: now,
+                lastProductStatDate: current.lastProductStatDate
             )
         case .revert:
             return ProductStatisticsSnapshot(
@@ -109,7 +138,9 @@ public enum ProductStatisticsPolicy {
                 typedSymbols: current.typedSymbols,
                 automaticSwitches: current.automaticSwitches,
                 manualSwitches: current.manualSwitches,
-                reverts: current.reverts + 1
+                reverts: current.reverts + 1,
+                lastDayuseDate: now,
+                lastProductStatDate: current.lastProductStatDate
             )
         }
     }
@@ -138,9 +169,17 @@ public enum ProductStatisticsPolicy {
         typedSymbols: Int?,
         automaticSwitches: Int?,
         manualSwitches: Int?,
-        reverts: Int? = nil
+        reverts: Int? = nil,
+        lastDayuseDate: Date? = nil,
+        lastProductStatDate: Date? = nil
     ) -> ProductStatisticsSnapshot? {
-        guard typedWords != nil || typedSymbols != nil || automaticSwitches != nil || manualSwitches != nil || reverts != nil else {
+        guard typedWords != nil ||
+                typedSymbols != nil ||
+                automaticSwitches != nil ||
+                manualSwitches != nil ||
+                reverts != nil ||
+                lastDayuseDate != nil ||
+                lastProductStatDate != nil else {
             return nil
         }
 
@@ -149,7 +188,9 @@ public enum ProductStatisticsPolicy {
             typedSymbols: typedSymbols ?? 0,
             automaticSwitches: automaticSwitches ?? 0,
             manualSwitches: manualSwitches ?? 0,
-            reverts: reverts ?? 0
+            reverts: reverts ?? 0,
+            lastDayuseDate: lastDayuseDate,
+            lastProductStatDate: lastProductStatDate
         ))
     }
 
@@ -163,7 +204,9 @@ public enum ProductStatisticsPolicy {
             typedSymbols: intValue(settings[dayuseTypedSymbolsKey]),
             automaticSwitches: intValue(settings[dayuseAutoSwitchesKey]),
             manualSwitches: intValue(settings[dayuseManualSwitchesKey]),
-            reverts: intValue(settings[dayuseRevertsKey])
+            reverts: intValue(settings[dayuseRevertsKey]),
+            lastDayuseDate: dateValue(settings[dayuseLastDayuseDateKey]),
+            lastProductStatDate: dateValue(settings[dayuseLastProductStatDateKey])
         )
     }
 
@@ -190,7 +233,9 @@ public enum ProductStatisticsPolicy {
             typedSymbols: typedSymbols ?? dayuseSnapshot?.typedSymbols ?? 0,
             automaticSwitches: automaticSwitches ?? dayuseSnapshot?.automaticSwitches ?? 0,
             manualSwitches: manualSwitches ?? dayuseSnapshot?.manualSwitches ?? 0,
-            reverts: reverts ?? dayuseSnapshot?.reverts ?? 0
+            reverts: reverts ?? dayuseSnapshot?.reverts ?? 0,
+            lastDayuseDate: dayuseSnapshot?.lastDayuseDate,
+            lastProductStatDate: dayuseSnapshot?.lastProductStatDate
         ))
     }
 
@@ -228,4 +273,44 @@ public enum ProductStatisticsPolicy {
             return nil
         }
     }
+
+    private static func snapshotForCurrentDay(
+        _ snapshot: ProductStatisticsSnapshot,
+        now: Date,
+        calendar: Calendar
+    ) -> ProductStatisticsSnapshot {
+        guard let lastDayuseDate = snapshot.lastDayuseDate else {
+            return snapshot
+        }
+
+        guard !calendar.isDate(lastDayuseDate, inSameDayAs: now) else {
+            return snapshot
+        }
+
+        return ProductStatisticsSnapshot(
+            lastDayuseDate: lastDayuseDate,
+            lastProductStatDate: snapshot.lastProductStatDate
+        )
+    }
+
+    private static func dateValue(_ value: Any?) -> Date? {
+        switch value {
+        case let value as Date:
+            return value
+        case let value as NSNumber:
+            return Date(timeIntervalSince1970: value.doubleValue)
+        case let value as String:
+            return legacyDateFormatter.date(from: value.trimmingCharacters(in: .whitespacesAndNewlines))
+        default:
+            return nil
+        }
+    }
+
+    private static let legacyDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss Z"
+        return formatter
+    }()
 }

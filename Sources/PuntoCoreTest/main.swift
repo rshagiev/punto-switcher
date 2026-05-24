@@ -4218,6 +4218,13 @@ private func runUndoLearningSettingsPolicyTests() throws {
 }
 
 private func runProductStatisticsPolicyTests() throws {
+    var utcCalendar = Calendar(identifier: .gregorian)
+    utcCalendar.timeZone = TimeZone(secondsFromGMT: 0)!
+    let today = Date(timeIntervalSince1970: 1_704_067_200) // 2024-01-01 00:00:00 +0000
+    let laterToday = Date(timeIntervalSince1970: 1_704_110_400) // 2024-01-01 12:00:00 +0000
+    let tomorrow = Date(timeIntervalSince1970: 1_704_153_600) // 2024-01-02 00:00:00 +0000
+    let lastProductStatDate = Date(timeIntervalSince1970: 1_704_024_000)
+
     let legacyNativeData = Data("""
     {"typedWords":2,"typedSymbols":3,"automaticSwitches":4,"manualSwitches":5}
     """.utf8)
@@ -4241,19 +4248,32 @@ private func runProductStatisticsPolicyTests() throws {
     )
 
     var snapshot = ProductStatisticsSnapshot()
-    snapshot = ProductStatisticsPolicy.snapshot(after: .typedText("ab в\n "), current: snapshot)
+    snapshot = ProductStatisticsPolicy.snapshot(after: .typedText("ab в\n "), current: snapshot, now: today, calendar: utcCalendar)
     try expect(
         snapshot,
-        ProductStatisticsSnapshot(typedWords: 0, typedSymbols: 3, automaticSwitches: 0, manualSwitches: 0),
+        ProductStatisticsSnapshot(
+            typedWords: 0,
+            typedSymbols: 3,
+            automaticSwitches: 0,
+            manualSwitches: 0,
+            lastDayuseDate: today
+        ),
         "product statistics policy counts typed non-whitespace symbols"
     )
-    snapshot = ProductStatisticsPolicy.snapshot(after: .completedWord, current: snapshot)
-    snapshot = ProductStatisticsPolicy.snapshot(after: .manualSwitch, current: snapshot)
-    snapshot = ProductStatisticsPolicy.snapshot(after: .automaticSwitch, current: snapshot)
-    snapshot = ProductStatisticsPolicy.snapshot(after: .revert, current: snapshot)
+    snapshot = ProductStatisticsPolicy.snapshot(after: .completedWord, current: snapshot, now: today, calendar: utcCalendar)
+    snapshot = ProductStatisticsPolicy.snapshot(after: .manualSwitch, current: snapshot, now: today, calendar: utcCalendar)
+    snapshot = ProductStatisticsPolicy.snapshot(after: .automaticSwitch, current: snapshot, now: today, calendar: utcCalendar)
+    snapshot = ProductStatisticsPolicy.snapshot(after: .revert, current: snapshot, now: today, calendar: utcCalendar)
     try expect(
         snapshot,
-        ProductStatisticsSnapshot(typedWords: 1, typedSymbols: 3, automaticSwitches: 1, manualSwitches: 1, reverts: 1),
+        ProductStatisticsSnapshot(
+            typedWords: 1,
+            typedSymbols: 3,
+            automaticSwitches: 1,
+            manualSwitches: 1,
+            reverts: 1,
+            lastDayuseDate: today
+        ),
         "product statistics policy increments Punto Switcher-style counters"
     )
     try expect(
@@ -4262,7 +4282,7 @@ private func runProductStatisticsPolicyTests() throws {
         "product statistics policy ignores missing typed text"
     )
     try expect(
-        ProductStatisticsPolicy.snapshot(after: .typedText("\n\t "), current: snapshot),
+        ProductStatisticsPolicy.snapshot(after: .typedText("\n\t "), current: snapshot, now: laterToday, calendar: utcCalendar),
         snapshot,
         "product statistics policy ignores whitespace-only typed text"
     )
@@ -4277,14 +4297,50 @@ private func runProductStatisticsPolicyTests() throws {
         "product statistics policy skips completed-word event without a consumed token"
     )
     try expect(
+        ProductStatisticsPolicy.snapshot(
+            after: .completedWord,
+            current: ProductStatisticsSnapshot(
+                typedWords: 2,
+                typedSymbols: 9,
+                automaticSwitches: 3,
+                manualSwitches: 4,
+                reverts: 5,
+                lastDayuseDate: today,
+                lastProductStatDate: lastProductStatDate
+            ),
+            now: tomorrow,
+            calendar: utcCalendar
+        ),
+        ProductStatisticsSnapshot(
+            typedWords: 1,
+            typedSymbols: 0,
+            automaticSwitches: 0,
+            manualSwitches: 0,
+            reverts: 0,
+            lastDayuseDate: tomorrow,
+            lastProductStatDate: lastProductStatDate
+        ),
+        "product statistics policy resets day-use counters when the day changes"
+    )
+    try expect(
         ProductStatisticsPolicy.snapshotFromLegacyCounters(
             typedWords: 2,
             typedSymbols: -1,
             automaticSwitches: nil,
             manualSwitches: 3,
-            reverts: 4
+            reverts: 4,
+            lastDayuseDate: today,
+            lastProductStatDate: lastProductStatDate
         ),
-        ProductStatisticsSnapshot(typedWords: 2, typedSymbols: 0, automaticSwitches: 0, manualSwitches: 3, reverts: 4),
+        ProductStatisticsSnapshot(
+            typedWords: 2,
+            typedSymbols: 0,
+            automaticSwitches: 0,
+            manualSwitches: 3,
+            reverts: 4,
+            lastDayuseDate: today,
+            lastProductStatDate: lastProductStatDate
+        ),
         "product statistics policy reads Punto Switcher-style individual counters"
     )
     try expect(
@@ -4293,7 +4349,9 @@ private func runProductStatisticsPolicyTests() throws {
             typedSymbols: nil,
             automaticSwitches: nil,
             manualSwitches: nil,
-            reverts: nil
+            reverts: nil,
+            lastDayuseDate: nil,
+            lastProductStatDate: nil
         ),
         nil,
         "product statistics policy ignores missing legacy counters"
@@ -4304,16 +4362,20 @@ private func runProductStatisticsPolicyTests() throws {
             "TypedSymbols": NSNumber(value: 375547),
             "AutoSwitches": -1,
             "ManualSwitches": 901,
-            "Reverts": 12
+            "Reverts": 12,
+            "LastDayuseDate": today,
+            "LastProductStatDate": lastProductStatDate
         ]),
         ProductStatisticsSnapshot(
             typedWords: 109879,
             typedSymbols: 375547,
             automaticSwitches: 0,
             manualSwitches: 901,
-            reverts: 12
+            reverts: 12,
+            lastDayuseDate: today,
+            lastProductStatDate: lastProductStatDate
         ),
-        "product statistics policy reads Punto Switcher PSDayuseSettings counters"
+        "product statistics policy reads Punto Switcher PSDayuseSettings counters and dates"
     )
     try expect(
         ProductStatisticsPolicy.snapshotFromDayuseSettings([
@@ -4321,16 +4383,20 @@ private func runProductStatisticsPolicyTests() throws {
             "TypedSymbols": "375547",
             "AutoSwitches": "-1",
             "ManualSwitches": "901",
-            "Reverts": "12"
+            "Reverts": "12",
+            "LastDayuseDate": "2024-01-01 00:00:00 +0000",
+            "LastProductStatDate": "2023-12-31 12:00:00 +0000"
         ]),
         ProductStatisticsSnapshot(
             typedWords: 109879,
             typedSymbols: 375547,
             automaticSwitches: 0,
             manualSwitches: 901,
-            reverts: 12
+            reverts: 12,
+            lastDayuseDate: today,
+            lastProductStatDate: lastProductStatDate
         ),
-        "product statistics policy reads string-backed Punto Switcher PSDayuseSettings counters"
+        "product statistics policy reads string-backed Punto Switcher PSDayuseSettings counters and dates"
     )
     try expect(
         ProductStatisticsPolicy.snapshotFromLegacySources(
@@ -4344,7 +4410,9 @@ private func runProductStatisticsPolicyTests() throws {
                 "TypedSymbols": 20,
                 "AutoSwitches": 30,
                 "ManualSwitches": 4,
-                "Reverts": 50
+                "Reverts": 50,
+                "LastDayuseDate": today,
+                "LastProductStatDate": lastProductStatDate
             ]
         ),
         ProductStatisticsSnapshot(
@@ -4352,7 +4420,9 @@ private func runProductStatisticsPolicyTests() throws {
             typedSymbols: 20,
             automaticSwitches: 30,
             manualSwitches: 40,
-            reverts: 50
+            reverts: 50,
+            lastDayuseDate: today,
+            lastProductStatDate: lastProductStatDate
         ),
         "product statistics policy merges partial legacy counters with Punto Switcher PSDayuseSettings"
     )

@@ -40,9 +40,10 @@ Punto Switcher storage shapes unless the native app actively needs that shape.
 
 Product statistics are now native-write only. `SettingsManager.productStatistics`
 still imports old `typedWords` / `typedSymbols` / `PSDayuseSettings` values when
-no native snapshot exists, but runtime events only update the Codable
-`productStatistics` payload. The old `PSDayuseSettings` keys remain pinned for
-audit/import coverage, but no core writer generates that legacy shape.
+no native snapshot exists, including the observed day-use date markers, but
+runtime events only update the Codable `productStatistics` payload. The old
+`PSDayuseSettings` keys remain pinned for audit/import coverage, but no core
+writer generates that legacy shape.
 
 ## Settings Mirror Cut
 
