@@ -85,6 +85,23 @@ for pattern in "${text_accessor_clipboard_transport_patterns[@]}"; do
     echo "PASS TextAccessor pasteboard transport absent: $pattern"
 done
 
+text_accessor_ax_selection_transport_patterns=(
+    "AXUIElementSetAttributeValue"
+    "kAXSelectedTextAttribute"
+    "kAXSelectedTextRangeAttribute"
+    "AXValueCreate"
+    "AccessibilitySelectionSearchPolicy"
+    "lastEditableSelectionElement"
+)
+
+for pattern in "${text_accessor_ax_selection_transport_patterns[@]}"; do
+    if rg --fixed-strings --quiet "$pattern" Sources/Punto/Core/TextAccessor.swift; then
+        echo "legacy boundary failed: TextAccessor reopened AX selected-text transport: $pattern" >&2
+        exit 1
+    fi
+    echo "PASS TextAccessor AX selected-text transport absent: $pattern"
+done
+
 if rg --fixed-strings --quiet "Placeholder - actual tests" Tests 2>/dev/null; then
     echo "legacy boundary failed: placeholder SwiftPM test target returned" >&2
     exit 1
