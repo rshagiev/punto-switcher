@@ -245,6 +245,22 @@ func runHotkeySlotAccessTests() throws {
     let settings = fixture.manager()
     let customToggleCase = Hotkey(keyCode: 31, command: true, option: true, shift: false, control: false)
 
+    for (index, slot) in HotkeySlot.allCases.enumerated() {
+        let custom = Hotkey(
+            keyCode: UInt16(18 + index),
+            command: true,
+            option: index % 2 == 0,
+            shift: index % 3 == 0,
+            control: false
+        )
+        settings.setHotkey(custom, for: slot)
+        try expect(
+            settings.hotkey(for: slot) == custom,
+            "settings manager round-trips hotkey slot \(slot.rawValue)"
+        )
+        settings.resetHotkey(for: slot)
+    }
+
     settings.setHotkey(customToggleCase, for: .toggleCase)
 
     try expect(

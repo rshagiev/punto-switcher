@@ -389,6 +389,48 @@ for pattern in "${settings_manager_boolean_slot_cases[@]}"; do
     echo "PASS SettingsManager boolean toggle slot switch absent: $pattern"
 done
 
+settings_manager_hotkey_slot_cases=(
+    "case .convertLayout:"
+    "case .toggleCase:"
+    "case .toggleAutoCorrection:"
+    "case .cancelLayoutChange:"
+    "case .findInYandex:"
+    "case .findInSlovari:"
+)
+
+for pattern in "${settings_manager_hotkey_slot_cases[@]}"; do
+    if rg --fixed-strings --quiet "$pattern" Sources/PuntoSettings/SettingsManager.swift; then
+        echo "legacy boundary failed: SettingsManager reopened hotkey slot switch: $pattern" >&2
+        exit 1
+    fi
+    echo "PASS SettingsManager hotkey slot switch absent: $pattern"
+done
+
+settings_manager_inline_boolean_defaults=(
+    "SettingsStorageKeys.showInMenuBar:"
+    "SettingsStorageKeys.showAdvancedSettings:"
+    "SettingsStorageKeys.launchAtLogin:"
+    "SettingsStorageKeys.switchLayoutAfterConversion:"
+    "SettingsStorageKeys.switchLayoutAfterSelectedTextConversion:"
+    "SettingsStorageKeys.manualConversionDisabled:"
+    "SettingsStorageKeys.rememberInputSourceForEachApp:"
+    "SettingsStorageKeys.completelyDisableInExceptionApplications:"
+    "SettingsStorageKeys.autoCorrectionEnabled:"
+    "SettingsStorageKeys.autoCorrectOnEnterAndTab:"
+    "SettingsStorageKeys.autoCorrectionUndoLearningEnabled:"
+    "SettingsStorageKeys.suppressAutoCorrectionAfterManualConversion:"
+    "SettingsStorageKeys.soundEffectsEnabled:"
+    "SettingsStorageKeys.restorePasteboardAfterConversion:"
+)
+
+for pattern in "${settings_manager_inline_boolean_defaults[@]}"; do
+    if rg --fixed-strings --quiet "$pattern" Sources/PuntoSettings/SettingsManager.swift; then
+        echo "legacy boundary failed: SettingsManager reopened inline boolean default registration: $pattern" >&2
+        exit 1
+    fi
+    echo "PASS SettingsManager inline boolean default registration absent: $pattern"
+done
+
 if rg --fixed-strings --quiet "ServiceManagement" Sources/PuntoSettings; then
     echo "legacy boundary failed: settings module reopened live login-item side effects" >&2
     exit 1

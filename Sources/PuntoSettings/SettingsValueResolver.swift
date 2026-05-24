@@ -56,6 +56,14 @@ final class SettingsValueResolver {
         return fallback
     }
 
+    func hotkeySlot(_ descriptor: SettingsHotkeySlotDescriptor) -> Hotkey {
+        hotkey(
+            nativeKey: descriptor.nativeKey,
+            legacyKey: descriptor.legacyKey,
+            fallback: descriptor.fallback
+        )
+    }
+
     func russianKeyboardLayoutType(nativeKey: String, legacyKey: String) -> KeyboardLayoutType {
         KeyboardLayoutTypePolicy.effectiveRussianKeyboardLayoutType(
             hasPersistedValue: hasStoredValue(nativeKey),

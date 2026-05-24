@@ -125,4 +125,8 @@ enum SettingsBoolSlotRegistry {
         }
         return descriptor
     }
+
+    static var nativeDefaultValues: [String: Bool] {
+        Dictionary(uniqueKeysWithValues: descriptors.map { ($0.nativeKey, $0.defaultValue) })
+    }
 }

@@ -59,92 +59,38 @@ public final class SettingsManager {
 
     /// Hotkey for converting layout
     public var convertLayoutHotkey: Hotkey {
-        get {
-            resolver.hotkey(
-                nativeKey: SettingsStorageKeys.convertLayoutHotkey,
-                legacyKey: SettingsImportKeys.shortcutChangeLayout,
-                fallback: Hotkey.defaultConvertLayout
-            )
-        }
-        set {
-            let normalized = HotkeyValidationPolicy.normalized(newValue, fallback: Hotkey.defaultConvertLayout)
-            store.encodeAndSet(normalized, forKey: SettingsStorageKeys.convertLayoutHotkey)
-        }
+        get { hotkey(for: .convertLayout) }
+        set { setHotkey(newValue, for: .convertLayout) }
     }
 
     /// Hotkey for toggling case
     public var toggleCaseHotkey: Hotkey {
-        get {
-            resolver.hotkey(
-                nativeKey: SettingsStorageKeys.toggleCaseHotkey,
-                legacyKey: SettingsImportKeys.shortcutChangeCase,
-                fallback: Hotkey.defaultToggleCase
-            )
-        }
-        set {
-            let normalized = HotkeyValidationPolicy.normalized(newValue, fallback: Hotkey.defaultToggleCase)
-            store.encodeAndSet(normalized, forKey: SettingsStorageKeys.toggleCaseHotkey)
-        }
+        get { hotkey(for: .toggleCase) }
+        set { setHotkey(newValue, for: .toggleCase) }
     }
 
     /// Hotkey for toggling auto-correction
     public var toggleAutoCorrectionHotkey: Hotkey {
-        get {
-            resolver.hotkey(
-                nativeKey: SettingsStorageKeys.toggleAutoCorrectionHotkey,
-                legacyKey: SettingsImportKeys.shortcutSwitchAutocorrection,
-                fallback: Hotkey.defaultToggleAutoCorrection
-            )
-        }
-        set {
-            let normalized = HotkeyValidationPolicy.normalized(newValue, fallback: Hotkey.defaultToggleAutoCorrection)
-            store.encodeAndSet(normalized, forKey: SettingsStorageKeys.toggleAutoCorrectionHotkey)
-        }
+        get { hotkey(for: .toggleAutoCorrection) }
+        set { setHotkey(newValue, for: .toggleAutoCorrection) }
     }
 
     /// Hotkey for cancelling the last layout change.
     public var cancelLayoutChangeHotkey: Hotkey {
-        get {
-            resolver.hotkey(
-                nativeKey: SettingsStorageKeys.cancelLayoutChangeHotkey,
-                legacyKey: SettingsImportKeys.shortcutCancelLayoutChange,
-                fallback: Hotkey.defaultCancelLayoutChange
-            )
-        }
-        set {
-            let normalized = HotkeyValidationPolicy.normalized(newValue, fallback: Hotkey.defaultCancelLayoutChange)
-            store.encodeAndSet(normalized, forKey: SettingsStorageKeys.cancelLayoutChangeHotkey)
-        }
+        get { hotkey(for: .cancelLayoutChange) }
+        set { setHotkey(newValue, for: .cancelLayoutChange) }
     }
 
     /// Hotkey for opening selected text in Yandex search.
     public var findInYandexHotkey: Hotkey {
-        get {
-            resolver.hotkey(
-                nativeKey: SettingsStorageKeys.findInYandexHotkey,
-                legacyKey: SettingsImportKeys.shortcutFindInYandex,
-                fallback: Hotkey.defaultFindInYandex
-            )
-        }
-        set {
-            let normalized = HotkeyValidationPolicy.normalized(newValue, fallback: Hotkey.defaultFindInYandex)
-            store.encodeAndSet(normalized, forKey: SettingsStorageKeys.findInYandexHotkey)
-        }
+        get { hotkey(for: .findInYandex) }
+        set { setHotkey(newValue, for: .findInYandex) }
     }
 
     /// Hotkey for opening selected text in Yandex Translate/Slovari flow.
     public var findInSlovariHotkey: Hotkey {
-        get {
-            resolver.hotkey(
-                nativeKey: SettingsStorageKeys.findInSlovariHotkey,
-                legacyKey: SettingsImportKeys.shortcutFindInSlovari,
-                fallback: Hotkey.defaultFindInSlovari
-            )
-        }
-        set {
-            let normalized = HotkeyValidationPolicy.normalized(newValue, fallback: Hotkey.defaultFindInSlovari)
-            store.encodeAndSet(normalized, forKey: SettingsStorageKeys.findInSlovariHotkey)
-        }
+        get { hotkey(for: .findInSlovari) }
+        set { setHotkey(newValue, for: .findInSlovari) }
     }
 
     public var hotkeyAssignments: [HotkeyAssignment] {
@@ -154,37 +100,13 @@ public final class SettingsManager {
     }
 
     public func hotkey(for slot: HotkeySlot) -> Hotkey {
-        switch slot {
-        case .convertLayout:
-            return convertLayoutHotkey
-        case .toggleCase:
-            return toggleCaseHotkey
-        case .toggleAutoCorrection:
-            return toggleAutoCorrectionHotkey
-        case .cancelLayoutChange:
-            return cancelLayoutChangeHotkey
-        case .findInYandex:
-            return findInYandexHotkey
-        case .findInSlovari:
-            return findInSlovariHotkey
-        }
+        resolver.hotkeySlot(SettingsHotkeySlotRegistry.descriptor(for: slot))
     }
 
     public func setHotkey(_ hotkey: Hotkey, for slot: HotkeySlot) {
-        switch slot {
-        case .convertLayout:
-            convertLayoutHotkey = hotkey
-        case .toggleCase:
-            toggleCaseHotkey = hotkey
-        case .toggleAutoCorrection:
-            toggleAutoCorrectionHotkey = hotkey
-        case .cancelLayoutChange:
-            cancelLayoutChangeHotkey = hotkey
-        case .findInYandex:
-            findInYandexHotkey = hotkey
-        case .findInSlovari:
-            findInSlovariHotkey = hotkey
-        }
+        let descriptor = SettingsHotkeySlotRegistry.descriptor(for: slot)
+        let normalized = HotkeyValidationPolicy.normalized(hotkey, fallback: descriptor.fallback)
+        store.encodeAndSet(normalized, forKey: descriptor.nativeKey)
     }
 
     public func resetHotkey(for slot: HotkeySlot) {
@@ -483,25 +405,11 @@ public final class SettingsManager {
         store.register(defaults: [
             SettingsStorageKeys.isEnabled: SettingsPersistencePolicy.defaultIsEnabled,
             SettingsStorageKeys.isFirstLaunch: StartupPresentationPolicy.defaultIsFirstLaunch,
-            SettingsStorageKeys.showInMenuBar: SettingsPersistencePolicy.defaultShowInMenuBar,
-            SettingsStorageKeys.showAdvancedSettings: SettingsPersistencePolicy.defaultShowAdvancedSettings,
-            SettingsStorageKeys.launchAtLogin: LoginItemPolicy.defaultLaunchAtLogin,
-            SettingsStorageKeys.switchLayoutAfterConversion: LayoutSwitchPolicy.defaultSwitchLayoutAfterConversion,
-            SettingsStorageKeys.switchLayoutAfterSelectedTextConversion: LayoutSwitchPolicy.defaultSwitchLayoutAfterSelectedTextConversion,
             SettingsStorageKeys.russianKeyboardLayoutType: KeyboardLayoutTypePolicy.defaultRussianLayoutTypeRawValue,
-            SettingsStorageKeys.manualConversionDisabled: TextActionPreflightPolicy.defaultManualConversionDisabled,
-            SettingsStorageKeys.rememberInputSourceForEachApp: ApplicationLayoutPolicy.defaultRememberInputSourceForEachApp,
             SettingsStorageKeys.rememberedApplicationLayouts: ApplicationLayoutMemory.defaultSnapshot,
             SettingsStorageKeys.disabledApplicationBundleIDs: ApplicationDisablePolicy.defaultDisabledBundleIDs,
-            SettingsStorageKeys.completelyDisableInExceptionApplications: ApplicationDisablePolicy.defaultCompletelyDisableInExceptionApplications,
-            SettingsStorageKeys.autoCorrectionEnabled: AutoCorrectionPreflightPolicy.defaultAutoCorrectionEnabled,
-            SettingsStorageKeys.autoCorrectOnEnterAndTab: AutoCorrectionPreflightPolicy.defaultAutoCorrectOnEnterAndTab,
-            SettingsStorageKeys.autoCorrectionUndoLearningEnabled: AutoCorrectionUndoLearningPolicy.defaultUndoLearningEnabled,
-            SettingsStorageKeys.suppressAutoCorrectionAfterManualConversion: TextReplacementCommitPolicy.defaultSuppressAutoCorrectionAfterManualConversion,
-            SettingsStorageKeys.autoCorrectionCancellingKeyNames: AutoCorrectionCancellingKeyPolicy.defaultEnabledKeyNameList,
-            SettingsStorageKeys.soundEffectsEnabled: SoundFeedbackPolicy.defaultSoundEffectsEnabled,
-            SettingsStorageKeys.restorePasteboardAfterConversion: ClipboardReplacementPolicy.defaultRestorePasteboardAfterConversion
-        ])
+            SettingsStorageKeys.autoCorrectionCancellingKeyNames: AutoCorrectionCancellingKeyPolicy.defaultEnabledKeyNameList
+        ].merging(SettingsBoolSlotRegistry.nativeDefaultValues) { nativeValue, _ in nativeValue })
     }
 
     // MARK: - Reset to Defaults
