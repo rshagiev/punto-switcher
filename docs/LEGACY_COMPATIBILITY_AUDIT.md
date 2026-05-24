@@ -100,10 +100,13 @@ placeholder comes back.
 
 `SettingsManager` now keeps native primary keys and Punto Switcher import aliases
 in separate namespaces. `Keys` is the native write surface; `ImportKeys` is
-read-only import evidence, with the only writer exception still being
-first-run consumption of the imported `isFirstInstallation` flag. The boundary
-script fails if imported aliases leak back into the routine key namespace or if
-routine code starts writing import-only keys again.
+read-only import evidence, with the only writer exceptions being one-shot
+consumption of imported first-run/update presentation flags. Low-level
+`UserDefaults` access sits behind `SettingsDefaultsStore`, so typed persistence,
+Codable payloads, and persistent-domain checks do not spread through the settings
+composition layer. The boundary script fails if imported aliases leak back into
+the routine key namespace or if routine code starts writing import-only keys
+again.
 
 Legacy scalar parsing is centralized in `LegacyValuePolicy` instead of being
 reimplemented per feature. Searchbar settings, update/install settings, product

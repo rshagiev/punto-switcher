@@ -7,7 +7,7 @@ extension Notification.Name {
     static let puntoInputSourcePreferencesChanged = Notification.Name("puntoInputSourcePreferencesChanged")
 }
 
-/// Manages application settings using UserDefaults
+/// Composes application settings from native storage, import fallbacks, and policy-provided base values.
 final class SettingsManager {
 
     // MARK: - Keys
@@ -99,14 +99,12 @@ final class SettingsManager {
 
     // MARK: - Properties
 
-    private let defaults = UserDefaults.standard
-    private let encoder = JSONEncoder()
-    private let decoder = JSONDecoder()
+    private let store = SettingsDefaultsStore()
 
     /// Whether the app functionality is enabled
     var isEnabled: Bool {
         get { persistedBool(forKey: Keys.isEnabled) ?? SettingsPersistencePolicy.defaultIsEnabled }
-        set { defaults.set(newValue, forKey: Keys.isEnabled) }
+        set { store.set(newValue, forKey: Keys.isEnabled) }
     }
 
     /// Whether this is the first launch
@@ -120,32 +118,32 @@ final class SettingsManager {
                 defaultValue: SettingsPersistencePolicy.defaultIsFirstLaunch
             )
         }
-        set { defaults.set(newValue, forKey: Keys.isFirstLaunch) }
+        set { store.set(newValue, forKey: Keys.isFirstLaunch) }
     }
 
     /// Consumes native and imported Punto Switcher first-run flags after onboarding.
     func consumeFirstLaunchPresentationFlags() {
-        defaults.set(false, forKey: Keys.isFirstLaunch)
-        defaults.set(false, forKey: ImportKeys.isFirstInstallation)
-        defaults.set(false, forKey: ImportKeys.isJustInstalled)
+        store.set(false, forKey: Keys.isFirstLaunch)
+        store.set(false, forKey: ImportKeys.isFirstInstallation)
+        store.set(false, forKey: ImportKeys.isJustInstalled)
     }
 
     /// Consumes imported Punto Switcher update flags after native update presentation.
     func consumeUpdatePresentationImportFlags() {
-        defaults.set(false, forKey: ImportKeys.isJustUpdated)
-        defaults.set(false, forKey: ImportKeys.isUpdating)
+        store.set(false, forKey: ImportKeys.isJustUpdated)
+        store.set(false, forKey: ImportKeys.isUpdating)
     }
 
     /// Whether to show the icon in the menu bar
     var showInMenuBar: Bool {
         get {
             SettingsPersistencePolicy.effectiveBool(
-                hasPersistedValue: defaults.object(forKey: Keys.showInMenuBar) != nil,
+                hasPersistedValue: store.object(forKey: Keys.showInMenuBar) != nil,
                 persistedValue: persistedBool(forKey: Keys.showInMenuBar),
                 defaultValue: SettingsPersistencePolicy.defaultShowInMenuBar
             )
         }
-        set { defaults.set(newValue, forKey: Keys.showInMenuBar) }
+        set { store.set(newValue, forKey: Keys.showInMenuBar) }
     }
 
     /// Whether advanced settings are visible in the preferences window
@@ -157,7 +155,7 @@ final class SettingsManager {
                 defaultValue: SettingsPersistencePolicy.defaultShowAdvancedSettings
             )
         }
-        set { defaults.set(newValue, forKey: Keys.showAdvancedSettings) }
+        set { store.set(newValue, forKey: Keys.showAdvancedSettings) }
     }
 
     /// Whether to launch at login
@@ -172,7 +170,7 @@ final class SettingsManager {
             )
         }
         set {
-            defaults.set(newValue, forKey: Keys.launchAtLogin)
+            store.set(newValue, forKey: Keys.launchAtLogin)
             updateLoginItem(enabled: newValue)
         }
     }
@@ -188,9 +186,7 @@ final class SettingsManager {
         }
         set {
             let normalized = HotkeyValidationPolicy.normalized(newValue, fallback: Hotkey.defaultConvertLayout)
-            if let data = try? encoder.encode(normalized) {
-                defaults.set(data, forKey: Keys.convertLayoutHotkey)
-            }
+            store.encodeAndSet(normalized, forKey: Keys.convertLayoutHotkey)
         }
     }
 
@@ -205,9 +201,7 @@ final class SettingsManager {
         }
         set {
             let normalized = HotkeyValidationPolicy.normalized(newValue, fallback: Hotkey.defaultToggleCase)
-            if let data = try? encoder.encode(normalized) {
-                defaults.set(data, forKey: Keys.toggleCaseHotkey)
-            }
+            store.encodeAndSet(normalized, forKey: Keys.toggleCaseHotkey)
         }
     }
 
@@ -222,9 +216,7 @@ final class SettingsManager {
         }
         set {
             let normalized = HotkeyValidationPolicy.normalized(newValue, fallback: Hotkey.defaultToggleAutoCorrection)
-            if let data = try? encoder.encode(normalized) {
-                defaults.set(data, forKey: Keys.toggleAutoCorrectionHotkey)
-            }
+            store.encodeAndSet(normalized, forKey: Keys.toggleAutoCorrectionHotkey)
         }
     }
 
@@ -239,9 +231,7 @@ final class SettingsManager {
         }
         set {
             let normalized = HotkeyValidationPolicy.normalized(newValue, fallback: Hotkey.defaultCancelLayoutChange)
-            if let data = try? encoder.encode(normalized) {
-                defaults.set(data, forKey: Keys.cancelLayoutChangeHotkey)
-            }
+            store.encodeAndSet(normalized, forKey: Keys.cancelLayoutChangeHotkey)
         }
     }
 
@@ -256,9 +246,7 @@ final class SettingsManager {
         }
         set {
             let normalized = HotkeyValidationPolicy.normalized(newValue, fallback: Hotkey.defaultFindInYandex)
-            if let data = try? encoder.encode(normalized) {
-                defaults.set(data, forKey: Keys.findInYandexHotkey)
-            }
+            store.encodeAndSet(normalized, forKey: Keys.findInYandexHotkey)
         }
     }
 
@@ -273,9 +261,7 @@ final class SettingsManager {
         }
         set {
             let normalized = HotkeyValidationPolicy.normalized(newValue, fallback: Hotkey.defaultFindInSlovari)
-            if let data = try? encoder.encode(normalized) {
-                defaults.set(data, forKey: Keys.findInSlovariHotkey)
-            }
+            store.encodeAndSet(normalized, forKey: Keys.findInSlovariHotkey)
         }
     }
 
@@ -284,18 +270,18 @@ final class SettingsManager {
             SearchbarSettingsPolicy.effectiveShouldSearchByDoubleClick(
                 hasNativeValue: hasStoredValue(forKey: Keys.searchSelectedTextByDoubleClick),
                 nativeValue: persistedBool(forKey: Keys.searchSelectedTextByDoubleClick),
-                legacySnapshot: SearchbarSettingsPolicy.snapshot(from: defaults.dictionary(forKey: ImportKeys.searchbarSettings))
+                legacySnapshot: SearchbarSettingsPolicy.snapshot(from: store.dictionary(forKey: ImportKeys.searchbarSettings))
             )
         }
         set {
-            defaults.set(newValue, forKey: Keys.searchSelectedTextByDoubleClick)
+            store.set(newValue, forKey: Keys.searchSelectedTextByDoubleClick)
         }
     }
 
     /// Переключать раскладку после конвертации
     var switchLayoutAfterConversion: Bool {
         get { persistedBool(forKey: Keys.switchLayoutAfterConversion) ?? SettingsPersistencePolicy.defaultSwitchLayoutAfterConversion }
-        set { defaults.set(newValue, forKey: Keys.switchLayoutAfterConversion) }
+        set { store.set(newValue, forKey: Keys.switchLayoutAfterConversion) }
     }
 
     var switchLayoutAfterSelectedTextConversion: Bool {
@@ -309,7 +295,7 @@ final class SettingsManager {
             )
         }
         set {
-            defaults.set(newValue, forKey: Keys.switchLayoutAfterSelectedTextConversion)
+            store.set(newValue, forKey: Keys.switchLayoutAfterSelectedTextConversion)
         }
     }
 
@@ -324,7 +310,7 @@ final class SettingsManager {
             )
         }
         set {
-            defaults.set(newValue, forKey: Keys.manualConversionDisabled)
+            store.set(newValue, forKey: Keys.manualConversionDisabled)
         }
     }
 
@@ -332,13 +318,13 @@ final class SettingsManager {
         get {
             SettingsPersistencePolicy.effectiveRussianKeyboardLayoutType(
                 hasPersistedValue: hasStoredValue(forKey: Keys.russianKeyboardLayoutType),
-                persistedValue: defaults.string(forKey: Keys.russianKeyboardLayoutType),
+                persistedValue: store.string(forKey: Keys.russianKeyboardLayoutType),
                 hasLegacyValue: hasStoredValue(forKey: ImportKeys.kbdLayoutType),
-                legacyValue: defaults.string(forKey: ImportKeys.kbdLayoutType)
+                legacyValue: store.string(forKey: ImportKeys.kbdLayoutType)
             )
         }
         set {
-            defaults.set(newValue.rawValue, forKey: Keys.russianKeyboardLayoutType)
+            store.set(newValue.rawValue, forKey: Keys.russianKeyboardLayoutType)
             NotificationCenter.default.post(name: .puntoRussianKeyboardLayoutTypeChanged, object: self)
             NotificationCenter.default.post(name: .puntoInputSourcePreferencesChanged, object: self)
         }
@@ -348,9 +334,9 @@ final class SettingsManager {
         get {
             SettingsPersistencePolicy.effectiveInputSourceID(
                 hasPersistedValue: hasStoredValue(forKey: Keys.preferredEnglishInputSourceID),
-                persistedValue: defaults.string(forKey: Keys.preferredEnglishInputSourceID),
+                persistedValue: store.string(forKey: Keys.preferredEnglishInputSourceID),
                 hasLegacyValue: hasStoredValue(forKey: ImportKeys.englishLayoutID),
-                legacyValue: defaults.string(forKey: ImportKeys.englishLayoutID)
+                legacyValue: store.string(forKey: ImportKeys.englishLayoutID)
             )
         }
         set {
@@ -362,9 +348,9 @@ final class SettingsManager {
         get {
             SettingsPersistencePolicy.effectiveInputSourceID(
                 hasPersistedValue: hasStoredValue(forKey: Keys.preferredRussianInputSourceID),
-                persistedValue: defaults.string(forKey: Keys.preferredRussianInputSourceID),
+                persistedValue: store.string(forKey: Keys.preferredRussianInputSourceID),
                 hasLegacyValue: hasStoredValue(forKey: ImportKeys.russianLayoutID),
-                legacyValue: defaults.string(forKey: ImportKeys.russianLayoutID)
+                legacyValue: store.string(forKey: ImportKeys.russianLayoutID)
             )
         }
         set {
@@ -384,18 +370,18 @@ final class SettingsManager {
             )
         }
         set {
-            defaults.set(newValue, forKey: Keys.rememberInputSourceForEachApp)
+            store.set(newValue, forKey: Keys.rememberInputSourceForEachApp)
         }
     }
 
     var rememberedApplicationLayouts: [String: String] {
         get {
             SettingsPersistencePolicy.normalizedRememberedApplicationLayouts(
-                defaults.dictionary(forKey: Keys.rememberedApplicationLayouts) as? [String: String] ?? [:]
+                store.dictionary(forKey: Keys.rememberedApplicationLayouts) as? [String: String] ?? [:]
             )
         }
         set {
-            defaults.set(
+            store.set(
                 SettingsPersistencePolicy.normalizedRememberedApplicationLayouts(newValue),
                 forKey: Keys.rememberedApplicationLayouts
             )
@@ -406,14 +392,14 @@ final class SettingsManager {
         get {
             SettingsPersistencePolicy.effectiveDisabledApplicationBundleIDs(
                 hasPersistedValue: hasStoredValue(forKey: Keys.disabledApplicationBundleIDs),
-                persistedValue: Set(defaults.stringArray(forKey: Keys.disabledApplicationBundleIDs) ?? []),
+                persistedValue: Set(store.stringArray(forKey: Keys.disabledApplicationBundleIDs) ?? []),
                 hasLegacyValue: hasStoredValue(forKey: ImportKeys.disabledApps),
-                legacyValue: Set(defaults.stringArray(forKey: ImportKeys.disabledApps) ?? [])
+                legacyValue: Set(store.stringArray(forKey: ImportKeys.disabledApps) ?? [])
             )
         }
         set {
             let normalized = Array(SettingsPersistencePolicy.normalizedDisabledApplicationBundleIDs(newValue)).sorted()
-            defaults.set(normalized, forKey: Keys.disabledApplicationBundleIDs)
+            store.set(normalized, forKey: Keys.disabledApplicationBundleIDs)
         }
     }
 
@@ -435,7 +421,7 @@ final class SettingsManager {
             )
         }
         set {
-            defaults.set(newValue, forKey: Keys.completelyDisableInExceptionApplications)
+            store.set(newValue, forKey: Keys.completelyDisableInExceptionApplications)
         }
     }
 
@@ -458,15 +444,15 @@ final class SettingsManager {
     var resetOnReturnBundleComponents: Set<String> {
         get {
             SettingsPersistencePolicy.effectiveResetOnReturnBundleComponents(
-                hasPersistedComponents: defaults.object(forKey: Keys.resetOnReturnBundleComponents) != nil,
-                persistedComponents: defaults.stringArray(forKey: Keys.resetOnReturnBundleComponents).map(Set.init),
-                hasLegacyComponents: defaults.object(forKey: ImportKeys.switcherResetOnReturn) != nil,
-                legacyComponents: defaults.stringArray(forKey: ImportKeys.switcherResetOnReturn).map(Set.init)
+                hasPersistedComponents: store.object(forKey: Keys.resetOnReturnBundleComponents) != nil,
+                persistedComponents: store.stringArray(forKey: Keys.resetOnReturnBundleComponents).map(Set.init),
+                hasLegacyComponents: store.object(forKey: ImportKeys.switcherResetOnReturn) != nil,
+                legacyComponents: store.stringArray(forKey: ImportKeys.switcherResetOnReturn).map(Set.init)
             )
         }
         set {
             let normalized = Array(SettingsPersistencePolicy.normalizedResetOnReturnBundleComponents(newValue)).sorted()
-            defaults.set(
+            store.set(
                 normalized,
                 forKey: Keys.resetOnReturnBundleComponents
             )
@@ -484,7 +470,7 @@ final class SettingsManager {
             )
         }
         set {
-            defaults.set(newValue, forKey: Keys.autoCorrectionEnabled)
+            store.set(newValue, forKey: Keys.autoCorrectionEnabled)
         }
     }
 
@@ -509,7 +495,7 @@ final class SettingsManager {
             )
         }
         set {
-            defaults.set(newValue, forKey: Keys.autoCorrectionStarterRulesEnabled)
+            store.set(newValue, forKey: Keys.autoCorrectionStarterRulesEnabled)
         }
     }
 
@@ -524,7 +510,7 @@ final class SettingsManager {
             )
         }
         set {
-            defaults.set(newValue, forKey: Keys.autoCorrectOnEnterAndTab)
+            store.set(newValue, forKey: Keys.autoCorrectOnEnterAndTab)
         }
     }
 
@@ -534,16 +520,16 @@ final class SettingsManager {
                 hasPersistedValue: hasStoredValue(forKey: Keys.autoCorrectionUndoLearningEnabled),
                 persistedValue: persistedBool(forKey: Keys.autoCorrectionUndoLearningEnabled),
                 hasLegacyValue: SettingsPersistencePolicy.legacyUndoCollectionEnabled(
-                    from: defaults.dictionary(forKey: ImportKeys.undoLearning)
+                    from: store.dictionary(forKey: ImportKeys.undoLearning)
                 ) != nil,
                 legacyValue: SettingsPersistencePolicy.legacyUndoCollectionEnabled(
-                    from: defaults.dictionary(forKey: ImportKeys.undoLearning)
+                    from: store.dictionary(forKey: ImportKeys.undoLearning)
                 ) ?? SettingsPersistencePolicy.defaultAutoCorrectionUndoLearningEnabled,
                 defaultValue: SettingsPersistencePolicy.defaultAutoCorrectionUndoLearningEnabled
             )
         }
         set {
-            defaults.set(newValue, forKey: Keys.autoCorrectionUndoLearningEnabled)
+            store.set(newValue, forKey: Keys.autoCorrectionUndoLearningEnabled)
         }
     }
 
@@ -558,7 +544,7 @@ final class SettingsManager {
             )
         }
         set {
-            defaults.set(newValue, forKey: Keys.suppressAutoCorrectionAfterManualConversion)
+            store.set(newValue, forKey: Keys.suppressAutoCorrectionAfterManualConversion)
         }
     }
 
@@ -566,13 +552,13 @@ final class SettingsManager {
         get {
             SettingsPersistencePolicy.effectiveAutoCorrectionCancellingKeyNames(
                 hasPersistedValue: hasStoredValue(forKey: Keys.autoCorrectionCancellingKeyNames),
-                persistedValue: Set(defaults.stringArray(forKey: Keys.autoCorrectionCancellingKeyNames) ?? []),
+                persistedValue: Set(store.stringArray(forKey: Keys.autoCorrectionCancellingKeyNames) ?? []),
                 hasLegacyValue: hasStoredValue(forKey: ImportKeys.cancellingKeys),
                 legacyBitmask: persistedInt(forKey: ImportKeys.cancellingKeys)
             )
         }
         set {
-            defaults.set(
+            store.set(
                 Array(SettingsPersistencePolicy.normalizedAutoCorrectionCancellingKeyNames(newValue)).sorted(),
                 forKey: Keys.autoCorrectionCancellingKeyNames
             )
@@ -609,20 +595,20 @@ final class SettingsManager {
             )
         }
         set {
-            defaults.set(newValue, forKey: Keys.soundEffectsEnabled)
+            store.set(newValue, forKey: Keys.soundEffectsEnabled)
         }
     }
 
     var enabledSoundResourceNames: Set<String> {
         get {
-            if defaults.object(forKey: Keys.enabledSoundResourceNames) != nil {
+            if store.object(forKey: Keys.enabledSoundResourceNames) != nil {
                 return SoundFeedbackPolicy.normalizedEnabledResourceNames(
-                    Set(defaults.stringArray(forKey: Keys.enabledSoundResourceNames) ?? [])
+                    Set(store.stringArray(forKey: Keys.enabledSoundResourceNames) ?? [])
                 )
             }
-            if defaults.object(forKey: ImportKeys.enabledSounds) != nil,
+            if store.object(forKey: ImportKeys.enabledSounds) != nil,
                let legacyNames = SoundFeedbackPolicy.enabledResourceNames(
-                fromLegacyBitmask: defaults.integer(forKey: ImportKeys.enabledSounds)
+                fromLegacyBitmask: store.integer(forKey: ImportKeys.enabledSounds)
                ) {
                 return legacyNames
             }
@@ -635,7 +621,7 @@ final class SettingsManager {
         }
         set {
             let normalized = SoundFeedbackPolicy.normalizedEnabledResourceNames(newValue)
-            defaults.set(Array(normalized).sorted(), forKey: Keys.enabledSoundResourceNames)
+            store.set(Array(normalized).sorted(), forKey: Keys.enabledSoundResourceNames)
         }
     }
 
@@ -664,21 +650,20 @@ final class SettingsManager {
             )
         }
         set {
-            defaults.set(newValue, forKey: Keys.restorePasteboardAfterConversion)
+            store.set(newValue, forKey: Keys.restorePasteboardAfterConversion)
         }
     }
 
     var productStatistics: ProductStatisticsSnapshot {
         get {
-            let persistedSnapshot = defaults.data(forKey: Keys.productStatistics)
-                .flatMap { try? decoder.decode(ProductStatisticsSnapshot.self, from: $0) }
+            let persistedSnapshot = store.decode(ProductStatisticsSnapshot.self, forKey: Keys.productStatistics)
             let legacyCountersSnapshot = ProductStatisticsPolicy.snapshotFromLegacySources(
                 typedWords: persistedInt(forKey: ImportKeys.typedWords),
                 typedSymbols: persistedInt(forKey: ImportKeys.typedSymbols),
                 automaticSwitches: persistedInt(forKey: ImportKeys.automaticSwitches),
                 manualSwitches: persistedInt(forKey: ImportKeys.manualSwitches),
                 reverts: persistedInt(forKey: ImportKeys.reverts),
-                dayuseSettings: defaults.dictionary(forKey: ImportKeys.dayuseSettings)
+                dayuseSettings: store.dictionary(forKey: ImportKeys.dayuseSettings)
             )
             return ProductStatisticsPolicy.effectiveSnapshot(
                 persistedSnapshot: persistedSnapshot,
@@ -687,10 +672,7 @@ final class SettingsManager {
         }
         set {
             let normalized = SettingsPersistencePolicy.normalizedProductStatistics(newValue)
-            guard let data = try? encoder.encode(normalized) else {
-                return
-            }
-            defaults.set(data, forKey: Keys.productStatistics)
+            store.encodeAndSet(normalized, forKey: Keys.productStatistics)
         }
     }
 
@@ -700,18 +682,14 @@ final class SettingsManager {
 
     var applicationUpdateSettings: ApplicationUpdateSettingsSnapshot {
         get {
-            if let data = defaults.data(forKey: Keys.applicationUpdateSettings),
-               let snapshot = try? decoder.decode(ApplicationUpdateSettingsSnapshot.self, from: data) {
+            if let snapshot = store.decode(ApplicationUpdateSettingsSnapshot.self, forKey: Keys.applicationUpdateSettings) {
                 return ApplicationUpdateSettingsPolicy.normalized(snapshot)
             }
-            return ApplicationUpdateSettingsPolicy.snapshot(from: storedDefaults)
+            return ApplicationUpdateSettingsPolicy.snapshot(from: store.storedDefaults)
         }
         set {
             let normalized = ApplicationUpdateSettingsPolicy.normalized(newValue)
-            guard let data = try? encoder.encode(normalized) else {
-                return
-            }
-            defaults.set(data, forKey: Keys.applicationUpdateSettings)
+            store.encodeAndSet(normalized, forKey: Keys.applicationUpdateSettings)
         }
     }
 
@@ -727,11 +705,10 @@ final class SettingsManager {
 
     var autoCorrectionRules: [AutoCorrectionRule] {
         get {
-            let hasPersistedRules = defaults.object(forKey: Keys.autoCorrectionRules) != nil
-            let rules = defaults.data(forKey: Keys.autoCorrectionRules)
-                .flatMap { try? decoder.decode([AutoCorrectionRule].self, from: $0) }
+            let hasPersistedRules = store.object(forKey: Keys.autoCorrectionRules) != nil
+            let rules = store.decode([AutoCorrectionRule].self, forKey: Keys.autoCorrectionRules)
                 .map(AutoCorrectionRuleStore.normalizedRules)
-            let legacyRules = LegacyUserRulePolicy.rules(from: defaults.object(forKey: ImportKeys.userRulesDictionary))
+            let legacyRules = LegacyUserRulePolicy.rules(from: store.object(forKey: ImportKeys.userRulesDictionary))
             return AutoCorrectionRuleSourcePolicy.effectiveRules(
                 hasPersistedRules: hasPersistedRules,
                 persistedRules: rules,
@@ -741,7 +718,7 @@ final class SettingsManager {
         }
         set {
             guard let data = try? AutoCorrectionRuleStore.encodeRules(newValue) else { return }
-            defaults.set(data, forKey: Keys.autoCorrectionRules)
+            store.set(data, forKey: Keys.autoCorrectionRules)
         }
     }
 
@@ -762,7 +739,7 @@ final class SettingsManager {
 
     init() {
         // Register defaults
-        defaults.register(defaults: [
+        store.register(defaults: [
             Keys.isEnabled: SettingsPersistencePolicy.defaultIsEnabled,
             Keys.isFirstLaunch: SettingsPersistencePolicy.defaultIsFirstLaunch,
             Keys.showInMenuBar: SettingsPersistencePolicy.defaultShowInMenuBar,
@@ -834,46 +811,32 @@ final class SettingsManager {
 
     private func setPreferredInputSourceID(_ sourceID: String?, nativeKey: String) {
         if let normalized = SettingsPersistencePolicy.normalizedInputSourceID(sourceID) {
-            defaults.set(normalized, forKey: nativeKey)
+            store.set(normalized, forKey: nativeKey)
         } else {
-            defaults.removeObject(forKey: nativeKey)
+            store.removeObject(forKey: nativeKey)
         }
         NotificationCenter.default.post(name: .puntoInputSourcePreferencesChanged, object: self)
     }
 
     private func persistedInt(forKey key: String) -> Int? {
-        guard hasStoredValue(forKey: key) else {
-            return nil
-        }
-        return defaults.integer(forKey: key)
+        store.integer(forKey: key)
     }
 
     private func persistedBool(forKey key: String) -> Bool? {
-        guard hasStoredValue(forKey: key) else {
-            return nil
-        }
-        return SettingsPersistencePolicy.boolValue(storedDefaults[key])
+        store.bool(forKey: key)
     }
 
     private func hasStoredValue(forKey key: String) -> Bool {
-        storedDefaults[key] != nil
-    }
-
-    private var storedDefaults: [String: Any] {
-        guard let domainName = Bundle.main.bundleIdentifier else {
-            return [:]
-        }
-        return defaults.persistentDomain(forName: domainName) ?? [:]
+        store.hasStoredValue(forKey: key)
     }
 
     private func persistedHotkey(nativeKey: String, legacyKey: String, fallback: Hotkey) -> Hotkey {
-        if let data = defaults.data(forKey: nativeKey),
-           let hotkey = try? decoder.decode(Hotkey.self, from: data) {
+        if let hotkey = store.decode(Hotkey.self, forKey: nativeKey) {
             return HotkeyValidationPolicy.normalized(hotkey, fallback: fallback)
         }
 
-        if defaults.object(forKey: legacyKey) != nil {
-            return LegacyHotkeyPolicy.normalized(defaults.dictionary(forKey: legacyKey), fallback: fallback)
+        if store.object(forKey: legacyKey) != nil {
+            return LegacyHotkeyPolicy.normalized(store.dictionary(forKey: legacyKey), fallback: fallback)
         }
 
         return fallback

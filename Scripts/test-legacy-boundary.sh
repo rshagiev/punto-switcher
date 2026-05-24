@@ -158,7 +158,7 @@ for pattern in "${settings_import_alias_patterns[@]}"; do
     echo "PASS SettingsManager import alias separated: $pattern"
 done
 
-settings_import_writes="$(rg "defaults\\.(set|removeObject)\\([^\\n]*forKey: ImportKeys\\." Sources/Punto/Settings/SettingsManager.swift || true)"
+settings_import_writes="$(rg "(defaults|store)\\.(set|removeObject)\\([^\\n]*forKey: ImportKeys\\." Sources/Punto/Settings/SettingsManager.swift || true)"
 unexpected_import_writes="$(printf '%s\n' "$settings_import_writes" | rg -v --fixed-strings "ImportKeys.isFirstInstallation" | rg -v --fixed-strings "ImportKeys.isJustInstalled" | rg -v --fixed-strings "ImportKeys.isJustUpdated" | rg -v --fixed-strings "ImportKeys.isUpdating" || true)"
 if [[ -n "$unexpected_import_writes" ]]; then
     echo "legacy boundary failed: routine write to import-only key:" >&2
@@ -166,6 +166,22 @@ if [[ -n "$unexpected_import_writes" ]]; then
     exit 1
 fi
 echo "PASS SettingsManager import-only writes limited to first-run/update consumption"
+
+settings_manager_direct_storage_patterns=(
+    "UserDefaults"
+    "JSONEncoder"
+    "JSONDecoder"
+    "persistentDomain"
+    "defaults."
+)
+
+for pattern in "${settings_manager_direct_storage_patterns[@]}"; do
+    if rg --fixed-strings --quiet "$pattern" Sources/Punto/Settings/SettingsManager.swift; then
+        echo "legacy boundary failed: SettingsManager reopened direct storage access: $pattern" >&2
+        exit 1
+    fi
+    echo "PASS SettingsManager direct storage absent: $pattern"
+done
 
 app_delegate_runtime_state_patterns=(
     "private let conversionSession = ConversionSession()"
@@ -456,7 +472,7 @@ with open(path, "r", encoding="utf-8") as handle:
 
 violations = []
 for index, line in enumerate(lines):
-    if "defaults.set" not in line and "defaults.removeObject" not in line:
+    if not any(pattern in line for pattern in ("defaults.set", "defaults.removeObject", "store.set", "store.removeObject")):
         continue
 
     call_lines = []
