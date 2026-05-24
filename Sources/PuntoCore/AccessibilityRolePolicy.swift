@@ -163,7 +163,8 @@ public enum AccessibilityRolePolicy {
 
         let normalized = role
             .trimmingCharacters(in: .whitespacesAndNewlines)
-            .replacingOccurrences(of: " ", with: "")
+            .components(separatedBy: .whitespacesAndNewlines)
+            .joined()
             .lowercased()
 
         return normalized.isEmpty ? nil : normalized
