@@ -1,5 +1,17 @@
 import Foundation
 
+public struct AutoCorrectionCancellingKeyDisplayItem: Equatable {
+    public let name: String
+    public let title: String
+    public let keyCode: UInt16
+
+    public init(name: String, title: String, keyCode: UInt16) {
+        self.name = name
+        self.title = title
+        self.keyCode = keyCode
+    }
+}
+
 public enum AutoCorrectionCancellingKeyPolicy {
     public static let legacyCancellingKeysBitmaskKey = "cancellingKeys"
     public static let legacyBackspaceName = "dontAutoconvertWordWithBackspace"
@@ -21,26 +33,43 @@ public enum AutoCorrectionCancellingKeyPolicy {
     public static let upArrow = "upArrow"
     public static let downArrow = "downArrow"
 
-    public static let defaultEnabledKeyNames: Set<String> = [
-        backspace,
-        delete,
-        leftArrow,
-        rightArrow,
-        upArrow,
-        downArrow
+    public static let displayOrder: [AutoCorrectionCancellingKeyDisplayItem] = [
+        AutoCorrectionCancellingKeyDisplayItem(
+            name: backspace,
+            title: "Backspace",
+            keyCode: WordTrackingPolicy.deleteKeyCode
+        ),
+        AutoCorrectionCancellingKeyDisplayItem(
+            name: delete,
+            title: "Delete",
+            keyCode: WordTrackingPolicy.forwardDeleteKeyCode
+        ),
+        AutoCorrectionCancellingKeyDisplayItem(
+            name: leftArrow,
+            title: "Left",
+            keyCode: WordTrackingPolicy.leftArrowKeyCode
+        ),
+        AutoCorrectionCancellingKeyDisplayItem(
+            name: rightArrow,
+            title: "Right",
+            keyCode: WordTrackingPolicy.rightArrowKeyCode
+        ),
+        AutoCorrectionCancellingKeyDisplayItem(
+            name: upArrow,
+            title: "Up",
+            keyCode: WordTrackingPolicy.upArrowKeyCode
+        ),
+        AutoCorrectionCancellingKeyDisplayItem(
+            name: downArrow,
+            title: "Down",
+            keyCode: WordTrackingPolicy.downArrowKeyCode
+        )
     ]
+
+    public static let defaultEnabledKeyNames = Set(displayOrder.map(\.name))
     public static let defaultEnabledKeyNameList = Array(defaultEnabledKeyNames).sorted()
 
     public static let supportedKeyNames: Set<String> = defaultEnabledKeyNames
-
-    public static let displayOrder: [(name: String, title: String)] = [
-        (backspace, "Backspace"),
-        (delete, "Delete"),
-        (leftArrow, "Left"),
-        (rightArrow, "Right"),
-        (upArrow, "Up"),
-        (downArrow, "Down")
-    ]
 
     private static let legacyNamesByCanonicalName: [String: String] = [
         legacyBackspaceName: backspace,
@@ -112,21 +141,6 @@ public enum AutoCorrectionCancellingKeyPolicy {
     }
 
     public static func cancellingKeyName(for keyCode: UInt16) -> String? {
-        switch keyCode {
-        case WordTrackingPolicy.deleteKeyCode:
-            return backspace
-        case WordTrackingPolicy.forwardDeleteKeyCode:
-            return delete
-        case WordTrackingPolicy.leftArrowKeyCode:
-            return leftArrow
-        case WordTrackingPolicy.rightArrowKeyCode:
-            return rightArrow
-        case WordTrackingPolicy.upArrowKeyCode:
-            return upArrow
-        case WordTrackingPolicy.downArrowKeyCode:
-            return downArrow
-        default:
-            return nil
-        }
+        displayOrder.first { $0.keyCode == keyCode }?.name
     }
 }

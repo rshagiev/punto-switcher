@@ -25,6 +25,52 @@ func runWordTrackerTests() throws {
             "auto-correction cancelling key policy mirrors supported Punto Switcher cancelling key names"
         )
         try expect(
+            AutoCorrectionCancellingKeyPolicy.displayOrder,
+            [
+                AutoCorrectionCancellingKeyDisplayItem(
+                    name: AutoCorrectionCancellingKeyPolicy.backspace,
+                    title: "Backspace",
+                    keyCode: WordTrackingPolicy.deleteKeyCode
+                ),
+                AutoCorrectionCancellingKeyDisplayItem(
+                    name: AutoCorrectionCancellingKeyPolicy.delete,
+                    title: "Delete",
+                    keyCode: WordTrackingPolicy.forwardDeleteKeyCode
+                ),
+                AutoCorrectionCancellingKeyDisplayItem(
+                    name: AutoCorrectionCancellingKeyPolicy.leftArrow,
+                    title: "Left",
+                    keyCode: WordTrackingPolicy.leftArrowKeyCode
+                ),
+                AutoCorrectionCancellingKeyDisplayItem(
+                    name: AutoCorrectionCancellingKeyPolicy.rightArrow,
+                    title: "Right",
+                    keyCode: WordTrackingPolicy.rightArrowKeyCode
+                ),
+                AutoCorrectionCancellingKeyDisplayItem(
+                    name: AutoCorrectionCancellingKeyPolicy.upArrow,
+                    title: "Up",
+                    keyCode: WordTrackingPolicy.upArrowKeyCode
+                ),
+                AutoCorrectionCancellingKeyDisplayItem(
+                    name: AutoCorrectionCancellingKeyPolicy.downArrow,
+                    title: "Down",
+                    keyCode: WordTrackingPolicy.downArrowKeyCode
+                )
+            ],
+            "auto-correction cancelling key policy owns settings display order and runtime key codes"
+        )
+        try expect(
+            Set(AutoCorrectionCancellingKeyPolicy.displayOrder.map(\.name)),
+            AutoCorrectionCancellingKeyPolicy.supportedKeyNames,
+            "auto-correction cancelling key display covers every supported key"
+        )
+        try expect(
+            AutoCorrectionCancellingKeyPolicy.displayOrder.count,
+            AutoCorrectionCancellingKeyPolicy.supportedKeyNames.count,
+            "auto-correction cancelling key display lists every supported key exactly once"
+        )
+        try expect(
             PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.setCancellingKeyStateSelector,
             "setCancellingKeyState:doEnable:",
             "observed surface preserves auto-correction cancelling-key setter selector"
