@@ -24,12 +24,23 @@ public struct AutoCorrectionToggleAction: Equatable {
 
 public enum AutoCorrectionTogglePolicy {
     public static func action(wasEnabled: Bool) -> AutoCorrectionToggleAction {
-        let isEnabled = !wasEnabled
+        action(changingFrom: wasEnabled, to: !wasEnabled, source: "hotkey")!
+    }
+
+    public static func action(
+        changingFrom wasEnabled: Bool,
+        to isEnabled: Bool,
+        source: String
+    ) -> AutoCorrectionToggleAction? {
+        guard wasEnabled != isEnabled else {
+            return nil
+        }
+
         return AutoCorrectionToggleAction(
             newEnabledValue: isEnabled,
             clearTrackedTextReason: "auto-correction toggled",
             clearConversionSessionReason: "auto-correction toggled",
-            logMessage: "Auto-correction \(isEnabled ? "enabled" : "disabled") by hotkey",
+            logMessage: "Auto-correction \(isEnabled ? "enabled" : "disabled") by \(source)",
             shouldFlashIcon: true
         )
     }

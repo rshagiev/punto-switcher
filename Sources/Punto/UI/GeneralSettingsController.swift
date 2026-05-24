@@ -10,6 +10,7 @@ final class GeneralSettingsController: NSObject {
     private let showDisabledAppsEditor: () -> Void
     private let showResetOnReturnEditor: () -> Void
     private let showLayoutMemoryEditor: () -> Void
+    private let onToggleChanged: (SettingsToggleSlot, Bool, Bool) -> Void
 
     private weak var advancedSettingsStack: NSStackView?
     private weak var preferredEnglishInputSourceIDField: NSTextField?
@@ -26,7 +27,8 @@ final class GeneralSettingsController: NSObject {
         importAutoCorrectionRules: @escaping () -> Void,
         showDisabledAppsEditor: @escaping () -> Void,
         showResetOnReturnEditor: @escaping () -> Void,
-        showLayoutMemoryEditor: @escaping () -> Void
+        showLayoutMemoryEditor: @escaping () -> Void,
+        onToggleChanged: @escaping (SettingsToggleSlot, Bool, Bool) -> Void = { _, _, _ in }
     ) {
         self.settingsManager = settingsManager
         self.setLoginItemEnabled = setLoginItemEnabled
@@ -35,6 +37,7 @@ final class GeneralSettingsController: NSObject {
         self.showDisabledAppsEditor = showDisabledAppsEditor
         self.showResetOnReturnEditor = showResetOnReturnEditor
         self.showLayoutMemoryEditor = showLayoutMemoryEditor
+        self.onToggleChanged = onToggleChanged
     }
 
     func createView() -> NSView {
@@ -402,6 +405,7 @@ final class GeneralSettingsController: NSObject {
             return
         }
 
+        let wasEnabled = settingsManager.bool(for: slot)
         let isEnabled = sender.state == .on
         settingsManager.setBool(isEnabled, for: slot)
 
@@ -425,6 +429,8 @@ final class GeneralSettingsController: NSObject {
              .completelyDisableInExceptionApplications:
             break
         }
+
+        onToggleChanged(slot, wasEnabled, isEnabled)
     }
 
     @objc private func changeRussianKeyboardLayoutType(_ sender: NSSegmentedControl) {

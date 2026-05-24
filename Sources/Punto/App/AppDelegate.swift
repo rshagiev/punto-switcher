@@ -362,11 +362,44 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 },
                 setLoginItemEnabled: { isEnabled in
                     LoginItemController.setEnabled(isEnabled, bundleIdentifier: Bundle.main.bundleIdentifier)
+                },
+                onToggleChanged: { [weak self] slot, wasEnabled, isEnabled in
+                    self?.handleSettingsToggleChanged(slot, wasEnabled: wasEnabled, isEnabled: isEnabled)
                 }
             )
         }
         settingsWindowController?.showWindow(nil)
         NSApp.activate(ignoringOtherApps: true)
+    }
+
+    private func handleSettingsToggleChanged(
+        _ slot: SettingsToggleSlot,
+        wasEnabled: Bool,
+        isEnabled: Bool
+    ) {
+        switch slot {
+        case .showInMenuBar:
+            statusBarController?.updateVisibility()
+
+        case .autoCorrectionEnabled:
+            commandRuntime?.handleAutoCorrectionSettingChanged(wasEnabled: wasEnabled, isEnabled: isEnabled)
+
+        case .completelyDisableInExceptionApplications:
+            statusBarController?.refreshCurrentApplicationState()
+
+        case .launchAtLogin,
+             .showAdvancedSettings,
+             .soundEffectsEnabled,
+             .switchLayoutAfterConversion,
+             .switchLayoutAfterSelectedTextConversion,
+             .searchSelectedTextByDoubleClick,
+             .manualConversionDisabled,
+             .rememberInputSourceForEachApp,
+             .autoCorrectOnEnterAndTab,
+             .autoCorrectionUndoLearningEnabled,
+             .suppressAutoCorrectionAfterManualConversion:
+            break
+        }
     }
 
     private func isCurrentApplicationDisabled() -> Bool {

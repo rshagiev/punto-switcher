@@ -1,4 +1,5 @@
 import AppKit
+import PuntoCore
 import PuntoSettings
 
 /// Controller for the settings window - liquid glass macOS style
@@ -7,6 +8,7 @@ final class SettingsWindowController: NSWindowController {
     private let settingsManager: SettingsManager
     private let currentApplication: () -> (bundleID: String, name: String?)?
     private let setLoginItemEnabled: (Bool) -> Void
+    private let onToggleChanged: (SettingsToggleSlot, Bool, Bool) -> Void
     private let hotkeySettingsController: HotkeySettingsController
     private lazy var generalSettingsController = GeneralSettingsController(
         settingsManager: settingsManager,
@@ -25,7 +27,8 @@ final class SettingsWindowController: NSWindowController {
         },
         showLayoutMemoryEditor: { [weak self] in
             self?.showLayoutMemoryEditor()
-        }
+        },
+        onToggleChanged: onToggleChanged
     )
     private var autoCorrectionRulesEditor: AutoCorrectionRulesEditorController?
     private var disabledApplicationsEditor: DisabledApplicationsEditorController?
@@ -35,11 +38,13 @@ final class SettingsWindowController: NSWindowController {
     init(
         settingsManager: SettingsManager,
         currentApplication: @escaping () -> (bundleID: String, name: String?)? = { nil },
-        setLoginItemEnabled: @escaping (Bool) -> Void = { _ in }
+        setLoginItemEnabled: @escaping (Bool) -> Void = { _ in },
+        onToggleChanged: @escaping (SettingsToggleSlot, Bool, Bool) -> Void = { _, _, _ in }
     ) {
         self.settingsManager = settingsManager
         self.currentApplication = currentApplication
         self.setLoginItemEnabled = setLoginItemEnabled
+        self.onToggleChanged = onToggleChanged
         self.hotkeySettingsController = HotkeySettingsController(settingsManager: settingsManager)
 
         // Create window

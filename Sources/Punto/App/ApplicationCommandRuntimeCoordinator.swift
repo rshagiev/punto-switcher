@@ -88,6 +88,21 @@ final class ApplicationCommandRuntimeCoordinator {
     func toggleAutoCorrection() {
         let action = AutoCorrectionTogglePolicy.action(wasEnabled: settingsManager.autoCorrectionEnabled)
         settingsManager.autoCorrectionEnabled = action.newEnabledValue
+        applyAutoCorrectionToggleAction(action)
+    }
+
+    func handleAutoCorrectionSettingChanged(wasEnabled: Bool, isEnabled: Bool) {
+        guard let action = AutoCorrectionTogglePolicy.action(
+            changingFrom: wasEnabled,
+            to: isEnabled,
+            source: "settings"
+        ) else {
+            return
+        }
+        applyAutoCorrectionToggleAction(action)
+    }
+
+    private func applyAutoCorrectionToggleAction(_ action: AutoCorrectionToggleAction) {
         textState.clearTextAndConversionState(
             trackedTextReason: action.clearTrackedTextReason,
             conversionSessionReason: action.clearConversionSessionReason

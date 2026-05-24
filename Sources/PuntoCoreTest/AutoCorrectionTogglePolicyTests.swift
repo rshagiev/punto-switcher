@@ -24,4 +24,20 @@ func runAutoCorrectionTogglePolicyTests() throws {
         ),
         "auto-correction toggle policy enables disabled setting and clears runtime state"
     )
+    try expect(
+        AutoCorrectionTogglePolicy.action(changingFrom: false, to: true, source: "settings"),
+        AutoCorrectionToggleAction(
+            newEnabledValue: true,
+            clearTrackedTextReason: "auto-correction toggled",
+            clearConversionSessionReason: "auto-correction toggled",
+            logMessage: "Auto-correction enabled by settings",
+            shouldFlashIcon: true
+        ),
+        "auto-correction toggle policy supports direct settings toggles"
+    )
+    try expect(
+        AutoCorrectionTogglePolicy.action(changingFrom: true, to: true, source: "settings"),
+        nil,
+        "auto-correction toggle policy ignores unchanged settings toggles"
+    )
 }
