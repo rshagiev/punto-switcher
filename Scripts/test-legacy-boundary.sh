@@ -127,6 +127,24 @@ if rg -n "PuntoSwitcherObservedSurface" Sources/Punto/App Sources/Punto/UI Sourc
 fi
 echo "PASS app shell has no direct reverse-audit-only observed surface dependency"
 
+core_live_transport_patterns=(
+    "import AppKit"
+    "import Cocoa"
+    "NSPasteboard"
+    "AXUIElement"
+    "CGEvent(keyboardEventSource:"
+    "TISSelectInputSource"
+    "TISCreateInputSourceList"
+)
+
+for pattern in "${core_live_transport_patterns[@]}"; do
+    if rg --fixed-strings --quiet "$pattern" Sources/PuntoCore; then
+        echo "legacy boundary failed: PuntoCore reopened live macOS transport: $pattern" >&2
+        exit 1
+    fi
+    echo "PASS PuntoCore live macOS transport absent: $pattern"
+done
+
 settings_import_alias_patterns=(
     "\\bKeys\\.isFirstInstallation"
     "\\bKeys\\.launchesOnStartup"

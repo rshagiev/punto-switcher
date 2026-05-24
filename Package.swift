@@ -43,7 +43,7 @@ let package = Package(
         ),
         .executableTarget(
             name: "PuntoDiag",
-            dependencies: ["PuntoCore"],
+            dependencies: ["PuntoCore", "PuntoRuntime"],
             path: "Sources/PuntoDiag"
         ),
         .executableTarget(

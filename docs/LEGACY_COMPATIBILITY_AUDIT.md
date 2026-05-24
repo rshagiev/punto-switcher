@@ -107,6 +107,11 @@ the production module instead of carrying inline copies of `LayoutConverter` and
 `WordTracker`; the boundary script fails if those duplicate classes or their old
 mapping/boundary tables reappear.
 
+The boundary also keeps live macOS transport out of `PuntoCore`: AppKit
+pasteboard snapshots, AX elements, CGEvent synthesis, and TIS switching belong
+to runtime adapters and diagnostics, while core modules stay as policy and
+domain code.
+
 The repository also no longer carries a placeholder SwiftPM `Tests/` file that
 claims tests live elsewhere. This toolchain cannot import XCTest, so placeholder
 test targets create a false green surface; the boundary script now fails if that
