@@ -39,11 +39,14 @@ final class KeyboardTextReplacementRuntime {
             return false
         }
 
-        logTargetApplicationState()
+        let targetApplication = targetApplicationEvidence()
 
         let focusEvidence = accessibilityElements.keyboardFocusEvidence()
         PuntoLog.info("replaceLastWord: AX focus check: \(focusEvidence.logDescription)")
-        guard KeyboardFocusPolicy.shouldAttemptKeyboardReplacement(focusEvidence: focusEvidence) else {
+        guard KeyboardFocusPolicy.shouldAttemptKeyboardReplacement(
+            focusEvidence: focusEvidence,
+            targetApplication: targetApplication
+        ) else {
             PuntoLog.info("replaceLastWord: aborting keyboard replacement because focused editable target is not verifiable")
             return false
         }
@@ -85,11 +88,16 @@ final class KeyboardTextReplacementRuntime {
         return true
     }
 
-    private func logTargetApplicationState() {
+    private func targetApplicationEvidence() -> KeyboardTargetApplicationEvidence? {
         guard let frontApp = frontmostApplication() else {
-            return
+            return nil
         }
 
         PuntoLog.info("replaceLastWord: target app='\(frontApp.localizedName ?? "?")' isActive=\(frontApp.isActive) isHidden=\(frontApp.isHidden) pid=\(frontApp.processIdentifier)")
+        return KeyboardTargetApplicationEvidence(
+            appName: frontApp.localizedName,
+            isActive: frontApp.isActive,
+            isHidden: frontApp.isHidden
+        )
     }
 }

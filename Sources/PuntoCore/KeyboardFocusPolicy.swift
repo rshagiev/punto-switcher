@@ -65,6 +65,18 @@ public struct KeyboardFocusEvidence: Equatable {
     }
 }
 
+public struct KeyboardTargetApplicationEvidence: Equatable {
+    public let appName: String?
+    public let isActive: Bool
+    public let isHidden: Bool
+
+    public init(appName: String?, isActive: Bool, isHidden: Bool) {
+        self.appName = appName
+        self.isActive = isActive
+        self.isHidden = isHidden
+    }
+}
+
 public enum KeyboardFocusPolicy {
     public static func shouldAttemptKeyboardReplacement(focusEvidence: KeyboardFocusEvidence) -> Bool {
         guard focusEvidence.hasFocusedApplication,
@@ -81,6 +93,22 @@ public enum KeyboardFocusPolicy {
         }
 
         return true
+    }
+
+    public static func shouldAttemptKeyboardReplacement(
+        focusEvidence: KeyboardFocusEvidence,
+        targetApplication: KeyboardTargetApplicationEvidence?
+    ) -> Bool {
+        if shouldAttemptKeyboardReplacement(focusEvidence: focusEvidence) {
+            return true
+        }
+
+        guard !focusEvidence.hasFocusedApplication,
+              let targetApplication else {
+            return false
+        }
+
+        return targetApplication.isActive && !targetApplication.isHidden
     }
 
     public static func shouldAttemptKeyboardReplacement(focusDescription: String) -> Bool {

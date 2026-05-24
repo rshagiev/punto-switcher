@@ -70,6 +70,54 @@ func runKeyboardFocusPolicyTests() throws {
         "keyboard focus policy rejects typed missing focused element"
     )
     try expect(
+        KeyboardFocusPolicy.shouldAttemptKeyboardReplacement(
+            focusEvidence: .noFocusedApplication(errorCode: -25212),
+            targetApplication: KeyboardTargetApplicationEvidence(
+                appName: "Codex",
+                isActive: true,
+                isHidden: false
+            )
+        ),
+        true,
+        "keyboard focus policy allows active visible frontmost target when AX focused application is unavailable"
+    )
+    try expect(
+        KeyboardFocusPolicy.shouldAttemptKeyboardReplacement(
+            focusEvidence: .noFocusedApplication(errorCode: -25212),
+            targetApplication: KeyboardTargetApplicationEvidence(
+                appName: "Codex",
+                isActive: false,
+                isHidden: false
+            )
+        ),
+        false,
+        "keyboard focus policy rejects inactive target when AX focused application is unavailable"
+    )
+    try expect(
+        KeyboardFocusPolicy.shouldAttemptKeyboardReplacement(
+            focusEvidence: .noFocusedApplication(errorCode: -25212),
+            targetApplication: KeyboardTargetApplicationEvidence(
+                appName: "Codex",
+                isActive: true,
+                isHidden: true
+            )
+        ),
+        false,
+        "keyboard focus policy rejects hidden target when AX focused application is unavailable"
+    )
+    try expect(
+        KeyboardFocusPolicy.shouldAttemptKeyboardReplacement(
+            focusEvidence: .noFocusedElement(appName: "TextEdit", errorCode: -25205),
+            targetApplication: KeyboardTargetApplicationEvidence(
+                appName: "TextEdit",
+                isActive: true,
+                isHidden: false
+            )
+        ),
+        false,
+        "keyboard focus policy still rejects focused app without focused element"
+    )
+    try expect(
         KeyboardFocusEvidence.focusedElement(
             appName: "TextEdit",
             role: "AXTextArea",

@@ -18,16 +18,7 @@ public enum ClipboardCapturePolicy {
     public static func shouldAttemptActiveClipboardCapture(
         focusEvidence: KeyboardFocusEvidence
     ) -> Bool {
-        guard focusEvidence.hasFocusedApplication else {
-            return false
-        }
-
-        if focusEvidence.hasFocusedElement,
-           focusEvidence.isEnabled == false {
-            return false
-        }
-
-        return true
+        ClipboardFocusPolicy.shouldAttemptFocusedClipboardKeyEvent(focusEvidence: focusEvidence)
     }
 
     public static func capturedTextAfterCopy(
