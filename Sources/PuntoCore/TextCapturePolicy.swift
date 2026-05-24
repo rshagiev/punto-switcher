@@ -98,6 +98,19 @@ public enum TextCapturePolicy {
         AccessibilityRolePolicy.containsWebAreaRole(accessibilityRoles)
     }
 
+    public static func shouldAttemptActiveClipboardFallbackAfterFailedSelection(
+        focusEvidence: KeyboardFocusEvidence,
+        lastTrackedTail: String?
+    ) -> Bool {
+        if let lastTrackedTail,
+           !lastTrackedTail.isEmpty,
+           AccessibilityRolePolicy.isEditableTextRole(focusEvidence.role) {
+            return false
+        }
+
+        return true
+    }
+
     public static func captureDecision(
         observation: AccessibilityObservation,
         activeClipboardText: String?,
@@ -227,12 +240,15 @@ public enum TextCapturePolicy {
     }
 
     public static func terminalTailRewrite(selectedText: String, lastTrackedTail: String?) -> TailRewrite? {
-        guard let lastTrackedTail, !lastTrackedTail.isEmpty else {
+        let selected = selectedText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !selected.isEmpty else {
             return nil
         }
 
-        let selected = selectedText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !selected.isEmpty else {
+        guard let lastTrackedTail, !lastTrackedTail.isEmpty else {
+            if let currentCommand = currentCommandFromPromptSelection(selected) {
+                return TailRewrite(selectedText: currentCommand, originalTail: currentCommand)
+            }
             return nil
         }
 
@@ -274,6 +290,44 @@ public enum TextCapturePolicy {
         }
 
         return false
+    }
+
+    private static func currentCommandFromPromptSelection(_ selected: String) -> String? {
+        guard selected.contains(where: \.isNewline),
+              let lastLine = selected
+                  .split(whereSeparator: \.isNewline)
+                  .last
+                  .map(String.init)?
+                  .trimmingCharacters(in: .whitespacesAndNewlines),
+              !lastLine.isEmpty else {
+            return nil
+        }
+
+        for index in lastLine.indices.reversed() {
+            guard WordBoundaryPolicy.isTerminalPromptMarker(lastLine[index]) else {
+                continue
+            }
+
+            let afterMarkerIndex = lastLine.index(after: index)
+            guard afterMarkerIndex < lastLine.endIndex else {
+                return nil
+            }
+
+            let afterMarker = lastLine[afterMarkerIndex...]
+            guard afterMarker.first?.isWhitespace == true else {
+                continue
+            }
+
+            let command = afterMarker.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !command.isEmpty,
+                  !command.contains(where: \.isNewline) else {
+                return nil
+            }
+
+            return command
+        }
+
+        return nil
     }
 
     private static func hasUnsafeTerminalTailEvidence(selectedText: String, lastTrackedTail: String?) -> Bool {

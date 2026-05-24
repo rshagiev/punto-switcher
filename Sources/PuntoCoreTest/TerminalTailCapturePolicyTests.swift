@@ -113,6 +113,38 @@ func runTerminalTailCapturePolicyTests() throws {
         TextCapturePolicy.terminalTailRewrite(selectedText: "git commit old prompt", lastTrackedTail: "git commit"),
         "terminal rewrite rejects non-current command tail selection"
     )
+    try expect(
+        TextCapturePolicy.terminalTailRewrite(
+            selectedText: "Last login: Sun May 24\nuser@host % hello world\n",
+            lastTrackedTail: nil
+        ),
+        TextCapturePolicy.TailRewrite(selectedText: "hello world", originalTail: "hello world"),
+        "terminal rewrite extracts current command from prompt selection without tracked tail"
+    )
+    try expect(
+        TextCapturePolicy.terminalTailRewrite(
+            selectedText: "Last login: Sun May 24\n❯ hello world",
+            lastTrackedTail: nil
+        ),
+        TextCapturePolicy.TailRewrite(selectedText: "hello world", originalTail: "hello world"),
+        "terminal rewrite extracts current command from compact prompt marker"
+    )
+    try expect(
+        TextCapturePolicy.terminalTailRewrite(
+            selectedText: "Last login\n➜  Punto git:(main) ✗ git commit",
+            lastTrackedTail: nil
+        ),
+        TextCapturePolicy.TailRewrite(selectedText: "git commit", originalTail: "git commit"),
+        "terminal rewrite extracts command after final prompt marker without tracked tail"
+    )
+    try expectNil(
+        TextCapturePolicy.terminalTailRewrite(selectedText: "old > scrollback git commit", lastTrackedTail: nil),
+        "terminal rewrite rejects single-line prompt-looking text without tracked tail"
+    )
+    try expectNil(
+        TextCapturePolicy.terminalTailRewrite(selectedText: "Last login\nold scrollback git commit", lastTrackedTail: nil),
+        "terminal rewrite rejects multiline text without prompt marker"
+    )
 
     try expect(
         TextCapturePolicy.passiveClipboardTailSelection(
@@ -250,5 +282,44 @@ func runTerminalTailCapturePolicyTests() throws {
         ),
         true,
         "capture policy attempts active clipboard copy when non-settable AX text has no tracked tail"
+    )
+    try expect(
+        TextCapturePolicy.shouldAttemptActiveClipboardFallbackAfterFailedSelection(
+            focusEvidence: .focusedElement(
+                appName: "Ghostty",
+                role: "AXTextArea",
+                isEnabled: true,
+                isFocused: true
+            ),
+            lastTrackedTail: "jjjj"
+        ),
+        false,
+        "capture policy skips active Cmd+C race before terminal last-word replacement"
+    )
+    try expect(
+        TextCapturePolicy.shouldAttemptActiveClipboardFallbackAfterFailedSelection(
+            focusEvidence: .focusedElement(
+                appName: "Safari",
+                role: "AXWebArea",
+                isEnabled: true,
+                isFocused: true
+            ),
+            lastTrackedTail: "jjjj"
+        ),
+        true,
+        "capture policy keeps active clipboard fallback for content surfaces"
+    )
+    try expect(
+        TextCapturePolicy.shouldAttemptActiveClipboardFallbackAfterFailedSelection(
+            focusEvidence: .focusedElement(
+                appName: "Ghostty",
+                role: "AXTextArea",
+                isEnabled: true,
+                isFocused: true
+            ),
+            lastTrackedTail: nil
+        ),
+        true,
+        "capture policy still allows active clipboard fallback when no typed tail can replace safely"
     )
 }

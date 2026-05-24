@@ -60,7 +60,15 @@ final class TextCaptureRuntime {
 
         case .failed:
             passiveClipboardText = clipboard.currentText()
-            activeClipboardText = captureSelectedTextViaClipboardIfFocused()
+            let focusEvidence = accessibilityElements.keyboardFocusEvidence()
+            if TextCapturePolicy.shouldAttemptActiveClipboardFallbackAfterFailedSelection(
+                focusEvidence: focusEvidence,
+                lastTrackedTail: lastTrackedTail
+            ) {
+                activeClipboardText = captureSelectedTextViaClipboardIfFocused(focusEvidence: focusEvidence)
+            } else {
+                PuntoLog.info("captureSelectedText: skipping active clipboard fallback after failed AX selection because tracked editable tail is available")
+            }
         }
 
         let captured = overrideCapturedText ?? TextCapturePolicy.captureDecision(
@@ -84,6 +92,10 @@ final class TextCaptureRuntime {
 
     private func captureSelectedTextViaClipboardIfFocused() -> String? {
         let focusEvidence = accessibilityElements.keyboardFocusEvidence()
+        return captureSelectedTextViaClipboardIfFocused(focusEvidence: focusEvidence)
+    }
+
+    private func captureSelectedTextViaClipboardIfFocused(focusEvidence: KeyboardFocusEvidence) -> String? {
         PuntoLog.info("getSelectedTextViaClipboard: AX focus check: \(focusEvidence.logDescription)")
         guard ClipboardCapturePolicy.shouldAttemptActiveClipboardCapture(
             focusEvidence: focusEvidence

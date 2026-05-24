@@ -375,7 +375,7 @@ if grep -q "Converting captured text" /tmp/punto.log; then
     # Check if it converted more than just one word
     WORD_COUNT=$(echo "$CONVERTED" | wc -w | tr -d ' ')
     if [ "$WORD_COUNT" -gt 1 ]; then
-        if grep -q "AX non-settable tail selection" /tmp/punto.log; then
+        if grep -q "AX non-settable command-tail selection" /tmp/punto.log; then
             print_success "TEST 3 PASSED: AX selection extracted typed tail ($WORD_COUNT words)"
             pass_test
         else

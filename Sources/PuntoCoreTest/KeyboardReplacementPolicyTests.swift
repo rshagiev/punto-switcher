@@ -119,13 +119,13 @@ func runKeyboardReplacementPolicyTests() throws {
     )
     try expect(
         KeyboardReplacementPolicy.backspaceInterval,
-        0.02,
-        "keyboard replacement preserves backspace interval"
+        0.05,
+        "keyboard replacement uses a terminal-safe backspace interval"
     )
     try expect(
         KeyboardReplacementPolicy.prePasteDelay,
-        0.02,
-        "keyboard replacement preserves pre-paste delay"
+        0.06,
+        "keyboard replacement waits for terminal backspaces before paste"
     )
     try expect(
         KeyboardReplacementPolicy.postPasteDelay,
