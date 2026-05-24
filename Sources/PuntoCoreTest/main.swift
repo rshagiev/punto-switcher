@@ -54,6 +54,8 @@ let suites = [
         try runInputSourceSwitchVerificationPolicyTests()
         try runConversionProtectionPolicyTests()
         try runInputSourceLanguagePolicyTests()
+        try runKeyboardLayoutInputSourcePolicyTests()
+        try runInputSourceSelectionPolicyTests()
         try runApplicationContextPolicyTests()
         try runHotkeyRoutingPolicyTests()
         try runKeyTrackingRuntimePolicyTests()

@@ -42,7 +42,9 @@ public enum InputSourceSelectionPolicy {
         preferredEnglishSourceID: String? = nil,
         preferredRussianSourceID: String? = nil
     ) -> InputSourceSelection {
-        let selectable = candidates.filter(\.isSelectableKeyboard)
+        let selectable = candidates.filter {
+            $0.isSelectableKeyboard && normalizedSourceID($0.sourceID) != nil
+        }
         let normalizedPreferredEnglishSourceID = normalizedSourceID(preferredEnglishSourceID)
         let normalizedPreferredRussianSourceID = normalizedSourceID(preferredRussianSourceID)
 
