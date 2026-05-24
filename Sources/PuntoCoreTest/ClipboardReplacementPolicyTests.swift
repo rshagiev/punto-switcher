@@ -44,6 +44,44 @@ func runClipboardReplacementPolicyTests() throws {
         "shared clipboard replacement policy preserves externally changed clipboard"
     )
     try expect(
+        ClipboardReplacementPolicy.shouldAttemptSelectedTextClipboardReplacement(
+            focusEvidence: .focusedElement(
+                appName: "TextEdit",
+                role: "AXTextArea",
+                isEnabled: true,
+                isFocused: true
+            )
+        ),
+        true,
+        "selected-text clipboard replacement accepts a verified focused application and element"
+    )
+    try expect(
+        ClipboardReplacementPolicy.shouldAttemptSelectedTextClipboardReplacement(
+            focusEvidence: .noFocusedElement(appName: "Safari", errorCode: -25205)
+        ),
+        true,
+        "selected-text clipboard replacement allows content fallbacks with focused app but no focused element"
+    )
+    try expect(
+        ClipboardReplacementPolicy.shouldAttemptSelectedTextClipboardReplacement(
+            focusEvidence: .noFocusedApplication(errorCode: -25212)
+        ),
+        false,
+        "selected-text clipboard replacement rejects NO_FOCUSED_APP evidence before sending Cmd+V"
+    )
+    try expect(
+        ClipboardReplacementPolicy.shouldAttemptSelectedTextClipboardReplacement(
+            focusEvidence: .focusedElement(
+                appName: "TextEdit",
+                role: "AXTextArea",
+                isEnabled: false,
+                isFocused: true
+            )
+        ),
+        false,
+        "selected-text clipboard replacement rejects disabled focused elements"
+    )
+    try expect(
         SelectedTextClipboardReplacementPolicy.postPasteDelay,
         0.03,
         "selected-text clipboard replacement preserves post-paste delay"

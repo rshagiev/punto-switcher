@@ -7,15 +7,18 @@ import PuntoCore
 /// can stay a public facade instead of re-owning replacement mechanics.
 final class TextReplacementRuntime {
     private let accessibilitySelection: AccessibilityTextSelectionTransport
+    private let accessibilityElements: AccessibilityElementClient
     private let clipboard: ClipboardTransport
     private let keyboardReplacement: KeyboardTextReplacementRuntime
 
     init(
         accessibilitySelection: AccessibilityTextSelectionTransport,
+        accessibilityElements: AccessibilityElementClient,
         clipboard: ClipboardTransport,
         keyboardReplacement: KeyboardTextReplacementRuntime
     ) {
         self.accessibilitySelection = accessibilitySelection
+        self.accessibilityElements = accessibilityElements
         self.clipboard = clipboard
         self.keyboardReplacement = keyboardReplacement
     }
@@ -60,6 +63,14 @@ final class TextReplacementRuntime {
 
     private func pasteSelectedTextViaClipboard(_ text: String, selectAfterPaste: Bool) -> Bool {
         accessibilitySelection.clearCachedEditableElement()
+        let focusEvidence = accessibilityElements.keyboardFocusEvidence()
+        PuntoLog.info("setSelectedTextViaClipboard: AX focus check: \(focusEvidence.logDescription)")
+        guard ClipboardReplacementPolicy.shouldAttemptSelectedTextClipboardReplacement(
+            focusEvidence: focusEvidence
+        ) else {
+            PuntoLog.info("setSelectedTextViaClipboard: aborting because focused paste target is not verifiable")
+            return false
+        }
         return clipboard.pasteSelectedText(text, selectAfterPaste: selectAfterPaste)
     }
 }

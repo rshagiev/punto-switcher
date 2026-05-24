@@ -42,6 +42,7 @@ final class TextAccessorRuntimeContainer {
         )
         self.textReplacement = TextReplacementRuntime(
             accessibilitySelection: self.accessibilitySelection,
+            accessibilityElements: self.accessibilityElements,
             clipboard: self.clipboard,
             keyboardReplacement: self.keyboardReplacement
         )

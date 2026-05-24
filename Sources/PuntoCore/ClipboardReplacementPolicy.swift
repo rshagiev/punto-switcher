@@ -12,4 +12,19 @@ public enum ClipboardReplacementPolicy {
     ) -> Bool {
         currentChangeCount == replacementChangeCount
     }
+
+    public static func shouldAttemptSelectedTextClipboardReplacement(
+        focusEvidence: KeyboardFocusEvidence
+    ) -> Bool {
+        guard focusEvidence.hasFocusedApplication else {
+            return false
+        }
+
+        if focusEvidence.hasFocusedElement,
+           focusEvidence.isEnabled == false {
+            return false
+        }
+
+        return true
+    }
 }
