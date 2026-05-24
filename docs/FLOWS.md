@@ -402,11 +402,11 @@
 │                                                                      │
 │  savedClipboard = pasteboard.string                                  │
 │  pasteboard.setString(text)                                          │
-│  simulatePaste()  ← Cmd+V через CGEvent (cghidEventTap)             │
+│  KeyboardEventTransport.postCommandPasteHID()                       │
 │  Thread.sleep(0.03)                                                  │
 │                                                                      │
 │  if keepSelection:                                                   │
-│      selectBackwardsFast(text.count)                                 │
+│      KeyboardEventTransport.selectBackwards(text.count)              │
 │      ← Shift+Left × count                                            │
 │                                                                      │
 │  DispatchQueue.asyncAfter(0.3s) {                                   │
@@ -438,10 +438,9 @@
 ┌─────────────────────────────────────────────────────────────┐
 │  УДАЛЕНИЕ СИМВОЛОВ                                          │
 │                                                             │
-│  for i in 0..<wordLength:                                   │
-│      CGEvent(Backspace keyDown) → post(cghidEventTap)       │
-│      CGEvent(Backspace keyUp)   → post(cghidEventTap)       │
-│      Thread.sleep(0.02)                                     │
+│  KeyboardEventTransport.postBackspaces(wordLength)          │
+│      → Backspace keyDown/keyUp × wordLength                 │
+│      → Thread.sleep(0.02) between pairs                     │
 └─────────────────────────────────────────────────────────────┘
                            │
                            ▼
@@ -451,7 +450,7 @@
 │  Thread.sleep(0.02)                                         │
 │  savedClipboard = pasteboard.string                         │
 │  pasteboard.setString(replacement)                          │
-│  simulatePaste()  ← Cmd+V                                   │
+│  KeyboardEventTransport.postCommandPasteHID()               │
 │  Thread.sleep(0.03)                                         │
 └─────────────────────────────────────────────────────────────┘
                            │

@@ -11,10 +11,15 @@ final class TextAccessor {
     typealias CapturedText = PuntoCore.CapturedText
 
     private let shouldRestorePasteboard: () -> Bool
+    private let keyboardEvents: KeyboardEventTransport
     private var lastEditableSelectionElement: AXUIElement?
 
-    init(shouldRestorePasteboard: @escaping () -> Bool = { true }) {
+    init(
+        shouldRestorePasteboard: @escaping () -> Bool = { true },
+        keyboardEvents: KeyboardEventTransport = KeyboardEventTransport()
+    ) {
         self.shouldRestorePasteboard = shouldRestorePasteboard
+        self.keyboardEvents = keyboardEvents
     }
 
     // MARK: - Security Detection
@@ -452,17 +457,7 @@ final class TextAccessor {
         pasteboard.clearContents()
         let copyBaselineChangeCount = pasteboard.changeCount
 
-        // Send Cmd+C via CGEvent (fastest method)
-        let source = CGEventSource(stateID: .combinedSessionState)
-        if let keyDown = CGEvent(keyboardEventSource: source, virtualKey: ClipboardCapturePolicy.copyKeyCode, keyDown: true) {
-            keyDown.flags = .maskCommand
-            keyDown.post(tap: .cgAnnotatedSessionEventTap)
-        }
-        Thread.sleep(forTimeInterval: ClipboardCapturePolicy.keyUpDelay)
-        if let keyUp = CGEvent(keyboardEventSource: source, virtualKey: ClipboardCapturePolicy.copyKeyCode, keyDown: false) {
-            keyUp.flags = .maskCommand
-            keyUp.post(tap: .cgAnnotatedSessionEventTap)
-        }
+        _ = keyboardEvents.postCommandCopyAnnotated()
 
         // Poll clipboard with short intervals instead of one long wait
         // This makes fast apps respond quickly while still supporting slow ones
@@ -474,16 +469,7 @@ final class TextAccessor {
             }
             // After 60ms, try HID fallback
             if ClipboardCapturePolicy.shouldAttemptHIDFallback(pollAttempt: i, pasteboardChanged: pasteboardChanged) {
-                let sourceHID = CGEventSource(stateID: .hidSystemState)
-                if let keyDown = CGEvent(keyboardEventSource: sourceHID, virtualKey: ClipboardCapturePolicy.copyKeyCode, keyDown: true) {
-                    keyDown.flags = .maskCommand
-                    keyDown.post(tap: .cghidEventTap)
-                }
-                Thread.sleep(forTimeInterval: ClipboardCapturePolicy.keyUpDelay)
-                if let keyUp = CGEvent(keyboardEventSource: sourceHID, virtualKey: ClipboardCapturePolicy.copyKeyCode, keyDown: false) {
-                    keyUp.flags = .maskCommand
-                    keyUp.post(tap: .cghidEventTap)
-                }
+                _ = keyboardEvents.postCommandCopyHID()
             }
         }
 
@@ -649,8 +635,7 @@ final class TextAccessor {
 
         PuntoLog.info("setSelectedTextViaClipboard: pasting \(text.count) chars")
 
-        // Simulate Cmd+V
-        guard simulatePaste() else {
+        guard keyboardEvents.postCommandPasteHID() else {
             PuntoLog.info("setSelectedTextViaClipboard: failed to send Cmd+V")
             restorePasteboardIfEnabled(snapshot, to: pasteboard, reason: "selected-text clipboard paste failed")
             return false
@@ -663,7 +648,7 @@ final class TextAccessor {
         // Much faster than character-by-character selection
         if SelectedTextClipboardReplacementPolicy.shouldSelectAfterPaste(selectAfterPaste, replacementText: text) {
             Thread.sleep(forTimeInterval: SelectedTextClipboardReplacementPolicy.selectAfterPasteDelay)
-            selectBackwardsFast(characterCount: text.count)
+            keyboardEvents.selectBackwards(characterCount: text.count)
             PuntoLog.info("setSelectedTextViaClipboard: selected backwards")
         }
 
@@ -676,46 +661,6 @@ final class TextAccessor {
                 self.restorePasteboardIfEnabled(snapshot, to: pasteboard, reason: "selected-text clipboard replacement")
             }
         }
-        return true
-    }
-
-    /// Fast backward selection using Shift+Arrow with batching
-    private func selectBackwardsFast(characterCount: Int) {
-        let source = CGEventSource(stateID: .hidSystemState)
-
-        // Always use character-by-character selection for precision
-        // Word-based selection (Opt+Shift+Left) can overshoot and select extra content
-        for _ in 0..<characterCount {
-            if let keyDown = CGEvent(keyboardEventSource: source, virtualKey: KeyboardEventKeyCodePolicy.leftArrowKeyCode, keyDown: true) {
-                keyDown.flags = .maskShift
-                keyDown.post(tap: .cghidEventTap)
-            }
-            if let keyUp = CGEvent(keyboardEventSource: source, virtualKey: KeyboardEventKeyCodePolicy.leftArrowKeyCode, keyDown: false) {
-                keyUp.flags = .maskShift
-                keyUp.post(tap: .cghidEventTap)
-            }
-        }
-        Thread.sleep(forTimeInterval: KeyboardEventTimingPolicy.selectionSettleDelay)
-    }
-
-    /// Simulates Cmd+V keystroke for paste operation
-    private func simulatePaste() -> Bool {
-        // Use .cghidEventTap for better Safari compatibility
-        let source = CGEventSource(stateID: .hidSystemState)
-
-        // Create key down event for V with Command modifier
-        guard let keyDown = CGEvent(keyboardEventSource: source, virtualKey: KeyboardEventKeyCodePolicy.pasteKeyCode, keyDown: true),
-              let keyUp = CGEvent(keyboardEventSource: source, virtualKey: KeyboardEventKeyCodePolicy.pasteKeyCode, keyDown: false) else {
-            PuntoLog.info("simulatePaste: failed to create Cmd+V events")
-            return false
-        }
-
-        keyDown.flags = .maskCommand
-        keyDown.post(tap: .cghidEventTap)
-        Thread.sleep(forTimeInterval: KeyboardEventTimingPolicy.commandKeyUpDelay)
-        keyUp.flags = .maskCommand
-        keyUp.post(tap: .cghidEventTap)
-        PuntoLog.info("simulatePaste: sent Cmd+V via CGEvent (HID)")
         return true
     }
 
@@ -765,32 +710,11 @@ final class TextAccessor {
             return false
         }
 
-        let source = CGEventSource(stateID: .hidSystemState)
-
-        // Check if event source was created
-        if source == nil {
-            PuntoLog.error("replaceLastWord: FAILED to create CGEventSource!")
-        }
-
         // Delete characters one by one using Backspace (keyCode 51)
         // Using .cghidEventTap which works for most apps
         // Do not use line-kill shortcuts here: this path must delete exactly the captured tail.
         PuntoLog.info("replaceLastWord: sending \(wordLength) backspaces via cghidEventTap (after \(Int(KeyboardReplacementPolicy.modifierReleaseSettleDelay * 1000))ms delay)")
-        var backspacesSent = 0
-        for i in 0..<wordLength {
-            let keyDown = CGEvent(keyboardEventSource: source, virtualKey: KeyboardEventKeyCodePolicy.backspaceKeyCode, keyDown: true)
-            let keyUp = CGEvent(keyboardEventSource: source, virtualKey: KeyboardEventKeyCodePolicy.backspaceKeyCode, keyDown: false)
-
-            if keyDown == nil || keyUp == nil {
-                PuntoLog.error("replaceLastWord: FAILED to create backspace event #\(i+1)")
-                continue
-            }
-
-            keyDown!.post(tap: .cghidEventTap)
-            keyUp!.post(tap: .cghidEventTap)
-            Thread.sleep(forTimeInterval: KeyboardReplacementPolicy.backspaceInterval)
-            backspacesSent += 1
-        }
+        let backspacesSent = keyboardEvents.postBackspaces(count: wordLength)
         let backspaceTime = Date().timeIntervalSince(startTime) * 1000
         PuntoLog.info("replaceLastWord: \(backspacesSent)/\(wordLength) backspaces sent in \(String(format: "%.1f", backspaceTime))ms, waiting \(Int(KeyboardReplacementPolicy.prePasteDelay * 1000))ms")
         guard KeyboardReplacementPolicy.shouldPasteReplacementAfterBackspaces(expectedCount: wordLength, sentCount: backspacesSent) else {
@@ -807,9 +731,8 @@ final class TextAccessor {
         pasteboard.setString(replacement, forType: .string)
         let replacementChangeCount = pasteboard.changeCount
 
-        // Simulate Cmd+V
         let pasteStartTime = Date()
-        guard simulatePaste() else {
+        guard keyboardEvents.postCommandPasteHID() else {
             PuntoLog.info("replaceLastWord: aborting because Cmd+V events could not be created")
             restorePasteboardIfEnabled(snapshot, to: pasteboard, reason: "keyboard replacement paste failed")
             return false
@@ -980,12 +903,7 @@ final class TextAccessor {
             return
         }
 
-        let source = CGEventSource(stateID: .hidSystemState)
-        for keyCode in KeyboardModifierCleanupPolicy.keyUpCodes(for: snapshot) {
-            let keyUp = CGEvent(keyboardEventSource: source, virtualKey: keyCode, keyDown: false)
-            keyUp?.flags = []
-            keyUp?.post(tap: .cghidEventTap)
-        }
+        _ = keyboardEvents.postKeyUps(KeyboardModifierCleanupPolicy.keyUpCodes(for: snapshot))
         PuntoLog.info("replaceLastWord: sent modifier key-up cleanup for \(describeModifiers(flags))")
     }
 
