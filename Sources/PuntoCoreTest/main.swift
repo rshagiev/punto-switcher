@@ -67,7 +67,11 @@ let suites = [
         try runTextTrackingSecurityPolicyTests()
         try runAccessibilityRolePolicyTests()
         try runAccessibilityTraversalPolicyTests()
+        try runKeyboardEventPolicyTests()
+        try runClipboardReplacementPolicyTests()
         try runKeyboardReplacementPolicyTests()
+        try runKeyboardFocusPolicyTests()
+        try runReplacementFailurePolicyTests()
         try runTextReplacementPolicyTests()
         try runAccessibilityReplacementPolicyTests()
     },

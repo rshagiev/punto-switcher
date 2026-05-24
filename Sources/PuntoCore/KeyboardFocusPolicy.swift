@@ -93,7 +93,7 @@ public enum KeyboardFocusPolicy {
             return false
         }
 
-        if normalized.contains("enabled=false") {
+        if boolValue(for: "enabled", in: focusDescription) == false {
             return false
         }
 
@@ -106,15 +106,35 @@ public enum KeyboardFocusPolicy {
     }
 
     private static func roleValue(in focusDescription: String) -> String? {
-        guard let roleRange = focusDescription.range(of: "role='") else {
+        fieldValue(for: "role", in: focusDescription)
+    }
+
+    private static func boolValue(for key: String, in focusDescription: String) -> Bool? {
+        fieldValue(for: key, in: focusDescription).flatMap { value in
+            switch value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
+            case "true":
+                return true
+            case "false":
+                return false
+            default:
+                return nil
+            }
+        }
+    }
+
+    private static func fieldValue(for key: String, in focusDescription: String) -> String? {
+        let pattern = #"\b"# + NSRegularExpression.escapedPattern(for: key) + #"\s*=\s*'?([^'\s]+)'?"#
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else {
             return nil
         }
 
-        let roleStart = roleRange.upperBound
-        guard let roleEnd = focusDescription[roleStart...].firstIndex(of: "'") else {
+        let range = NSRange(focusDescription.startIndex..<focusDescription.endIndex, in: focusDescription)
+        guard let match = regex.firstMatch(in: focusDescription, range: range),
+              match.numberOfRanges > 1,
+              let valueRange = Range(match.range(at: 1), in: focusDescription) else {
             return nil
         }
 
-        return String(focusDescription[roleStart..<roleEnd])
+        return String(focusDescription[valueRange])
     }
 }
