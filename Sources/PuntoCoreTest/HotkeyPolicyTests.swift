@@ -1,9 +1,6 @@
 import Foundation
 import PuntoCore
 
-import Foundation
-import PuntoCore
-
 func runHotkeyPolicyTests() throws {
     try expect(Hotkey.defaultConvertLayout.isModifierOnly, true, "default convert hotkey is modifier-only")
     try expect(Hotkey.defaultConvertLayout.displayString, "\u{2325}\u{21E7}\u{2318}", "default convert hotkey display")
@@ -392,18 +389,58 @@ func runHotkeyPolicyTests() throws {
         "hotkey collision policy rejects duplicate modifier-only shortcuts"
     )
 
+    let hotkey = Hotkey.defaultConvertLayout
+    let pressed = ModifierFlagsSnapshot(command: true, option: true, shift: true, control: false)
+    let released = ModifierFlagsSnapshot(command: false, option: false, shift: false, control: false)
+    let partial = ModifierFlagsSnapshot(command: true, option: true, shift: false, control: false)
+    let singleModifier = ModifierFlagsSnapshot(command: true, option: false, shift: false, control: false)
+    let extra = ModifierFlagsSnapshot(command: true, option: true, shift: true, control: true)
+    let commandOption = ModifierFlagsSnapshot(command: true, option: true, shift: false, control: false)
+    let now = Date(timeIntervalSince1970: 100)
+
+    let recordingMachine = HotkeyRecordingStateMachine()
+    try expect(
+        recordingMachine.handleFlagsChanged(flags: pressed),
+        .previewModifierOnly(Hotkey.defaultConvertLayout),
+        "hotkey recording policy previews modifier-only shortcuts when two or more modifiers are held"
+    )
+    try expect(
+        recordingMachine.handleFlagsChanged(flags: singleModifier),
+        .none,
+        "hotkey recording policy waits for full modifier release before recording"
+    )
+    try expect(
+        recordingMachine.handleFlagsChanged(flags: released),
+        .record(Hotkey.defaultConvertLayout),
+        "hotkey recording policy records modifier-only shortcut after full release"
+    )
+    try expect(
+        HotkeyRecordingStateMachine().handleKeyDown(keyCode: 6, flags: commandOption),
+        .record(Hotkey.defaultToggleCase),
+        "hotkey recording policy records key-based shortcuts"
+    )
+    try expect(
+        HotkeyRecordingStateMachine().handleKeyDown(keyCode: KeyDownEventPolicy.escapeKeyCode, flags: commandOption),
+        .cancel,
+        "hotkey recording policy cancels on Escape"
+    )
+    try expect(
+        HotkeyRecordingStateMachine().handleKeyDown(keyCode: 55, flags: commandOption),
+        .reject,
+        "hotkey recording policy rejects modifier keycodes as shortcut keys"
+    )
+    try expect(
+        HotkeyRecordingStateMachine().handleKeyDown(keyCode: 0, flags: ModifierFlagsSnapshot(command: false, option: false, shift: true, control: false)),
+        .passThrough,
+        "hotkey recording policy lets plain shifted text input pass through"
+    )
+
     let machine = ModifierOnlyHotkeyStateMachine(debounceInterval: 0.5)
     try expect(
         ModifierOnlyHotkeyStateMachine.actionDelay,
         0.15,
         "modifier-only hotkey action is delayed until real HID modifiers settle"
     )
-    let hotkey = Hotkey.defaultConvertLayout
-    let pressed = ModifierFlagsSnapshot(command: true, option: true, shift: true, control: false)
-    let released = ModifierFlagsSnapshot(command: false, option: false, shift: false, control: false)
-    let partial = ModifierFlagsSnapshot(command: true, option: true, shift: false, control: false)
-    let extra = ModifierFlagsSnapshot(command: true, option: true, shift: true, control: true)
-    let now = Date(timeIntervalSince1970: 100)
 
     try expect(machine.handleFlagsChanged(flags: pressed, hotkey: hotkey, now: now), false, "modifier-only press arms but does not trigger")
     try expect(machine.handleFlagsChanged(flags: released, hotkey: hotkey, now: now.addingTimeInterval(0.1)), true, "modifier-only release triggers")
@@ -436,247 +473,4 @@ func runHotkeyPolicyTests() throws {
         false,
         "key-based hotkey is ignored by modifier-only machine"
     )
-}
-
-func runKeyDownEventPolicyTests() throws {
-    let none = ModifierFlagsSnapshot(command: false, option: false, shift: false, control: false)
-    let shift = ModifierFlagsSnapshot(command: false, option: false, shift: true, control: false)
-    let command = ModifierFlagsSnapshot(command: true, option: false, shift: false, control: false)
-    let commandOption = ModifierFlagsSnapshot(command: true, option: true, shift: false, control: false)
-    let commandOptionShift = ModifierFlagsSnapshot(command: true, option: true, shift: true, control: false)
-    let commandControl = ModifierFlagsSnapshot(command: true, option: false, shift: false, control: true)
-    let optionOnly = ModifierFlagsSnapshot(command: false, option: true, shift: false, control: false)
-    let controlOnly = ModifierFlagsSnapshot(command: false, option: false, shift: false, control: true)
-    let findInYandexHotkey = Hotkey(keyCode: 3, command: true, option: true, shift: false, control: false)
-    let findInSlovariHotkey = Hotkey(keyCode: 3, command: true, option: true, shift: true, control: false)
-
-    try expect(
-        KeyDownEventPolicy.keyBasedHotkeyActionDelay,
-        0.15,
-        "keyDown policy delays key-based hotkey actions until modifiers are released"
-    )
-    try expect(
-        KeyDownEventPolicy.action(
-            keyCode: 6,
-            flags: commandOption,
-            convertHotkey: Hotkey.defaultConvertLayout,
-            toggleCaseHotkey: Hotkey.defaultToggleCase
-        ),
-        .toggleCaseHotkey,
-        "keyDown policy detects toggle-case hotkey"
-    )
-
-    try expect(
-        KeyDownEventPolicy.action(
-            keyCode: 0,
-            flags: commandOption,
-            convertHotkey: Hotkey.defaultConvertLayout,
-            toggleCaseHotkey: Hotkey.defaultToggleCase,
-            toggleAutoCorrectionHotkey: Hotkey.defaultToggleAutoCorrection
-        ),
-        .toggleAutoCorrectionHotkey,
-        "keyDown policy detects toggle-auto-correction hotkey"
-    )
-
-    try expect(
-        KeyDownEventPolicy.action(
-            keyCode: 51,
-            flags: commandOption,
-            convertHotkey: Hotkey.defaultConvertLayout,
-            toggleCaseHotkey: Hotkey.defaultToggleCase,
-            toggleAutoCorrectionHotkey: Hotkey.defaultToggleAutoCorrection,
-            cancelLayoutChangeHotkey: Hotkey.defaultCancelLayoutChange
-        ),
-        .cancelLayoutChangeHotkey,
-        "keyDown policy detects cancel-layout-change hotkey before modified deletion"
-    )
-
-    try expect(
-        KeyDownEventPolicy.action(
-            keyCode: 3,
-            flags: commandOption,
-            convertHotkey: Hotkey.defaultConvertLayout,
-            toggleCaseHotkey: Hotkey.defaultToggleCase,
-            toggleAutoCorrectionHotkey: Hotkey.defaultToggleAutoCorrection,
-            cancelLayoutChangeHotkey: Hotkey.defaultCancelLayoutChange,
-            findInYandexHotkey: findInYandexHotkey,
-            findInSlovariHotkey: findInSlovariHotkey
-        ),
-        .findInYandexHotkey,
-        "keyDown policy detects find-in-Yandex hotkey before modified shortcut clearing"
-    )
-
-    try expect(
-        KeyDownEventPolicy.action(
-            keyCode: 3,
-            flags: commandOptionShift,
-            convertHotkey: Hotkey.defaultConvertLayout,
-            toggleCaseHotkey: Hotkey.defaultToggleCase,
-            toggleAutoCorrectionHotkey: Hotkey.defaultToggleAutoCorrection,
-            cancelLayoutChangeHotkey: Hotkey.defaultCancelLayoutChange,
-            findInYandexHotkey: findInYandexHotkey,
-            findInSlovariHotkey: findInSlovariHotkey
-        ),
-        .findInSlovariHotkey,
-        "keyDown policy detects find-in-Slovari hotkey before modified shortcut clearing"
-    )
-
-    try expect(
-        KeyDownEventPolicy.action(
-            keyCode: 3,
-            flags: commandOption,
-            convertHotkey: Hotkey.defaultConvertLayout,
-            toggleCaseHotkey: Hotkey.defaultToggleCase,
-            findInYandexHotkey: Hotkey.disabled,
-            findInSlovariHotkey: Hotkey.disabled
-        ),
-        .clearTrackedText(reason: "modified shortcut"),
-        "keyDown policy treats disabled search shortcut as ordinary modified shortcut"
-    )
-
-    let keyBasedConvert = Hotkey(keyCode: 49, command: true, option: true, shift: false, control: false)
-    try expect(
-        KeyDownEventPolicy.action(
-            keyCode: 49,
-            flags: commandOption,
-            convertHotkey: keyBasedConvert,
-            toggleCaseHotkey: Hotkey.defaultToggleCase
-        ),
-        .convertLayoutHotkey,
-        "keyDown policy detects key-based convert hotkey"
-    )
-
-    try expect(
-        KeyDownEventPolicy.action(
-            keyCode: 6,
-            flags: commandOptionShift,
-            convertHotkey: Hotkey.defaultConvertLayout,
-            toggleCaseHotkey: Hotkey.defaultToggleCase
-        ),
-        .clearTrackedText(reason: "modified shortcut"),
-        "keyDown policy clears tracker for non-exact modified hotkey chord"
-    )
-
-    try expect(
-        KeyDownEventPolicy.action(
-            keyCode: 9,
-            flags: command,
-            convertHotkey: Hotkey.defaultConvertLayout,
-            toggleCaseHotkey: Hotkey.defaultToggleCase
-        ),
-        .clearTrackedText(reason: "paste"),
-        "keyDown policy clears tracker for Cmd+V"
-    )
-
-    try expect(
-        KeyDownEventPolicy.action(
-            keyCode: 8,
-            flags: command,
-            convertHotkey: Hotkey.defaultConvertLayout,
-            toggleCaseHotkey: Hotkey.defaultToggleCase
-        ),
-        .clearTrackedText(reason: "copy"),
-        "keyDown policy clears tracker for Cmd+C"
-    )
-
-    try expect(
-        KeyDownEventPolicy.action(
-            keyCode: 6,
-            flags: command,
-            convertHotkey: Hotkey.defaultConvertLayout,
-            toggleCaseHotkey: Hotkey.defaultToggleCase
-        ),
-        .clearTrackedText(reason: "undo"),
-        "keyDown policy clears tracker for Cmd+Z"
-    )
-
-    try expect(
-        KeyDownEventPolicy.action(
-            keyCode: 9,
-            flags: commandOption,
-            convertHotkey: Hotkey.defaultConvertLayout,
-            toggleCaseHotkey: Hotkey.defaultToggleCase
-        ),
-        .clearTrackedText(reason: "modified shortcut"),
-        "keyDown policy clears tracker for Cmd+Opt+V as modified shortcut"
-    )
-
-    try expect(
-        KeyDownEventPolicy.action(
-            keyCode: 7,
-            flags: command,
-            convertHotkey: Hotkey.defaultConvertLayout,
-            toggleCaseHotkey: Hotkey.defaultToggleCase
-        ),
-        .clearTrackedText(reason: "cut"),
-        "keyDown policy clears tracker for Cmd+X"
-    )
-
-    try expect(
-        KeyDownEventPolicy.action(
-            keyCode: 0,
-            flags: command,
-            convertHotkey: Hotkey.defaultConvertLayout,
-            toggleCaseHotkey: Hotkey.defaultToggleCase
-        ),
-        .clearTrackedText(reason: "selection"),
-        "keyDown policy clears tracker for Cmd+A"
-    )
-
-    try expect(
-        KeyDownEventPolicy.action(
-            keyCode: 51,
-            flags: optionOnly,
-            convertHotkey: Hotkey.defaultConvertLayout,
-            toggleCaseHotkey: Hotkey.defaultToggleCase
-        ),
-        .clearTrackedText(reason: "modified deletion"),
-        "keyDown policy clears tracker for Option+Delete"
-    )
-
-    try expect(
-        KeyDownEventPolicy.action(
-            keyCode: 123,
-            flags: command,
-            convertHotkey: Hotkey.defaultConvertLayout,
-            toggleCaseHotkey: Hotkey.defaultToggleCase
-        ),
-        .clearTrackedText(reason: "modified navigation"),
-        "keyDown policy clears tracker for Cmd+Left"
-    )
-
-    try expect(
-        KeyDownEventPolicy.action(
-            keyCode: 0,
-            flags: none,
-            convertHotkey: Hotkey.defaultConvertLayout,
-            toggleCaseHotkey: Hotkey.defaultToggleCase
-        ),
-        .trackKeyPress,
-        "keyDown policy tracks plain key press"
-    )
-
-    try expect(
-        KeyDownEventPolicy.action(
-            keyCode: 0,
-            flags: shift,
-            convertHotkey: Hotkey.defaultConvertLayout,
-            toggleCaseHotkey: Hotkey.defaultToggleCase
-        ),
-        .trackKeyPress,
-        "keyDown policy tracks shifted key press"
-    )
-
-    for (flags, label) in [(command, "command"), (optionOnly, "option"), (controlOnly, "control"), (commandControl, "command-control")] {
-        try expect(
-            KeyDownEventPolicy.action(
-                keyCode: 11,
-                flags: flags,
-                convertHotkey: Hotkey.defaultConvertLayout,
-                toggleCaseHotkey: Hotkey.defaultToggleCase
-            ),
-            .clearTrackedText(reason: "modified shortcut"),
-            "keyDown policy clears tracker for \(label)-modified shortcut"
-        )
-    }
 }

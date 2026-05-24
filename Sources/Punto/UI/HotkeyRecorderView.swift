@@ -13,7 +13,7 @@ final class HotkeyRecorderView: NSView {
     private var localMonitor: Any?
     private var globalMonitor: Any?
     private var flagsMonitor: Any?
-    private var pendingModifiers: (cmd: Bool, opt: Bool, shift: Bool, ctrl: Bool)?
+    private let recordingStateMachine = HotkeyRecordingStateMachine()
 
     init(hotkey: Hotkey, onRecord: @escaping (Hotkey) -> Void) {
         self.hotkey = hotkey
@@ -65,7 +65,7 @@ final class HotkeyRecorderView: NSView {
 
     private func startRecording() {
         isRecording = true
-        pendingModifiers = nil
+        recordingStateMachine.reset()
         button.title = "Type shortcut…"
         button.contentTintColor = .controlAccentColor
 
@@ -91,7 +91,7 @@ final class HotkeyRecorderView: NSView {
 
     private func stopRecording() {
         isRecording = false
-        pendingModifiers = nil
+        recordingStateMachine.reset()
         button.title = hotkey.displayString
         button.contentTintColor = nil
 
@@ -118,73 +118,53 @@ final class HotkeyRecorderView: NSView {
         let hasShift = flags.contains(.shift)
         let hasControl = flags.contains(.control)
 
-        let modifierCount = [hasCommand, hasOption, hasShift, hasControl].filter { $0 }.count
-
-        if modifierCount >= 2 {
-            // Store pending modifiers when 2+ are pressed
-            pendingModifiers = (hasCommand, hasOption, hasShift, hasControl)
-            // Update button to show current combination
-            var parts: [String] = []
-            if hasControl { parts.append("⌃") }
-            if hasOption { parts.append("⌥") }
-            if hasShift { parts.append("⇧") }
-            if hasCommand { parts.append("⌘") }
-            button.title = parts.joined()
-        } else if let pending = pendingModifiers, modifierCount < 2 {
-            // Modifiers released - save modifier-only hotkey
-            let newHotkey = Hotkey(
-                keyCode: Hotkey.modifierOnlyKeyCode,
-                command: pending.cmd,
-                option: pending.opt,
-                shift: pending.shift,
-                control: pending.ctrl
-            )
-            hotkey = newHotkey
-            onRecord(newHotkey)
-            stopRecording()
-        }
-    }
-
-    private func handleKeyEvent(_ event: NSEvent) -> Bool {
-        guard isRecording else { return false }
-
-        // Escape cancels
-        if event.keyCode == 53 {
-            stopRecording()
-            return true
-        }
-
-        // Any key press clears pending modifiers (user wants key+modifier combo)
-        pendingModifiers = nil
-
-        guard HotkeyValidationPolicy.isAllowedShortcutCharacterKeycode(event.keyCode) else {
-            NSSound.beep()
-            return true
-        }
-
-        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-        let hasCommand = flags.contains(.command)
-        let hasOption = flags.contains(.option)
-        let hasShift = flags.contains(.shift)
-        let hasControl = flags.contains(.control)
-
-        // Need at least one modifier
-        guard hasCommand || hasOption || hasControl else {
-            return false
-        }
-
-        let newHotkey = Hotkey(
-            keyCode: event.keyCode,
+        let snapshot = ModifierFlagsSnapshot(
             command: hasCommand,
             option: hasOption,
             shift: hasShift,
             control: hasControl
         )
 
-        hotkey = newHotkey
-        onRecord(newHotkey)
-        stopRecording()
-        return true
+        switch recordingStateMachine.handleFlagsChanged(flags: snapshot) {
+        case .previewModifierOnly(let preview):
+            button.title = preview.displayString
+        case .record(let newHotkey):
+            hotkey = newHotkey
+            onRecord(newHotkey)
+            stopRecording()
+        case .none, .cancel, .reject, .passThrough:
+            break
+        }
+    }
+
+    private func handleKeyEvent(_ event: NSEvent) -> Bool {
+        guard isRecording else { return false }
+
+        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        let snapshot = ModifierFlagsSnapshot(
+            command: flags.contains(.command),
+            option: flags.contains(.option),
+            shift: flags.contains(.shift),
+            control: flags.contains(.control)
+        )
+
+        switch recordingStateMachine.handleKeyDown(keyCode: event.keyCode, flags: snapshot) {
+        case .cancel:
+            stopRecording()
+            return true
+        case .reject:
+            NSSound.beep()
+            return true
+        case .passThrough:
+            return false
+        case .record(let newHotkey):
+            hotkey = newHotkey
+            onRecord(newHotkey)
+            stopRecording()
+            return true
+        case .none, .previewModifierOnly:
+            return true
+        }
     }
 
     // MARK: - Public

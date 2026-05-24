@@ -20,6 +20,7 @@ public enum KeyDownEventPolicy {
     public static let cutKeyCode: UInt16 = 7
     public static let selectAllKeyCode: UInt16 = 0
     public static let deleteKeyCode = KeyboardEventKeyCodePolicy.backspaceKeyCode
+    public static let escapeKeyCode: UInt16 = 53
     public static let forwardDeleteKeyCode: UInt16 = 117
     public static let navigationKeyCodes: Set<UInt16> = [
         123, 124, 125, 126,
