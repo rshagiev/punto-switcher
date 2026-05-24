@@ -16,6 +16,7 @@ removed_symbols=(
     "SoundFeedbackPolicy.legacyBitmask(fromEnabledResourceNames"
     "SoundFeedbackPolicy.legacyToggleValues(fromEnabledResourceNames"
     "UndoLearningSettingsPolicy.dictionary"
+    "ApplicationUpdateSettingsPolicy.dictionary"
 )
 
 for symbol in "${removed_symbols[@]}"; do
@@ -138,6 +139,15 @@ settings_import_alias_patterns=(
     "\\bKeys\\.manualSwitches"
     "\\bKeys\\.reverts"
     "\\bKeys\\.dayuseSettings"
+    "\\bKeys\\.configVersion"
+    "\\bKeys\\.isJustInstalled"
+    "\\bKeys\\.isJustUpdated"
+    "\\bKeys\\.isUpdating"
+    "\\bKeys\\.shouldCheckForUpdatesAutomatically"
+    "\\bKeys\\.updateRequestRateInDays"
+    "\\bKeys\\.lastStatisticsRequestDate"
+    "\\bKeys\\.lastUpdateRequestDate"
+    "\\bKeys\\.lastUpdateShownDate"
 )
 
 for pattern in "${settings_import_alias_patterns[@]}"; do

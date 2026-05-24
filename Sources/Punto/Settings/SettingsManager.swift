@@ -702,12 +702,13 @@ final class SettingsManager {
         get {
             if let data = defaults.data(forKey: Keys.applicationUpdateSettings),
                let snapshot = try? decoder.decode(ApplicationUpdateSettingsSnapshot.self, from: data) {
-                return snapshot
+                return ApplicationUpdateSettingsPolicy.normalized(snapshot)
             }
             return ApplicationUpdateSettingsPolicy.snapshot(from: storedDefaults)
         }
         set {
-            guard let data = try? encoder.encode(newValue) else {
+            let normalized = ApplicationUpdateSettingsPolicy.normalized(newValue)
+            guard let data = try? encoder.encode(normalized) else {
                 return
             }
             defaults.set(data, forKey: Keys.applicationUpdateSettings)

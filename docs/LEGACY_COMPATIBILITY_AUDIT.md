@@ -48,7 +48,9 @@ writer generates that legacy shape.
 Application update/install state is also native-write only. Imported Punto
 Switcher updater keys (`configVersion`, install/update booleans, request-rate
 and date markers) seed `applicationUpdateSettings` when no native snapshot
-exists, but startup presentation writes back only the native Codable payload.
+exists, but startup presentation writes back only the normalized native Codable
+payload. There is no helper that emits the old updater plist dictionary from
+native state.
 The only legacy updater writes left are one-shot consumption of imported
 `isFirstInstallation`, `isJustInstalled`, `isJustUpdated`, and `isUpdating` so
 old presentation flags cannot reopen welcome/update UI.

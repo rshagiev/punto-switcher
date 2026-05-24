@@ -104,20 +104,19 @@ public enum ApplicationUpdateSettingsPolicy {
         )
     }
 
-    public static func dictionary(from snapshot: ApplicationUpdateSettingsSnapshot) -> [String: Any] {
-        var dictionary: [String: Any] = [
-            configVersionKey: max(0, snapshot.configVersion),
-            isFirstInstallationKey: snapshot.isFirstInstallation,
-            isJustInstalledKey: snapshot.isJustInstalled,
-            isJustUpdatedKey: snapshot.isJustUpdated,
-            isUpdatingKey: snapshot.isUpdating,
-            shouldCheckForUpdatesAutomaticallyKey: snapshot.shouldCheckForUpdatesAutomatically,
-            updateRequestRateInDaysKey: max(0, snapshot.updateRequestRateInDays)
-        ]
-        dictionary[lastStatisticsRequestDateKey] = snapshot.lastStatisticsRequestDate
-        dictionary[lastUpdateRequestDateKey] = snapshot.lastUpdateRequestDate
-        dictionary[lastUpdateShownDateKey] = snapshot.lastUpdateShownDate
-        return dictionary
+    public static func normalized(_ snapshot: ApplicationUpdateSettingsSnapshot) -> ApplicationUpdateSettingsSnapshot {
+        ApplicationUpdateSettingsSnapshot(
+            configVersion: max(0, snapshot.configVersion),
+            isFirstInstallation: snapshot.isFirstInstallation,
+            isJustInstalled: snapshot.isJustInstalled,
+            isJustUpdated: snapshot.isJustUpdated,
+            isUpdating: snapshot.isUpdating,
+            shouldCheckForUpdatesAutomatically: snapshot.shouldCheckForUpdatesAutomatically,
+            updateRequestRateInDays: max(0, snapshot.updateRequestRateInDays),
+            lastStatisticsRequestDate: snapshot.lastStatisticsRequestDate,
+            lastUpdateRequestDate: snapshot.lastUpdateRequestDate,
+            lastUpdateShownDate: snapshot.lastUpdateShownDate
+        )
     }
 
 }

@@ -4755,16 +4755,28 @@ private func runApplicationUpdateSettingsPolicyTests() throws {
     try expect(clamped.configVersion, 0, "update settings policy clamps negative config version")
     try expect(clamped.updateRequestRateInDays, 0, "update settings policy clamps negative update request rate")
 
-    let dictionary = ApplicationUpdateSettingsPolicy.dictionary(from: snapshot)
-    try expect(dictionary[ApplicationUpdateSettingsPolicy.configVersionKey] as? Int, 9, "update settings policy writes config version")
-    try expect(dictionary[ApplicationUpdateSettingsPolicy.isJustInstalledKey] as? Bool, true, "update settings policy writes install flag")
-    try expect(dictionary[ApplicationUpdateSettingsPolicy.shouldCheckForUpdatesAutomaticallyKey] as? Bool, false, "update settings policy writes auto-check flag")
-    try expect(dictionary[ApplicationUpdateSettingsPolicy.updateRequestRateInDaysKey] as? Int, 14, "update settings policy writes update rate")
-    try expect(dictionary[ApplicationUpdateSettingsPolicy.lastUpdateRequestDateKey] as? Date, updateRequestDate, "update settings policy writes update request date")
-
     let encoded = try JSONEncoder().encode(snapshot)
     let decoded = try JSONDecoder().decode(ApplicationUpdateSettingsSnapshot.self, from: encoded)
     try expect(decoded, snapshot, "update settings snapshot supports native Codable persistence")
+
+    let normalized = ApplicationUpdateSettingsPolicy.normalized(
+        ApplicationUpdateSettingsSnapshot(
+            configVersion: -2,
+            isFirstInstallation: false,
+            isJustInstalled: true,
+            isJustUpdated: true,
+            isUpdating: false,
+            shouldCheckForUpdatesAutomatically: false,
+            updateRequestRateInDays: -5,
+            lastStatisticsRequestDate: nil,
+            lastUpdateRequestDate: updateRequestDate,
+            lastUpdateShownDate: nil
+        )
+    )
+    try expect(normalized.configVersion, 0, "update settings native snapshot clamps config version")
+    try expect(normalized.updateRequestRateInDays, 0, "update settings native snapshot clamps update rate")
+    try expect(normalized.isJustInstalled, true, "update settings native snapshot preserves install flag")
+    try expect(normalized.lastUpdateRequestDate, updateRequestDate, "update settings native snapshot preserves update date")
 }
 
 private func runStartupPresentationPolicyTests() throws {
