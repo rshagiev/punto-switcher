@@ -11,21 +11,61 @@ func runSearchShortcutPolicyTests() throws {
         "привет мир",
         "search shortcut policy trims query"
     )
+    try expect(
+        PuntoSwitcherObservedSurface.SearchShortcuts.processSelectedTextWithYandexSelector,
+        "processSelectedTextWithYandex",
+        "search shortcut policy preserves observed selected-text Yandex processor selector"
+    )
+    try expect(
+        PuntoSwitcherObservedSurface.SearchShortcuts.findInYandexSelector,
+        "findInYandex",
+        "search shortcut policy preserves observed find-in-Yandex selector"
+    )
+    try expect(
+        PuntoSwitcherObservedSurface.SearchShortcuts.searchInYandexShortcutKey,
+        "searchInYandexShortcut",
+        "search shortcut policy preserves observed Yandex shortcut field key"
+    )
+    try expect(
+        PuntoSwitcherObservedSurface.SearchShortcuts.yandexSearchTemplate,
+        "http://yandex.ru/yandsearch?text=%@&clid=141986&yasoft=puntomac",
+        "search shortcut policy preserves observed fixed Yandex URL template"
+    )
+    try expect(
+        PuntoSwitcherObservedSurface.SearchShortcuts.yandexSearchParameterizedTemplate,
+        "http://yandex.ru/yandsearch?text=%@&clid=%d",
+        "search shortcut policy preserves observed parameterized Yandex URL template"
+    )
+    try expect(
+        PuntoSwitcherObservedSurface.SearchShortcuts.yandexTranslateParameterizedTemplate,
+        "http://translate.yandex.ru/?text=%@&clid=%d",
+        "search shortcut policy preserves observed parameterized Yandex translate URL template"
+    )
+    try expect(
+        SearchShortcutPolicy.yandexClid,
+        PuntoSwitcherObservedSurface.SearchShortcuts.yandexClid,
+        "search shortcut policy keeps Yandex clid aligned with reverse-audit anchor"
+    )
+    try expect(
+        SearchShortcutPolicy.yandexSoft,
+        PuntoSwitcherObservedSurface.SearchShortcuts.yandexSoft,
+        "search shortcut policy keeps Yandex yasoft marker aligned with reverse-audit anchor"
+    )
 
     try expect(
         SearchShortcutPolicy.url(for: "привет мир", destination: .yandexSearch)?.absoluteString,
-        "http://yandex.ru/yandsearch?text=%D0%BF%D1%80%D0%B8%D0%B2%D0%B5%D1%82%20%D0%BC%D0%B8%D1%80&clid=141986&yasoft=puntomac",
+        "http://yandex.ru/yandsearch?text=%D0%BF%D1%80%D0%B8%D0%B2%D0%B5%D1%82%20%D0%BC%D0%B8%D1%80&clid=\(PuntoSwitcherObservedSurface.SearchShortcuts.yandexClid)&yasoft=\(PuntoSwitcherObservedSurface.SearchShortcuts.yandexSoft)",
         "search shortcut policy builds Punto Switcher-style Yandex search URL"
     )
     try expect(
-        SearchShortcutPolicy.url(for: "привет мир", destination: .yandexSearch)?.absoluteString.contains("yasoft=puntomac") == true,
+        SearchShortcutPolicy.url(for: "привет мир", destination: .yandexSearch)?.absoluteString.contains("yasoft=\(PuntoSwitcherObservedSurface.SearchShortcuts.yandexSoft)") == true,
         true,
         "search shortcut policy preserves yasoft marker"
     )
 
     try expect(
         SearchShortcutPolicy.url(for: "hello", destination: .yandexTranslate)?.absoluteString,
-        "http://translate.yandex.ru/?text=hello&clid=141986",
+        "http://translate.yandex.ru/?text=hello&clid=\(PuntoSwitcherObservedSurface.SearchShortcuts.yandexClid)",
         "search shortcut policy builds Yandex translate URL"
     )
 }
@@ -38,7 +78,7 @@ func runSelectedTextSearchPolicyTests() throws {
     )
     try expect(
         SelectedTextSearchPolicy.plan(capturedText: editableCapture, destination: .yandexSearch),
-        .open(URL(string: "http://yandex.ru/yandsearch?text=%D0%BF%D1%80%D0%B8%D0%B2%D0%B5%D1%82%20%D0%BC%D0%B8%D1%80&clid=141986&yasoft=puntomac")!),
+        .open(URL(string: "http://yandex.ru/yandsearch?text=%D0%BF%D1%80%D0%B8%D0%B2%D0%B5%D1%82%20%D0%BC%D0%B8%D1%80&clid=\(PuntoSwitcherObservedSurface.SearchShortcuts.yandexClid)&yasoft=\(PuntoSwitcherObservedSurface.SearchShortcuts.yandexSoft)")!),
         "selected-text search policy opens normalized Yandex search URL"
     )
 
@@ -49,7 +89,7 @@ func runSelectedTextSearchPolicyTests() throws {
     )
     try expect(
         SelectedTextSearchPolicy.plan(capturedText: terminalTailCapture, destination: .yandexTranslate),
-        .open(URL(string: "http://translate.yandex.ru/?text=hello&clid=141986")!),
+        .open(URL(string: "http://translate.yandex.ru/?text=hello&clid=\(PuntoSwitcherObservedSurface.SearchShortcuts.yandexClid)")!),
         "selected-text search policy allows safe terminal-tail selected text"
     )
 
@@ -86,7 +126,7 @@ func runSelectedTextSearchPolicyTests() throws {
         "selected-text search policy skips blank normalized query"
     )
 
-    let searchURL = URL(string: "http://yandex.ru/yandsearch?text=%D0%BF%D1%80%D0%B8%D0%B2%D0%B5%D1%82%20%D0%BC%D0%B8%D1%80&clid=141986&yasoft=puntomac")!
+    let searchURL = URL(string: "http://yandex.ru/yandsearch?text=%D0%BF%D1%80%D0%B8%D0%B2%D0%B5%D1%82%20%D0%BC%D0%B8%D1%80&clid=\(PuntoSwitcherObservedSurface.SearchShortcuts.yandexClid)&yasoft=\(PuntoSwitcherObservedSurface.SearchShortcuts.yandexSoft)")!
     try expect(
         SelectedTextSearchPolicy.runtimePlan(from: .open(searchURL)),
         .open(

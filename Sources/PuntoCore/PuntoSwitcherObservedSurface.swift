@@ -110,6 +110,17 @@ public enum PuntoSwitcherObservedSurface {
         public static let allowedShortcutCharacterKeycodeSelector = "isAllowedShortcutCharacterKeycode:"
     }
 
+    public enum SearchShortcuts {
+        public static let processSelectedTextWithYandexSelector = "processSelectedTextWithYandex"
+        public static let findInYandexSelector = "findInYandex"
+        public static let searchInYandexShortcutKey = "searchInYandexShortcut"
+        public static let yandexSearchTemplate = "http://yandex.ru/yandsearch?text=%@&clid=141986&yasoft=puntomac"
+        public static let yandexSearchParameterizedTemplate = "http://yandex.ru/yandsearch?text=%@&clid=%d"
+        public static let yandexTranslateParameterizedTemplate = "http://translate.yandex.ru/?text=%@&clid=%d"
+        public static let yandexClid = "141986"
+        public static let yandexSoft = "puntomac"
+    }
+
     public enum InputSources {
         public static let undefinedSourceID = "UNDEFINED"
         public static let inputSourceEnabledSelector = "inputSourceEnabled:"
