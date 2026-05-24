@@ -1,6 +1,7 @@
 import AppKit
 import Carbon.HIToolbox
 import PuntoCore
+import PuntoSettings
 
 /// Manages global hotkeys using CGEvent Tap
 final class HotkeyManager {

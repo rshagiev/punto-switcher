@@ -2,13 +2,13 @@ import Foundation
 import PuntoCore
 import ServiceManagement
 
-extension Notification.Name {
+public extension Notification.Name {
     static let puntoRussianKeyboardLayoutTypeChanged = Notification.Name("puntoRussianKeyboardLayoutTypeChanged")
     static let puntoInputSourcePreferencesChanged = Notification.Name("puntoInputSourcePreferencesChanged")
 }
 
 /// Composes application settings from native storage, import fallbacks, and policy-provided base values.
-final class SettingsManager {
+public final class SettingsManager {
 
     // MARK: - Keys
 
@@ -99,48 +99,48 @@ final class SettingsManager {
 
     // MARK: - Properties
 
-    private let store = SettingsDefaultsStore()
+    private let store: SettingsDefaultsStore
     private lazy var resolver = SettingsValueResolver(store: store)
 
     /// Whether the app functionality is enabled
-    var isEnabled: Bool {
+    public var isEnabled: Bool {
         get { resolver.bool(nativeKey: Keys.isEnabled, defaultValue: SettingsPersistencePolicy.defaultIsEnabled) }
         set { store.set(newValue, forKey: Keys.isEnabled) }
     }
 
     /// Whether this is the first launch
-    var isFirstLaunch: Bool {
+    public var isFirstLaunch: Bool {
         get { resolver.bool(nativeKey: Keys.isFirstLaunch, legacyKey: ImportKeys.isFirstInstallation, defaultValue: SettingsPersistencePolicy.defaultIsFirstLaunch) }
         set { store.set(newValue, forKey: Keys.isFirstLaunch) }
     }
 
     /// Consumes native and imported Punto Switcher first-run flags after onboarding.
-    func consumeFirstLaunchPresentationFlags() {
+    public func consumeFirstLaunchPresentationFlags() {
         store.set(false, forKey: Keys.isFirstLaunch)
         store.set(false, forKey: ImportKeys.isFirstInstallation)
         store.set(false, forKey: ImportKeys.isJustInstalled)
     }
 
     /// Consumes imported Punto Switcher update flags after native update presentation.
-    func consumeUpdatePresentationImportFlags() {
+    public func consumeUpdatePresentationImportFlags() {
         store.set(false, forKey: ImportKeys.isJustUpdated)
         store.set(false, forKey: ImportKeys.isUpdating)
     }
 
     /// Whether to show the icon in the menu bar
-    var showInMenuBar: Bool {
+    public var showInMenuBar: Bool {
         get { resolver.bool(nativeKey: Keys.showInMenuBar, defaultValue: SettingsPersistencePolicy.defaultShowInMenuBar) }
         set { store.set(newValue, forKey: Keys.showInMenuBar) }
     }
 
     /// Whether advanced settings are visible in the preferences window
-    var showAdvancedSettings: Bool {
+    public var showAdvancedSettings: Bool {
         get { resolver.bool(nativeKey: Keys.showAdvancedSettings, defaultValue: SettingsPersistencePolicy.defaultShowAdvancedSettings) }
         set { store.set(newValue, forKey: Keys.showAdvancedSettings) }
     }
 
     /// Whether to launch at login
-    var launchAtLogin: Bool {
+    public var launchAtLogin: Bool {
         get { resolver.bool(nativeKey: Keys.launchAtLogin, legacyKey: ImportKeys.launchesOnStartup, defaultValue: SettingsPersistencePolicy.defaultLaunchAtLogin) }
         set {
             store.set(newValue, forKey: Keys.launchAtLogin)
@@ -149,7 +149,7 @@ final class SettingsManager {
     }
 
     /// Hotkey for converting layout
-    var convertLayoutHotkey: Hotkey {
+    public var convertLayoutHotkey: Hotkey {
         get {
             resolver.hotkey(
                 nativeKey: Keys.convertLayoutHotkey,
@@ -164,7 +164,7 @@ final class SettingsManager {
     }
 
     /// Hotkey for toggling case
-    var toggleCaseHotkey: Hotkey {
+    public var toggleCaseHotkey: Hotkey {
         get {
             resolver.hotkey(
                 nativeKey: Keys.toggleCaseHotkey,
@@ -179,7 +179,7 @@ final class SettingsManager {
     }
 
     /// Hotkey for toggling auto-correction
-    var toggleAutoCorrectionHotkey: Hotkey {
+    public var toggleAutoCorrectionHotkey: Hotkey {
         get {
             resolver.hotkey(
                 nativeKey: Keys.toggleAutoCorrectionHotkey,
@@ -194,7 +194,7 @@ final class SettingsManager {
     }
 
     /// Hotkey for cancelling the last layout change.
-    var cancelLayoutChangeHotkey: Hotkey {
+    public var cancelLayoutChangeHotkey: Hotkey {
         get {
             resolver.hotkey(
                 nativeKey: Keys.cancelLayoutChangeHotkey,
@@ -209,7 +209,7 @@ final class SettingsManager {
     }
 
     /// Hotkey for opening selected text in Yandex search.
-    var findInYandexHotkey: Hotkey {
+    public var findInYandexHotkey: Hotkey {
         get {
             resolver.hotkey(
                 nativeKey: Keys.findInYandexHotkey,
@@ -224,7 +224,7 @@ final class SettingsManager {
     }
 
     /// Hotkey for opening selected text in Yandex Translate/Slovari flow.
-    var findInSlovariHotkey: Hotkey {
+    public var findInSlovariHotkey: Hotkey {
         get {
             resolver.hotkey(
                 nativeKey: Keys.findInSlovariHotkey,
@@ -238,7 +238,7 @@ final class SettingsManager {
         }
     }
 
-    var searchSelectedTextByDoubleClick: Bool {
+    public var searchSelectedTextByDoubleClick: Bool {
         get {
             resolver.searchSelectedTextByDoubleClick(
                 nativeKey: Keys.searchSelectedTextByDoubleClick,
@@ -251,26 +251,26 @@ final class SettingsManager {
     }
 
     /// Переключать раскладку после конвертации
-    var switchLayoutAfterConversion: Bool {
+    public var switchLayoutAfterConversion: Bool {
         get { resolver.bool(nativeKey: Keys.switchLayoutAfterConversion, defaultValue: SettingsPersistencePolicy.defaultSwitchLayoutAfterConversion) }
         set { store.set(newValue, forKey: Keys.switchLayoutAfterConversion) }
     }
 
-    var switchLayoutAfterSelectedTextConversion: Bool {
+    public var switchLayoutAfterSelectedTextConversion: Bool {
         get { resolver.bool(nativeKey: Keys.switchLayoutAfterSelectedTextConversion, legacyKey: ImportKeys.switchLayoutOnSelectedTextSwitch, defaultValue: SettingsPersistencePolicy.defaultSwitchLayoutAfterSelectedTextConversion) }
         set {
             store.set(newValue, forKey: Keys.switchLayoutAfterSelectedTextConversion)
         }
     }
 
-    var manualConversionDisabled: Bool {
+    public var manualConversionDisabled: Bool {
         get { resolver.bool(nativeKey: Keys.manualConversionDisabled, legacyKey: ImportKeys.isManualConversionDisabled, defaultValue: SettingsPersistencePolicy.defaultManualConversionDisabled) }
         set {
             store.set(newValue, forKey: Keys.manualConversionDisabled)
         }
     }
 
-    var russianKeyboardLayoutType: KeyboardLayoutType {
+    public var russianKeyboardLayoutType: KeyboardLayoutType {
         get { resolver.russianKeyboardLayoutType(nativeKey: Keys.russianKeyboardLayoutType, legacyKey: ImportKeys.kbdLayoutType) }
         set {
             store.set(newValue.rawValue, forKey: Keys.russianKeyboardLayoutType)
@@ -279,14 +279,14 @@ final class SettingsManager {
         }
     }
 
-    var preferredEnglishInputSourceID: String? {
+    public var preferredEnglishInputSourceID: String? {
         get { resolver.inputSourceID(nativeKey: Keys.preferredEnglishInputSourceID, legacyKey: ImportKeys.englishLayoutID) }
         set {
             setPreferredInputSourceID(newValue, nativeKey: Keys.preferredEnglishInputSourceID)
         }
     }
 
-    var preferredRussianInputSourceID: String? {
+    public var preferredRussianInputSourceID: String? {
         get { resolver.inputSourceID(nativeKey: Keys.preferredRussianInputSourceID, legacyKey: ImportKeys.russianLayoutID) }
         set {
             setPreferredInputSourceID(newValue, nativeKey: Keys.preferredRussianInputSourceID)
@@ -294,14 +294,14 @@ final class SettingsManager {
     }
 
     /// Punto Switcher-style per-application layout memory.
-    var rememberInputSourceForEachApp: Bool {
+    public var rememberInputSourceForEachApp: Bool {
         get { resolver.bool(nativeKey: Keys.rememberInputSourceForEachApp, legacyKey: ImportKeys.shouldRememberInputSourceForEachApp, defaultValue: SettingsPersistencePolicy.defaultRememberInputSourceForEachApp) }
         set {
             store.set(newValue, forKey: Keys.rememberInputSourceForEachApp)
         }
     }
 
-    var rememberedApplicationLayouts: [String: String] {
+    public var rememberedApplicationLayouts: [String: String] {
         get {
             SettingsPersistencePolicy.normalizedRememberedApplicationLayouts(
                 store.dictionary(forKey: Keys.rememberedApplicationLayouts) as? [String: String] ?? [:]
@@ -315,7 +315,7 @@ final class SettingsManager {
         }
     }
 
-    var disabledApplicationBundleIDs: Set<String> {
+    public var disabledApplicationBundleIDs: Set<String> {
         get { resolver.disabledApplicationBundleIDs(nativeKey: Keys.disabledApplicationBundleIDs, legacyKey: ImportKeys.disabledApps) }
         set {
             let normalized = Array(SettingsPersistencePolicy.normalizedDisabledApplicationBundleIDs(newValue)).sorted()
@@ -323,21 +323,21 @@ final class SettingsManager {
         }
     }
 
-    func isApplicationDisabled(bundleID: String?) -> Bool {
+    public func isApplicationDisabled(bundleID: String?) -> Bool {
         ApplicationDisablePolicy.isApplicationDisabled(
             bundleID: bundleID,
             disabledBundleIDs: disabledApplicationBundleIDs
         )
     }
 
-    var completelyDisableInExceptionApplications: Bool {
+    public var completelyDisableInExceptionApplications: Bool {
         get { resolver.bool(nativeKey: Keys.completelyDisableInExceptionApplications, legacyKey: ImportKeys.completelyDisableInExceptionApps, defaultValue: SettingsPersistencePolicy.defaultCompletelyDisableInExceptionApplications) }
         set {
             store.set(newValue, forKey: Keys.completelyDisableInExceptionApplications)
         }
     }
 
-    func isApplicationCompletelyDisabled(bundleID: String?) -> Bool {
+    public func isApplicationCompletelyDisabled(bundleID: String?) -> Bool {
         ApplicationDisablePolicy.isApplicationCompletelyDisabled(
             bundleID: bundleID,
             disabledBundleIDs: disabledApplicationBundleIDs,
@@ -345,7 +345,7 @@ final class SettingsManager {
         )
     }
 
-    func setApplicationDisabled(bundleID: String?, disabled: Bool) {
+    public func setApplicationDisabled(bundleID: String?, disabled: Bool) {
         disabledApplicationBundleIDs = ApplicationDisablePolicy.disabledBundleIDsAfterSet(
             bundleID: bundleID,
             disabled: disabled,
@@ -353,7 +353,7 @@ final class SettingsManager {
         )
     }
 
-    var resetOnReturnBundleComponents: Set<String> {
+    public var resetOnReturnBundleComponents: Set<String> {
         get { resolver.resetOnReturnBundleComponents(nativeKey: Keys.resetOnReturnBundleComponents, legacyKey: ImportKeys.switcherResetOnReturn) }
         set {
             let normalized = Array(SettingsPersistencePolicy.normalizedResetOnReturnBundleComponents(newValue)).sorted()
@@ -364,14 +364,14 @@ final class SettingsManager {
         }
     }
 
-    var autoCorrectionEnabled: Bool {
+    public var autoCorrectionEnabled: Bool {
         get { resolver.bool(nativeKey: Keys.autoCorrectionEnabled, legacyKey: ImportKeys.isAutocorrectionActive, defaultValue: SettingsPersistencePolicy.defaultAutoCorrectionEnabled) }
         set {
             store.set(newValue, forKey: Keys.autoCorrectionEnabled)
         }
     }
 
-    var autoCorrectionStarterRulesEnabled: Bool {
+    public var autoCorrectionStarterRulesEnabled: Bool {
         get {
             resolver.firstStoredBool(
                 keys: [
@@ -387,28 +387,28 @@ final class SettingsManager {
         }
     }
 
-    var autoCorrectOnEnterAndTab: Bool {
+    public var autoCorrectOnEnterAndTab: Bool {
         get { resolver.invertedLegacyBool(nativeKey: Keys.autoCorrectOnEnterAndTab, legacyKey: ImportKeys.shouldNotAutoconvertWithTabOrEnter, defaultValue: SettingsPersistencePolicy.defaultAutoCorrectOnEnterAndTab) }
         set {
             store.set(newValue, forKey: Keys.autoCorrectOnEnterAndTab)
         }
     }
 
-    var autoCorrectionUndoLearningEnabled: Bool {
+    public var autoCorrectionUndoLearningEnabled: Bool {
         get { resolver.undoLearningEnabled(nativeKey: Keys.autoCorrectionUndoLearningEnabled, legacyKey: ImportKeys.undoLearning, defaultValue: SettingsPersistencePolicy.defaultAutoCorrectionUndoLearningEnabled) }
         set {
             store.set(newValue, forKey: Keys.autoCorrectionUndoLearningEnabled)
         }
     }
 
-    var suppressAutoCorrectionAfterManualConversion: Bool {
+    public var suppressAutoCorrectionAfterManualConversion: Bool {
         get { resolver.invertedLegacyBool(nativeKey: Keys.suppressAutoCorrectionAfterManualConversion, legacyKey: ImportKeys.shouldNotAutoconvertAfterConvertion, defaultValue: SettingsPersistencePolicy.defaultSuppressAutoCorrectionAfterManualConversion) }
         set {
             store.set(newValue, forKey: Keys.suppressAutoCorrectionAfterManualConversion)
         }
     }
 
-    var autoCorrectionCancellingKeyNames: Set<String> {
+    public var autoCorrectionCancellingKeyNames: Set<String> {
         get { resolver.autoCorrectionCancellingKeyNames(nativeKey: Keys.autoCorrectionCancellingKeyNames, legacyKey: ImportKeys.cancellingKeys) }
         set {
             store.set(
@@ -418,13 +418,13 @@ final class SettingsManager {
         }
     }
 
-    func isAutoCorrectionCancellingKeyEnabled(_ keyName: String) -> Bool {
+    public func isAutoCorrectionCancellingKeyEnabled(_ keyName: String) -> Bool {
         autoCorrectionCancellingKeyNames.contains(
             AutoCorrectionCancellingKeyPolicy.normalizedEnabledKeyNames([keyName]).first ?? ""
         )
     }
 
-    func setAutoCorrectionCancellingKey(_ keyName: String, enabled: Bool) {
+    public func setAutoCorrectionCancellingKey(_ keyName: String, enabled: Bool) {
         guard let normalized = AutoCorrectionCancellingKeyPolicy.normalizedEnabledKeyNames([keyName]).first else {
             return
         }
@@ -437,14 +437,14 @@ final class SettingsManager {
         autoCorrectionCancellingKeyNames = enabledKeyNames
     }
 
-    var soundEffectsEnabled: Bool {
+    public var soundEffectsEnabled: Bool {
         get { resolver.bool(nativeKey: Keys.soundEffectsEnabled, legacyKey: ImportKeys.isSoundOn, defaultValue: SettingsPersistencePolicy.defaultSoundEffectsEnabled) }
         set {
             store.set(newValue, forKey: Keys.soundEffectsEnabled)
         }
     }
 
-    var enabledSoundResourceNames: Set<String> {
+    public var enabledSoundResourceNames: Set<String> {
         get {
             resolver.enabledSoundResourceNames(
                 nativeKey: Keys.enabledSoundResourceNames,
@@ -458,11 +458,11 @@ final class SettingsManager {
         }
     }
 
-    func isSoundResourceEnabled(_ resourceName: String) -> Bool {
+    public func isSoundResourceEnabled(_ resourceName: String) -> Bool {
         enabledSoundResourceNames.contains(resourceName)
     }
 
-    func setSoundResource(_ resourceName: String, enabled: Bool) {
+    public func setSoundResource(_ resourceName: String, enabled: Bool) {
         var enabledNames = enabledSoundResourceNames
         if enabled {
             enabledNames.insert(resourceName)
@@ -472,14 +472,14 @@ final class SettingsManager {
         enabledSoundResourceNames = enabledNames
     }
 
-    var restorePasteboardAfterConversion: Bool {
+    public var restorePasteboardAfterConversion: Bool {
         get { resolver.bool(nativeKey: Keys.restorePasteboardAfterConversion, legacyKey: ImportKeys.shouldRestorePasteboard, defaultValue: SettingsPersistencePolicy.defaultRestorePasteboardAfterConversion) }
         set {
             store.set(newValue, forKey: Keys.restorePasteboardAfterConversion)
         }
     }
 
-    var productStatistics: ProductStatisticsSnapshot {
+    public var productStatistics: ProductStatisticsSnapshot {
         get {
             resolver.productStatistics(
                 nativeKey: Keys.productStatistics,
@@ -497,11 +497,11 @@ final class SettingsManager {
         }
     }
 
-    func recordProductStatisticsEvent(_ event: ProductStatisticsEvent) {
+    public func recordProductStatisticsEvent(_ event: ProductStatisticsEvent) {
         productStatistics = ProductStatisticsPolicy.snapshot(after: event, current: productStatistics)
     }
 
-    var applicationUpdateSettings: ApplicationUpdateSettingsSnapshot {
+    public var applicationUpdateSettings: ApplicationUpdateSettingsSnapshot {
         get { resolver.applicationUpdateSettings(nativeKey: Keys.applicationUpdateSettings) }
         set {
             let normalized = ApplicationUpdateSettingsPolicy.normalized(newValue)
@@ -509,7 +509,7 @@ final class SettingsManager {
         }
     }
 
-    var autoCorrectionRules: [AutoCorrectionRule] {
+    public var autoCorrectionRules: [AutoCorrectionRule] {
         get {
             resolver.autoCorrectionRules(
                 nativeKey: Keys.autoCorrectionRules,
@@ -524,7 +524,7 @@ final class SettingsManager {
     }
 
     @discardableResult
-    func importAutoCorrectionRules(from data: Data, merge: Bool = true) throws -> AutoCorrectionRuleImportResult {
+    public func importAutoCorrectionRules(from data: Data, merge: Bool = true) throws -> AutoCorrectionRuleImportResult {
         let result = try AutoCorrectionRuleStore.decodeRules(from: data)
         autoCorrectionRules = merge
             ? AutoCorrectionRuleStore.mergedRules(existing: autoCorrectionRules, imported: result.rules)
@@ -532,13 +532,17 @@ final class SettingsManager {
         return result
     }
 
-    func exportAutoCorrectionRules() throws -> Data {
+    public func exportAutoCorrectionRules() throws -> Data {
         try AutoCorrectionRuleStore.encodeRules(autoCorrectionRules)
     }
 
     // MARK: - Initialization
 
-    init() {
+    public init(
+        defaults: UserDefaults = .standard,
+        domainName: String? = Bundle.main.bundleIdentifier
+    ) {
+        self.store = SettingsDefaultsStore(defaults: defaults, domainName: domainName)
         // Register defaults
         store.register(defaults: [
             Keys.isEnabled: SettingsPersistencePolicy.defaultIsEnabled,
@@ -566,27 +570,27 @@ final class SettingsManager {
 
     // MARK: - Reset to Defaults
 
-    func resetConvertLayoutHotkey() {
+    public func resetConvertLayoutHotkey() {
         convertLayoutHotkey = Hotkey.defaultConvertLayout
     }
 
-    func resetToggleCaseHotkey() {
+    public func resetToggleCaseHotkey() {
         toggleCaseHotkey = Hotkey.defaultToggleCase
     }
 
-    func resetToggleAutoCorrectionHotkey() {
+    public func resetToggleAutoCorrectionHotkey() {
         toggleAutoCorrectionHotkey = Hotkey.defaultToggleAutoCorrection
     }
 
-    func resetCancelLayoutChangeHotkey() {
+    public func resetCancelLayoutChangeHotkey() {
         cancelLayoutChangeHotkey = Hotkey.defaultCancelLayoutChange
     }
 
-    func resetFindInYandexHotkey() {
+    public func resetFindInYandexHotkey() {
         findInYandexHotkey = Hotkey.defaultFindInYandex
     }
 
-    func resetFindInSlovariHotkey() {
+    public func resetFindInSlovariHotkey() {
         findInSlovariHotkey = Hotkey.defaultFindInSlovari
     }
 

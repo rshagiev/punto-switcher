@@ -1,6 +1,7 @@
 import AppKit
 import Foundation
 import PuntoCore
+import PuntoSettings
 
 /// App-side owner for active-application context and per-application layout memory.
 ///

@@ -19,6 +19,7 @@
 
 # Run tests
 swift run PuntoCoreTest
+swift run PuntoSettingsTest
 swift run PuntoParityTest
 
 # View logs
@@ -52,7 +53,7 @@ tail -f /tmp/punto.log
 | Character mapping | `Sources/Punto/Core/LayoutConverter.swift` |
 | Word tracking | `Sources/Punto/Core/WordTracker.swift` |
 | Layout switching | `Sources/Punto/Core/InputSourceManager.swift` |
-| Settings storage | `Sources/Punto/Settings/SettingsManager.swift` |
+| Settings storage | `Sources/PuntoSettings/SettingsManager.swift` |
 | Menu bar UI | `Sources/Punto/App/StatusBarController.swift` |
 
 ## Build & Run

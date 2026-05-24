@@ -266,6 +266,7 @@ Z→Я  X→Ч  C→С  V→М  B→И  N→Т  M→Ь
 ```bash
 # Run production-code test harnesses
 swift run PuntoCoreTest
+swift run PuntoSettingsTest
 swift run PuntoParityTest
 
 # Run diagnostics

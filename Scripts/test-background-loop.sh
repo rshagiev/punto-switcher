@@ -49,6 +49,7 @@ run_loop() {
         ./Scripts/test-legacy-boundary.sh
         ./Scripts/test-native-bundle-audit.sh
         swift run PuntoCoreTest
+        swift run PuntoSettingsTest
         swift run PuntoParityTest
         swift run PuntoDiag converter
         swift run PuntoDiag tracker

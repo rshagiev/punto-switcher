@@ -1,6 +1,7 @@
 import AppKit
 import Foundation
 import PuntoCore
+import PuntoSettings
 
 /// App-side executor for non-replacement user commands.
 ///

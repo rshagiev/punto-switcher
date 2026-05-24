@@ -2,6 +2,7 @@ import AppKit
 import ApplicationServices
 import Foundation
 import PuntoCore
+import PuntoSettings
 
 /// App-side executor for startup presentation and Accessibility permission flow.
 ///

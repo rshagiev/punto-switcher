@@ -1,6 +1,7 @@
 import AppKit
 import Foundation
 import PuntoCore
+import PuntoSettings
 
 /// App-side executor for shared text-action runtime effects.
 ///

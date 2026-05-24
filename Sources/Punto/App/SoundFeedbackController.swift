@@ -1,5 +1,6 @@
 import AppKit
 import PuntoCore
+import PuntoSettings
 
 final class SoundFeedbackController {
     private let settingsManager: SettingsManager

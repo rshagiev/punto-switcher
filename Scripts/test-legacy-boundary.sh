@@ -151,14 +151,14 @@ settings_import_alias_patterns=(
 )
 
 for pattern in "${settings_import_alias_patterns[@]}"; do
-    if rg --quiet "$pattern" Sources/Punto/Settings/SettingsManager.swift; then
+    if rg --quiet "$pattern" Sources/PuntoSettings/SettingsManager.swift; then
         echo "legacy boundary failed: SettingsManager routine key namespace contains import alias: $pattern" >&2
         exit 1
     fi
     echo "PASS SettingsManager import alias separated: $pattern"
 done
 
-settings_import_writes="$(rg "(defaults|store)\\.(set|removeObject)\\([^\\n]*forKey: ImportKeys\\." Sources/Punto/Settings/SettingsManager.swift || true)"
+settings_import_writes="$(rg "(defaults|store)\\.(set|removeObject)\\([^\\n]*forKey: ImportKeys\\." Sources/PuntoSettings/SettingsManager.swift || true)"
 unexpected_import_writes="$(printf '%s\n' "$settings_import_writes" | rg -v --fixed-strings "ImportKeys.isFirstInstallation" | rg -v --fixed-strings "ImportKeys.isJustInstalled" | rg -v --fixed-strings "ImportKeys.isJustUpdated" | rg -v --fixed-strings "ImportKeys.isUpdating" || true)"
 if [[ -n "$unexpected_import_writes" ]]; then
     echo "legacy boundary failed: routine write to import-only key:" >&2
@@ -168,7 +168,8 @@ fi
 echo "PASS SettingsManager import-only writes limited to first-run/update consumption"
 
 settings_manager_direct_storage_patterns=(
-    "UserDefaults"
+    "UserDefaults."
+    "UserDefaults("
     "JSONEncoder"
     "JSONDecoder"
     "persistentDomain"
@@ -176,7 +177,7 @@ settings_manager_direct_storage_patterns=(
 )
 
 for pattern in "${settings_manager_direct_storage_patterns[@]}"; do
-    if rg --fixed-strings --quiet "$pattern" Sources/Punto/Settings/SettingsManager.swift; then
+    if rg --fixed-strings --quiet "$pattern" Sources/PuntoSettings/SettingsManager.swift; then
         echo "legacy boundary failed: SettingsManager reopened direct storage access: $pattern" >&2
         exit 1
     fi
@@ -202,7 +203,7 @@ settings_manager_direct_resolution_patterns=(
 )
 
 for pattern in "${settings_manager_direct_resolution_patterns[@]}"; do
-    if rg --fixed-strings --quiet "$pattern" Sources/Punto/Settings/SettingsManager.swift; then
+    if rg --fixed-strings --quiet "$pattern" Sources/PuntoSettings/SettingsManager.swift; then
         echo "legacy boundary failed: SettingsManager reopened direct native/import resolution: $pattern" >&2
         exit 1
     fi
@@ -449,7 +450,7 @@ for pattern in "${puntotest_copy_heavy_patterns[@]}"; do
     echo "PASS copy-heavy legacy simulation absent: $pattern"
 done
 
-/usr/bin/python3 - "$ROOT_DIR/Sources/Punto/Settings/SettingsManager.swift" <<'PY'
+/usr/bin/python3 - "$ROOT_DIR/Sources/PuntoSettings/SettingsManager.swift" <<'PY'
 import re
 import sys
 

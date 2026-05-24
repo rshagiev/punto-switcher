@@ -1,5 +1,6 @@
 import AppKit
 import PuntoCore
+import PuntoSettings
 
 /// Controller for the settings window - liquid glass macOS style
 final class SettingsWindowController: NSWindowController {

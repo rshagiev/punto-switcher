@@ -1,5 +1,6 @@
 import AppKit
 import PuntoCore
+import PuntoSettings
 
 /// Controller for the menu bar icon and dropdown menu
 final class StatusBarController: NSObject {

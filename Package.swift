@@ -8,10 +8,12 @@ let package = Package(
     ],
     products: [
         .library(name: "PuntoCore", targets: ["PuntoCore"]),
+        .library(name: "PuntoSettings", targets: ["PuntoSettings"]),
         .executable(name: "Punto", targets: ["Punto"]),
         .executable(name: "PuntoDiag", targets: ["PuntoDiag"]),
         .executable(name: "PuntoHarness", targets: ["PuntoHarness"]),
         .executable(name: "PuntoCoreTest", targets: ["PuntoCoreTest"]),
+        .executable(name: "PuntoSettingsTest", targets: ["PuntoSettingsTest"]),
         .executable(name: "PuntoParityTest", targets: ["PuntoParityTest"])
     ],
     targets: [
@@ -19,9 +21,14 @@ let package = Package(
             name: "PuntoCore",
             path: "Sources/PuntoCore"
         ),
+        .target(
+            name: "PuntoSettings",
+            dependencies: ["PuntoCore"],
+            path: "Sources/PuntoSettings"
+        ),
         .executableTarget(
             name: "Punto",
-            dependencies: ["PuntoCore"],
+            dependencies: ["PuntoCore", "PuntoSettings"],
             path: "Sources/Punto",
             resources: [
                 .copy("../../Resources/Assets.xcassets"),
@@ -42,6 +49,11 @@ let package = Package(
             name: "PuntoCoreTest",
             dependencies: ["PuntoCore"],
             path: "Sources/PuntoCoreTest"
+        ),
+        .executableTarget(
+            name: "PuntoSettingsTest",
+            dependencies: ["PuntoCore", "PuntoSettings"],
+            path: "Sources/PuntoSettingsTest"
         ),
         .executableTarget(
             name: "PuntoParityTest",

@@ -4,11 +4,13 @@ import PuntoCore
 /// Thin typed boundary around UserDefaults so SettingsManager can stay focused on settings policy composition.
 final class SettingsDefaultsStore {
     let defaults: UserDefaults
+    private let domainName: String?
     private let encoder = JSONEncoder()
     private let decoder = JSONDecoder()
 
-    init(defaults: UserDefaults = .standard) {
+    init(defaults: UserDefaults = .standard, domainName: String? = Bundle.main.bundleIdentifier) {
         self.defaults = defaults
+        self.domainName = domainName
     }
 
     func register(defaults registrationDictionary: [String: Any]) {
@@ -77,7 +79,7 @@ final class SettingsDefaultsStore {
     }
 
     var storedDefaults: [String: Any] {
-        guard let domainName = Bundle.main.bundleIdentifier else {
+        guard let domainName else {
             return [:]
         }
         return defaults.persistentDomain(forName: domainName) ?? [:]

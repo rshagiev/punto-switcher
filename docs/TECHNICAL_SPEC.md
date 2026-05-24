@@ -462,7 +462,7 @@ func switchTo(_ language: KeyboardLanguage) -> Bool {
 
 ### 3.7 SettingsManager
 
-**Файл:** `Sources/Punto/Settings/SettingsManager.swift`
+**Файл:** `Sources/PuntoSettings/SettingsManager.swift`
 
 Хранение настроек в UserDefaults.
 
@@ -878,6 +878,7 @@ tail -f /tmp/punto.log
 ```bash
 # Запуск тестов
 swift run PuntoCoreTest
+swift run PuntoSettingsTest
 swift run PuntoParityTest
 
 # Отдельные тесты
@@ -925,13 +926,17 @@ Punto/
 │   │   │   ├── WordTracker.swift
 │   │   │   ├── InputSourceManager.swift
 │   │   │   └── Logger.swift
-│   │   ├── Settings/
-│   │   │   └── SettingsManager.swift
 │   │   └── UI/
 │   │       ├── SettingsWindowController.swift
 │   │       ├── HotkeyRecorderView.swift
 │   │       ├── OnboardingAlert.swift
 │   │       └── Styles.swift
+│   ├── PuntoSettings/
+│   │   ├── SettingsDefaultsStore.swift
+│   │   ├── SettingsManager.swift
+│   │   └── SettingsValueResolver.swift
+│   ├── PuntoSettingsTest/
+│   │   └── main.swift
 │   ├── PuntoDiag/
 │   │   └── main.swift
 │   └── PuntoParityTest/
