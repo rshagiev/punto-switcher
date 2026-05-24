@@ -202,6 +202,8 @@ settings_persistence_role_specific_patterns=(
     "defaultIsFirstLaunch"
     "defaultRussianKeyboardLayoutType"
     "defaultProductStatistics"
+    "normalizedProductStatistics"
+    "legacyUndoCollectionEnabled"
     "normalizedDisabledApplicationBundleIDs"
     "effectiveDisabledApplicationBundleIDs"
     "normalizedResetOnReturnBundleComponents"

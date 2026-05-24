@@ -33,7 +33,7 @@ final class SettingsDefaultsStore {
         guard let value = persistentValue(forKey: key) else {
             return nil
         }
-        return SettingsPersistencePolicy.boolValue(value)
+        return LegacyValuePolicy.bool(value)
     }
 
     func integer(forKey key: String) -> Int? {

@@ -102,7 +102,7 @@ final class SettingsValueResolver {
     }
 
     func undoLearningEnabled(nativeKey: String, legacyKey: String, defaultValue: Bool) -> Bool {
-        let legacyValue = SettingsPersistencePolicy.legacyUndoCollectionEnabled(
+        let legacyValue = UndoLearningSettingsPolicy.legacyUndoCollectionEnabled(
             from: store.dictionary(forKey: legacyKey)
         )
         return SettingsPersistencePolicy.effectiveBoolWithLegacyAlias(

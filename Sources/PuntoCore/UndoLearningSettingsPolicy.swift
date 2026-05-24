@@ -46,6 +46,10 @@ public enum UndoLearningSettingsPolicy {
         )
     }
 
+    public static func legacyUndoCollectionEnabled(from dictionary: [String: Any]?) -> Bool? {
+        snapshot(from: dictionary)?.undoCollectionEnabled
+    }
+
     public static func normalizedUndoDictionary(_ dictionary: [String: String]) -> [String: String] {
         dictionary.reduce(into: [:]) { result, entry in
             let key = entry.key.trimmingCharacters(in: .whitespacesAndNewlines)

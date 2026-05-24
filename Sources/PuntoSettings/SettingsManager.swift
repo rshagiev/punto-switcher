@@ -492,7 +492,7 @@ public final class SettingsManager {
             )
         }
         set {
-            let normalized = SettingsPersistencePolicy.normalizedProductStatistics(newValue)
+            let normalized = ProductStatisticsPolicy.normalized(newValue)
             store.encodeAndSet(normalized, forKey: Keys.productStatistics)
         }
     }

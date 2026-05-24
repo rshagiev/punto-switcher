@@ -3862,18 +3862,18 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings persistence preserves explicit false boolean value"
     )
     try expect(
-        SettingsPersistencePolicy.boolValue(" YES "),
+        LegacyValuePolicy.bool(" YES "),
         true,
-        "settings persistence parses string-backed true boolean imports"
+        "legacy value policy parses string-backed true boolean imports"
     )
     try expect(
-        SettingsPersistencePolicy.boolValue("0"),
+        LegacyValuePolicy.bool("0"),
         false,
-        "settings persistence parses string-backed false boolean imports"
+        "legacy value policy parses string-backed false boolean imports"
     )
     try expectNil(
-        SettingsPersistencePolicy.boolValue("maybe"),
-        "settings persistence rejects unknown string-backed boolean imports"
+        LegacyValuePolicy.bool("maybe"),
+        "legacy value policy rejects unknown string-backed boolean imports"
     )
     try expect(
         SettingsPersistencePolicy.effectiveBoolWithLegacyAlias(
@@ -3891,7 +3891,7 @@ private func runSettingsPersistencePolicyTests() throws {
             hasPersistedValue: false,
             persistedValue: nil,
             hasLegacyValue: true,
-            legacyValue: SettingsPersistencePolicy.boolValue("on"),
+            legacyValue: LegacyValuePolicy.bool("on"),
             defaultValue: false
         ),
         true,
@@ -3900,7 +3900,7 @@ private func runSettingsPersistencePolicyTests() throws {
     try expect(
         SettingsPersistencePolicy.effectiveBoolWithLegacyAlias(
             hasPersistedValue: true,
-            persistedValue: SettingsPersistencePolicy.boolValue("0"),
+            persistedValue: LegacyValuePolicy.bool("0"),
             hasLegacyValue: true,
             legacyValue: true,
             defaultValue: true
@@ -3935,7 +3935,7 @@ private func runSettingsPersistencePolicyTests() throws {
             hasPersistedValue: false,
             persistedValue: nil,
             hasLegacyValue: true,
-            invertedLegacyValue: SettingsPersistencePolicy.boolValue("false"),
+            invertedLegacyValue: LegacyValuePolicy.bool("false"),
             defaultValue: false
         ),
         true,
@@ -3951,17 +3951,6 @@ private func runSettingsPersistencePolicyTests() throws {
         ),
         false,
         "settings persistence prefers native boolean key over inverted legacy alias"
-    )
-    try expect(
-        SettingsPersistencePolicy.legacyUndoCollectionEnabled(from: [
-            UndoLearningSettingsPolicy.undoCollectionEnabledKey: NSNumber(value: true)
-        ]),
-        true,
-        "settings persistence reads Punto Switcher undoLearning undoCollectionEnabled"
-    )
-    try expectNil(
-        SettingsPersistencePolicy.legacyUndoCollectionEnabled(from: nil),
-        "settings persistence ignores missing undoLearning dictionaries"
     )
     try expect(
         ApplicationDisablePolicy.normalizedSet([
@@ -4381,6 +4370,17 @@ private func runUndoLearningSettingsPolicyTests() throws {
             undoDictionary: ["teh": "the"]
         ),
         "undo learning policy parses imported string-backed values and normalizes undo dictionary"
+    )
+    try expect(
+        UndoLearningSettingsPolicy.legacyUndoCollectionEnabled(from: [
+            UndoLearningSettingsPolicy.undoCollectionEnabledKey: NSNumber(value: true)
+        ]),
+        true,
+        "undo learning policy exposes imported undoCollectionEnabled for settings fallback"
+    )
+    try expectNil(
+        UndoLearningSettingsPolicy.legacyUndoCollectionEnabled(from: nil),
+        "undo learning policy ignores missing undoLearning dictionaries"
     )
 
     try expect(

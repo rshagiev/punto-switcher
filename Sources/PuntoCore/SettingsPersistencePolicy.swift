@@ -7,14 +7,6 @@ public enum SettingsPersistencePolicy {
     public static let defaultShowAdvancedSettings = false
     public static let nativeShowAdvancedSettingsKey = "showAdvancedSettings"
 
-    public static func normalizedProductStatistics(_ snapshot: ProductStatisticsSnapshot) -> ProductStatisticsSnapshot {
-        ProductStatisticsPolicy.normalized(snapshot)
-    }
-
-    public static func boolValue(_ value: Any?) -> Bool? {
-        LegacyValuePolicy.bool(value)
-    }
-
     public static func effectiveBool(
         hasPersistedValue: Bool,
         persistedValue: Bool?,
@@ -59,10 +51,6 @@ public enum SettingsPersistencePolicy {
             legacyValue: legacyValue,
             defaultValue: defaultValue
         )
-    }
-
-    public static func legacyUndoCollectionEnabled(from undoLearning: [String: Any]?) -> Bool? {
-        UndoLearningSettingsPolicy.snapshot(from: undoLearning)?.undoCollectionEnabled
     }
 
 }
