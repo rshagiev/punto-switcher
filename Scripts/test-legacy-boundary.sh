@@ -629,7 +629,7 @@ behavior_policy_observed_surface_files=(
     Sources/PuntoCore/LegacyUserRulePolicy.swift
 )
 
-if rg -n "observed[A-Za-z0-9]*(Selector|ClassName|ProtocolName|ResourceName|FormatKey|Controller|Field|MetricName|Accessor|Checkbox|TooltipKey|Tries|Persists|WasDone)" \
+if rg -n "observed[A-Za-z0-9]*(Selector|ClassName|ProtocolName|ResourceName|FormatKey|Controller|Field|MetricName|Accessor|Checkbox|TooltipKey|Tries|Persists|WasDone|Name)" \
     "${behavior_policy_observed_surface_files[@]}"; then
     echo "legacy boundary failed: reverse-audit-only observed surface leaked back into behavior policy" >&2
     exit 1

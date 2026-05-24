@@ -438,6 +438,66 @@ private func runWordTrackerTests() throws {
             "observed surface preserves auto-correction cancelling-key setter selector"
         )
         try expect(
+            PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.backspaceName,
+            "dontAutoconvertWordWithBackspace",
+            "observed surface preserves auto-correction cancelling-key backspace name"
+        )
+        try expect(
+            PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.deleteName,
+            "dontAutoconvertWordWithDelete",
+            "observed surface preserves auto-correction cancelling-key delete name"
+        )
+        try expect(
+            PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.leftArrowName,
+            "dontAutoconvertWordWithLeftArrow",
+            "observed surface preserves auto-correction cancelling-key left-arrow name"
+        )
+        try expect(
+            PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.rightArrowName,
+            "dontAutoconvertWordWithRightArrow",
+            "observed surface preserves auto-correction cancelling-key right-arrow name"
+        )
+        try expect(
+            PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.upArrowName,
+            "dontAutoconvertWordWithUpArrow",
+            "observed surface preserves auto-correction cancelling-key up-arrow name"
+        )
+        try expect(
+            PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.downArrowName,
+            "dontAutoconvertWordWithDownArrow",
+            "observed surface preserves auto-correction cancelling-key down-arrow name"
+        )
+        try expect(
+            AutoCorrectionCancellingKeyPolicy.legacyBackspaceName,
+            PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.backspaceName,
+            "auto-correction cancelling key policy keeps backspace name alias aligned with reverse-audit anchor"
+        )
+        try expect(
+            AutoCorrectionCancellingKeyPolicy.legacyDeleteName,
+            PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.deleteName,
+            "auto-correction cancelling key policy keeps delete name alias aligned with reverse-audit anchor"
+        )
+        try expect(
+            AutoCorrectionCancellingKeyPolicy.legacyLeftArrowName,
+            PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.leftArrowName,
+            "auto-correction cancelling key policy keeps left-arrow name alias aligned with reverse-audit anchor"
+        )
+        try expect(
+            AutoCorrectionCancellingKeyPolicy.legacyRightArrowName,
+            PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.rightArrowName,
+            "auto-correction cancelling key policy keeps right-arrow name alias aligned with reverse-audit anchor"
+        )
+        try expect(
+            AutoCorrectionCancellingKeyPolicy.legacyUpArrowName,
+            PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.upArrowName,
+            "auto-correction cancelling key policy keeps up-arrow name alias aligned with reverse-audit anchor"
+        )
+        try expect(
+            AutoCorrectionCancellingKeyPolicy.legacyDownArrowName,
+            PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.downArrowName,
+            "auto-correction cancelling key policy keeps down-arrow name alias aligned with reverse-audit anchor"
+        )
+        try expect(
             PuntoSwitcherObservedSurface.AutoCorrectionCancellingKeys.backspaceSelector,
             "dontAutoconvertWordWithBackspace:",
             "observed surface preserves auto-correction cancelling-key backspace selector"
@@ -529,7 +589,7 @@ private func runWordTrackerTests() throws {
         try expect(
             AutoCorrectionCancellingKeyPolicy.shouldSuppressAutoCorrection(
                 keyCode: 51,
-                enabledKeyNames: [AutoCorrectionCancellingKeyPolicy.observedBackspaceName]
+                enabledKeyNames: [AutoCorrectionCancellingKeyPolicy.legacyBackspaceName]
             ),
             true,
             "auto-correction cancelling key policy suppresses backspace from observed name"

@@ -14,6 +14,12 @@ public enum PuntoSwitcherObservedSurface {
 
     public enum AutoCorrectionCancellingKeys {
         public static let setCancellingKeyStateSelector = "setCancellingKeyState:doEnable:"
+        public static let backspaceName = "dontAutoconvertWordWithBackspace"
+        public static let deleteName = "dontAutoconvertWordWithDelete"
+        public static let leftArrowName = "dontAutoconvertWordWithLeftArrow"
+        public static let rightArrowName = "dontAutoconvertWordWithRightArrow"
+        public static let upArrowName = "dontAutoconvertWordWithUpArrow"
+        public static let downArrowName = "dontAutoconvertWordWithDownArrow"
         public static let backspaceSelector = "dontAutoconvertWordWithBackspace:"
         public static let deleteSelector = "dontAutoconvertWordWithDelete:"
         public static let leftArrowSelector = "dontAutoconvertWordWithLeftArrow:"

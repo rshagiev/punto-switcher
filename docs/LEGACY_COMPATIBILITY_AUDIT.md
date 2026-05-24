@@ -118,6 +118,12 @@ aliases. `observed*Key` is reserved for reverse-audit anchors, so a
 Punto-compatible string value no longer makes a runtime setting look like it is
 owned by the binary audit layer.
 
+The same split applies to auto-correction cancelling-key aliases: behavior code
+uses `legacy*Name` / `legacy*SelectorAlias`, while
+`PuntoSwitcherObservedSurface` owns the observed per-key names and selectors.
+Tests align the two surfaces without making behavior policies depend on the
+reverse-audit namespace.
+
 The repository also no longer carries a placeholder SwiftPM `Tests/` file that
 claims tests live elsewhere. This toolchain cannot import XCTest, so placeholder
 test targets create a false green surface; the boundary script now fails if that

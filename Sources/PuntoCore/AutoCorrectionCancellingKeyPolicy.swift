@@ -1,12 +1,12 @@
 import Foundation
 
 public enum AutoCorrectionCancellingKeyPolicy {
-    public static let observedBackspaceName = "dontAutoconvertWordWithBackspace"
-    public static let observedDeleteName = "dontAutoconvertWordWithDelete"
-    public static let observedLeftArrowName = "dontAutoconvertWordWithLeftArrow"
-    public static let observedRightArrowName = "dontAutoconvertWordWithRightArrow"
-    public static let observedUpArrowName = "dontAutoconvertWordWithUpArrow"
-    public static let observedDownArrowName = "dontAutoconvertWordWithDownArrow"
+    public static let legacyBackspaceName = "dontAutoconvertWordWithBackspace"
+    public static let legacyDeleteName = "dontAutoconvertWordWithDelete"
+    public static let legacyLeftArrowName = "dontAutoconvertWordWithLeftArrow"
+    public static let legacyRightArrowName = "dontAutoconvertWordWithRightArrow"
+    public static let legacyUpArrowName = "dontAutoconvertWordWithUpArrow"
+    public static let legacyDownArrowName = "dontAutoconvertWordWithDownArrow"
     public static let legacyBackspaceSelectorAlias = "dontAutoconvertWordWithBackspace:"
     public static let legacyDeleteSelectorAlias = "dontAutoconvertWordWithDelete:"
     public static let legacyLeftArrowSelectorAlias = "dontAutoconvertWordWithLeftArrow:"
@@ -40,13 +40,13 @@ public enum AutoCorrectionCancellingKeyPolicy {
         (downArrow, "Down")
     ]
 
-    private static let observedNamesByCanonicalName: [String: String] = [
-        observedBackspaceName: backspace,
-        observedDeleteName: delete,
-        observedLeftArrowName: leftArrow,
-        observedRightArrowName: rightArrow,
-        observedUpArrowName: upArrow,
-        observedDownArrowName: downArrow,
+    private static let legacyNamesByCanonicalName: [String: String] = [
+        legacyBackspaceName: backspace,
+        legacyDeleteName: delete,
+        legacyLeftArrowName: leftArrow,
+        legacyRightArrowName: rightArrow,
+        legacyUpArrowName: upArrow,
+        legacyDownArrowName: downArrow,
         legacyBackspaceSelectorAlias: backspace,
         legacyDeleteSelectorAlias: delete,
         legacyLeftArrowSelectorAlias: leftArrow,
@@ -57,8 +57,8 @@ public enum AutoCorrectionCancellingKeyPolicy {
 
     private static let canonicalNamesByLowercaseName: [String: String] = {
         var names = Dictionary(uniqueKeysWithValues: supportedKeyNames.map { ($0.lowercased(), $0) })
-        for (observedName, canonicalName) in observedNamesByCanonicalName {
-            names[observedName.lowercased()] = canonicalName
+        for (legacyName, canonicalName) in legacyNamesByCanonicalName {
+            names[legacyName.lowercased()] = canonicalName
         }
         return names
     }()
