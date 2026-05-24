@@ -1,30 +1,24 @@
 import AppKit
 import PuntoSettings
 
-final class DisabledApplicationsEditorController: NSWindowController {
+final class LayoutMemoryEditorController: NSWindowController {
     private let settingsManager: SettingsManager
-    private let currentApplication: () -> (bundleID: String, name: String?)?
     private let onChange: () -> Void
     private let tableView = NSTableView()
     private let statusLabel = NSTextField(labelWithString: "")
-    private var bundleIDs: [String] = []
+    private var rows: [(bundleID: String, layoutID: String)] = []
 
-    init(
-        settingsManager: SettingsManager,
-        currentApplication: @escaping () -> (bundleID: String, name: String?)?,
-        onChange: @escaping () -> Void
-    ) {
+    init(settingsManager: SettingsManager, onChange: @escaping () -> Void) {
         self.settingsManager = settingsManager
-        self.currentApplication = currentApplication
         self.onChange = onChange
 
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 640, height: 360),
+            contentRect: NSRect(x: 0, y: 0, width: 760, height: 380),
             styleMask: [.titled, .closable, .miniaturizable],
             backing: .buffered,
             defer: false
         )
-        window.title = "Disabled Applications"
+        window.title = "Remembered App Layouts"
         window.center()
         window.isReleasedWhenClosed = false
 
@@ -58,8 +52,9 @@ final class DisabledApplicationsEditorController: NSWindowController {
         tableView.allowsMultipleSelection = true
         tableView.dataSource = self
         tableView.delegate = self
-        addColumn(identifier: "appName", title: "Application", width: 220)
-        addColumn(identifier: "bundleID", title: "Bundle ID", width: 360)
+        addColumn(identifier: "layoutAppName", title: "Application", width: 210)
+        addColumn(identifier: "layoutBundleID", title: "Bundle ID", width: 260)
+        addColumn(identifier: "layoutID", title: "Layout ID", width: 250)
 
         let scrollView = NSScrollView()
         scrollView.hasVerticalScroller = true
@@ -69,14 +64,15 @@ final class DisabledApplicationsEditorController: NSWindowController {
 
         statusLabel.font = .systemFont(ofSize: 12)
         statusLabel.textColor = .secondaryLabelColor
+        statusLabel.lineBreakMode = .byTruncatingTail
 
-        let addCurrentButton = NSButton(title: "Add Current App", target: self, action: #selector(addCurrentApplication(_:)))
-        let removeButton = NSButton(title: "Remove", target: self, action: #selector(removeSelectedApplications(_:)))
+        let removeButton = NSButton(title: "Remove", target: self, action: #selector(removeSelectedLayouts(_:)))
+        let clearButton = NSButton(title: "Clear All", target: self, action: #selector(clearLayouts(_:)))
         let closeButton = NSButton(title: "Close", target: self, action: #selector(closeEditor(_:)))
 
         let spacer = NSView()
         spacer.translatesAutoresizingMaskIntoConstraints = false
-        let buttonRow = NSStackView(views: [addCurrentButton, removeButton, spacer, closeButton])
+        let buttonRow = NSStackView(views: [removeButton, clearButton, spacer, closeButton])
         buttonRow.orientation = .horizontal
         buttonRow.alignment = .centerY
         buttonRow.spacing = 8
@@ -94,7 +90,7 @@ final class DisabledApplicationsEditorController: NSWindowController {
             root.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
             root.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
             scrollView.widthAnchor.constraint(equalTo: root.widthAnchor),
-            scrollView.heightAnchor.constraint(equalToConstant: 260),
+            scrollView.heightAnchor.constraint(equalToConstant: 280),
             statusLabel.widthAnchor.constraint(equalTo: root.widthAnchor),
             buttonRow.widthAnchor.constraint(equalTo: root.widthAnchor)
         ])
@@ -108,41 +104,34 @@ final class DisabledApplicationsEditorController: NSWindowController {
     }
 
     private func reload() {
-        bundleIDs = Array(settingsManager.disabledApplicationBundleIDs).sorted {
-            ApplicationDisplayNameResolver.displayName(for: $0).localizedCaseInsensitiveCompare(
-                ApplicationDisplayNameResolver.displayName(for: $1)
-            ) == .orderedAscending
-        }
+        rows = settingsManager.rememberedApplicationLayouts
+            .map { (bundleID: $0.key, layoutID: $0.value) }
+            .sorted {
+                ApplicationDisplayNameResolver.displayName(for: $0.bundleID).localizedCaseInsensitiveCompare(
+                    ApplicationDisplayNameResolver.displayName(for: $1.bundleID)
+                ) == .orderedAscending
+            }
         tableView.reloadData()
-        statusLabel.stringValue = bundleIDs.isEmpty
-            ? "Punto is active in every application."
-            : "\(bundleIDs.count) disabled application\(bundleIDs.count == 1 ? "" : "s")"
+        statusLabel.stringValue = rows.isEmpty
+            ? "No application-specific layouts are remembered."
+            : "\(rows.count) remembered application layout\(rows.count == 1 ? "" : "s")"
     }
 
-    @objc private func addCurrentApplication(_ sender: NSButton) {
-        guard let app = currentApplication(),
-              app.bundleID != Bundle.main.bundleIdentifier else {
-            NSSound.beep()
-            return
-        }
-
-        settingsManager.setApplicationDisabled(bundleID: app.bundleID, disabled: true)
-        reload()
-        onChange()
-
-        if let row = bundleIDs.firstIndex(of: app.bundleID) {
-            tableView.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
-        }
-    }
-
-    @objc private func removeSelectedApplications(_ sender: NSButton) {
+    @objc private func removeSelectedLayouts(_ sender: NSButton) {
         let selectedRows = tableView.selectedRowIndexes
         guard !selectedRows.isEmpty else { return }
 
-        for row in selectedRows.reversed() where row < bundleIDs.count {
-            settingsManager.setApplicationDisabled(bundleID: bundleIDs[row], disabled: false)
+        var layouts = settingsManager.rememberedApplicationLayouts
+        for row in selectedRows where row < rows.count {
+            layouts.removeValue(forKey: rows[row].bundleID)
         }
+        settingsManager.rememberedApplicationLayouts = layouts
+        reload()
+        onChange()
+    }
 
+    @objc private func clearLayouts(_ sender: NSButton) {
+        settingsManager.rememberedApplicationLayouts = [:]
         reload()
         onChange()
     }
@@ -152,28 +141,31 @@ final class DisabledApplicationsEditorController: NSWindowController {
     }
 }
 
-extension DisabledApplicationsEditorController: NSTableViewDataSource, NSTableViewDelegate {
+extension LayoutMemoryEditorController: NSTableViewDataSource, NSTableViewDelegate {
     func numberOfRows(in tableView: NSTableView) -> Int {
-        bundleIDs.count
+        rows.count
     }
 
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
-        guard row < bundleIDs.count,
+        guard row < rows.count,
               let identifier = tableColumn?.identifier.rawValue else {
             return nil
         }
 
-        let bundleID = bundleIDs[row]
+        let rememberedLayout = rows[row]
         let textField = NSTextField()
         textField.isBordered = false
         textField.backgroundColor = .clear
         textField.isEditable = false
 
         switch identifier {
-        case "appName":
-            textField.stringValue = ApplicationDisplayNameResolver.displayName(for: bundleID)
-        case "bundleID":
-            textField.stringValue = bundleID
+        case "layoutAppName":
+            textField.stringValue = ApplicationDisplayNameResolver.displayName(for: rememberedLayout.bundleID)
+        case "layoutBundleID":
+            textField.stringValue = rememberedLayout.bundleID
+            textField.textColor = .secondaryLabelColor
+        case "layoutID":
+            textField.stringValue = rememberedLayout.layoutID
             textField.textColor = .secondaryLabelColor
         default:
             return nil

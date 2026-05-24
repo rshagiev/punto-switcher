@@ -103,6 +103,7 @@ The read-only Punto Switcher pass exposed a useful boundary split. Punto now mir
 The macOS app target wires `PuntoRuntime` into:
 
 - `AppDelegate`: orchestration only: lifecycle wiring, hotkey callbacks, conversion/search/toggle/auto-correction flow entrypoints, and app activation events.
+- `SettingsWindowController`: main settings composition and simple setting actions. Dedicated child controllers own list-editor windows for auto-correction rules, disabled applications, reset-on-return application tokens, and remembered per-app layout state, while `ApplicationDisplayNameResolver` keeps bundle-id display lookup shared across those editors.
 
 ## Current Conversion Flow
 
