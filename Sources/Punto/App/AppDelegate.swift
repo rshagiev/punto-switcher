@@ -20,6 +20,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var autoCorrectionEngine = AutoCorrectionEngine(rules: [])
     private var textState: TextRuntimeStateCoordinator?
     private var appRuntime: ApplicationRuntimeCoordinator?
+    private var keyPressRuntime: KeyPressRuntimeCoordinator?
 
     private var conversionSession: ConversionSession {
         guard let textState else {
@@ -42,8 +43,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private var lastKeyPressTime: Date? {
-        get { textState?.lastKeyPressTime }
-        set { textState?.lastKeyPressTime = newValue }
+        textState?.lastKeyPressTime
     }
 
     private var activeApplicationBundleID: String? {
@@ -93,6 +93,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             textState: textState!
         )
         soundFeedbackController = SoundFeedbackController(settingsManager: settingsManager!)
+        keyPressRuntime = KeyPressRuntimeCoordinator(
+            settingsManager: settingsManager!,
+            wordTracker: wordTracker!,
+            textState: textState!,
+            textAccessor: textAccessor!,
+            layoutConverter: layoutConverter!,
+            soundFeedbackController: soundFeedbackController!,
+            currentApplicationBundleID: { [weak self] in
+                self?.activeApplicationBundleID ?? NSWorkspace.shared.frontmostApplication?.bundleIdentifier
+            },
+            isCurrentApplicationDisabled: { [weak self] in
+                self?.isCurrentApplicationDisabled() ?? false
+            },
+            clearTextStateForSecureInput: { [weak self] context in
+                self?.clearTextStateForSecureInput(context: context)
+            },
+            runAutoCorrectionIfNeeded: { [weak self] in
+                self?.handleAutoCorrectionIfNeeded()
+            }
+        )
         accessibilityStateObserver = AccessibilityStateObserver { [weak self] notificationName, observedBundleID in
             self?.accessibilityStateChanged(notificationName: notificationName, observedBundleID: observedBundleID)
         }
@@ -344,7 +364,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard let settingsManager = settingsManager,
               textAccessor != nil,
               layoutConverter != nil,
-              let wordTracker = wordTracker else {
+              wordTracker != nil,
+              let keyPressRuntime = keyPressRuntime else {
             PuntoLog.error("Failed to initialize - missing components")
             return
         }
@@ -385,68 +406,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     conversionSessionReason: reason
                 )
             },
-            onKeyPress: { [weak self, weak wordTracker] keyCode, characters in
-                self?.lastKeyPressTime = Date()
-                let keyTrackingPreflight = KeyTrackingRuntimePolicy.preflightPlan(
-                    isEnabled: self?.settingsManager?.isEnabled == true,
-                    isCurrentApplicationDisabled: self?.isCurrentApplicationDisabled() == true,
-                    isSecureInputEnabled: self?.textAccessor?.isSecureInputEnabled() == true,
-                    isPasswordField: self?.textAccessor?.isPasswordField() == true
-                )
-
-                switch keyTrackingPreflight {
-                case .skipRouting(let logMessage):
-                    PuntoLog.info(logMessage)
-                    return
-
-                case .blockSecureInput(let context, let logMessage):
-                    self?.clearTextStateForSecureInput(context: context)
-                    PuntoLog.info(logMessage)
-                    return
-
-                case .track:
-                    break
-                }
-
-                wordTracker?.trackKeyPress(
-                    keyCode: keyCode,
-                    characters: characters,
-                    autoCorrectionCancellingKeyNames: self?.settingsManager?.autoCorrectionCancellingKeyNames
-                        ?? AutoCorrectionCancellingKeyPolicy.defaultEnabledKeyNames,
-                    russianLayoutType: self?.settingsManager?.russianKeyboardLayoutType
-                        ?? KeyboardLayoutTypePolicy.defaultRussianLayoutType
-                )
-                self?.settingsManager?.recordProductStatisticsEvent(.typedText(characters))
-                self?.playTextInputSound(characters: characters)
-
-                switch KeyTrackingRuntimePolicy.postTrackRoute(
-                    bundleID: self?.activeApplicationBundleID ?? NSWorkspace.shared.frontmostApplication?.bundleIdentifier,
-                    keyCode: keyCode,
-                    resetBundleComponents: self?.settingsManager?.resetOnReturnBundleComponents
-                        ?? ApplicationReturnKeyPolicy.defaultResetBundleComponents
-                ) {
-                case .resetOnReturn:
-                    let consumedCompletedToken = wordTracker?.consumeCompletedToken() != nil
-                    let resetPlan = KeyTrackingRuntimePolicy.resetOnReturnPlan(
-                        consumedCompletedToken: consumedCompletedToken,
-                        bundleID: self?.activeApplicationBundleID
-                    )
-                    if let statisticsEvent = resetPlan.completedTokenStatisticsEvent {
-                        self?.settingsManager?.recordProductStatisticsEvent(statisticsEvent)
-                    }
-                    self?.textState?.clearConversionSession(reason: resetPlan.conversionSessionClearReason)
-                    PuntoLog.info(resetPlan.logMessage)
-                    return
-
-                case .runAutoCorrection:
-                    self?.handleAutoCorrectionIfNeeded()
-                }
-
-                if let clearReason = KeyTrackingRuntimePolicy.conversionSessionClearReasonAfterAutoCorrection(
-                    isConversionInProgress: self?.isConversionInProgress == true
-                ) {
-                    self?.textState?.clearConversionSession(reason: clearReason)
-                }
+            onKeyPress: { keyCode, characters in
+                keyPressRuntime.handleKeyPress(keyCode: keyCode, characters: characters)
             },
             isCurrentApplicationDisabled: { [weak self] in
                 self?.isCurrentApplicationCompletelyDisabled() ?? false
@@ -486,17 +447,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .noText(let logMessage):
             PuntoLog.info(logMessage)
         }
-    }
-
-    private func playTextInputSound(characters: String?) {
-        let detectedLayout = layoutConverter?.detectLayout(characters ?? "") ?? .unknown
-        guard let event = SoundFeedbackPolicy.eventAfterTextInput(
-            characters: characters,
-            detectedLayout: detectedLayout
-        ) else {
-            return
-        }
-        soundFeedbackController?.play(event)
     }
 
     // MARK: - Actions
