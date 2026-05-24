@@ -210,33 +210,8 @@ public final class WordTracker {
         return tail
     }
 
-    /// Checks if text contains characters from multiple keyboard layouts
     private func isMixedLayout(_ text: String) -> Bool {
-        var hasEnglish = false
-        var hasRussian = false
-
-        for char in text {
-            if isEnglishLetter(char) {
-                hasEnglish = true
-            } else if isRussianLetter(char) {
-                hasRussian = true
-            }
-
-            // Early exit if both detected
-            if hasEnglish && hasRussian {
-                return true
-            }
-        }
-
-        return false
-    }
-
-    private func isEnglishLetter(_ char: Character) -> Bool {
-        LayoutDetectionPolicy.isEnglishLetter(char)
-    }
-
-    private func isRussianLetter(_ char: Character) -> Bool {
-        LayoutDetectionPolicy.isRussianLetter(char)
+        LayoutDetectionPolicy.isMixedLayout(text)
     }
 
     /// Clears the buffer

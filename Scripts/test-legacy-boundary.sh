@@ -42,6 +42,25 @@ for symbol in "${debug_inline_core_symbols[@]}"; do
     echo "PASS debug inline duplicate absent: $symbol"
 done
 
+layout_detection_duplicate_files=(
+    Sources/PuntoCore/LayoutConverter.swift
+    Sources/PuntoCore/WordTracker.swift
+)
+layout_detection_duplicate_patterns=(
+    "private func isEnglishLetter"
+    "private func isRussianLetter"
+    "var englishCount"
+    "var russianCount"
+)
+
+for pattern in "${layout_detection_duplicate_patterns[@]}"; do
+    if rg --fixed-strings --quiet "$pattern" "${layout_detection_duplicate_files[@]}"; then
+        echo "legacy boundary failed: layout detection reopened outside LayoutDetectionPolicy: $pattern" >&2
+        exit 1
+    fi
+    echo "PASS layout detection duplicate absent: $pattern"
+done
+
 text_accessor_transport_patterns=(
     "CGEvent(keyboardEventSource:"
     "simulatePaste"

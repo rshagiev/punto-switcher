@@ -4,6 +4,21 @@ public enum LayoutDetectionPolicy {
     public static let englishThreshold = 0.8
     public static let russianThreshold = 0.2
 
+    public static func detectedLayout(for text: String) -> LayoutConverter.DetectedLayout {
+        var englishCount = 0
+        var russianCount = 0
+
+        for character in text {
+            if isEnglishLetter(character) {
+                englishCount += 1
+            } else if isRussianLetter(character) {
+                russianCount += 1
+            }
+        }
+
+        return detectedLayout(englishCount: englishCount, russianCount: russianCount)
+    }
+
     public static func detectedLayout(englishCount: Int, russianCount: Int) -> LayoutConverter.DetectedLayout {
         let total = englishCount + russianCount
         guard total > 0 else {
@@ -18,6 +33,10 @@ public enum LayoutDetectionPolicy {
             return .russian
         }
         return .mixed
+    }
+
+    public static func isMixedLayout(_ text: String) -> Bool {
+        detectedLayout(for: text) == .mixed
     }
 
     public static func isEnglishLetter(_ character: Character) -> Bool {

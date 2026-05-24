@@ -163,29 +163,7 @@ public final class LayoutConverter {
 
     /// Detects the keyboard layout of the given text
     public func detectLayout(_ text: String) -> DetectedLayout {
-        var englishCount = 0
-        var russianCount = 0
-
-        for char in text {
-            if isEnglishLetter(char) {
-                englishCount += 1
-            } else if isRussianLetter(char) {
-                russianCount += 1
-            }
-        }
-
-        return LayoutDetectionPolicy.detectedLayout(
-            englishCount: englishCount,
-            russianCount: russianCount
-        )
-    }
-
-    private func isEnglishLetter(_ char: Character) -> Bool {
-        LayoutDetectionPolicy.isEnglishLetter(char)
-    }
-
-    private func isRussianLetter(_ char: Character) -> Bool {
-        LayoutDetectionPolicy.isRussianLetter(char)
+        LayoutDetectionPolicy.detectedLayout(for: text)
     }
 
     private enum ConversionDirection {
