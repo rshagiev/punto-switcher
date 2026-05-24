@@ -94,6 +94,12 @@ first-run consumption of the imported `isFirstInstallation` flag. The boundary
 script fails if imported aliases leak back into the routine key namespace or if
 routine code starts writing import-only keys again.
 
+Legacy scalar parsing is centralized in `LegacyValuePolicy` instead of being
+reimplemented per feature. Searchbar settings, update/install settings, product
+statistics, hotkeys, undo-learning, user-rule imports, and alias-sensitive
+settings now share the same Bool/Int/date/bundle-id normalization surface while
+keeping their native write targets separate.
+
 ## Next Candidates
 
 - Continue splitting only the remaining constants where the policy currently

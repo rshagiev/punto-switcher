@@ -77,100 +77,26 @@ public enum SearchbarSettingsPolicy {
                 dictionary[activationShortcutKey] as? [String: Any],
                 fallback: defaultSnapshot.activationShortcut
             ),
-            shouldOfferSearchbarAutoactivation: boolValue(
+            shouldOfferSearchbarAutoactivation: LegacyValuePolicy.bool(
                 dictionary[autoactivationKey],
                 defaultValue: defaultSnapshot.shouldOfferSearchbarAutoactivation
             ),
-            autoactivationExceptions: stringArrayValue(
+            autoactivationExceptions: LegacyValuePolicy.normalizedStringArray(
                 dictionary[autoactivationExceptionsKey]
             ),
-            alertShownIn: dateValue(
+            alertShownIn: LegacyValuePolicy.date(
                 dictionary[alertShownInKey],
-                defaultValue: defaultSnapshot.alertShownIn
+                defaultValue: defaultSnapshot.alertShownIn,
+                allowNumericString: true
             ),
-            shouldSearchByDoubleClick: boolValue(
+            shouldSearchByDoubleClick: LegacyValuePolicy.bool(
                 dictionary[shouldSearchByDoubleClickKey],
                 defaultValue: defaultSnapshot.shouldSearchByDoubleClick
             ),
-            sitesearchPromptCounter: intValue(
+            sitesearchPromptCounter: LegacyValuePolicy.nonNegativeInt(
                 dictionary[sitesearchPromptCounterKey],
                 defaultValue: defaultSnapshot.sitesearchPromptCounter
             )
         )
-    }
-
-    private static func boolValue(_ rawValue: Any?, defaultValue: Bool) -> Bool {
-        if let value = rawValue as? Bool {
-            return value
-        }
-
-        if let value = rawValue as? NSNumber {
-            return value.boolValue
-        }
-
-        if let value = rawValue as? String {
-            switch value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
-            case "true", "yes", "1":
-                return true
-            case "false", "no", "0":
-                return false
-            default:
-                return defaultValue
-            }
-        }
-
-        return defaultValue
-    }
-
-    private static func intValue(_ rawValue: Any?, defaultValue: Int) -> Int {
-        if let value = rawValue as? Int {
-            return max(0, value)
-        }
-
-        if let value = rawValue as? NSNumber {
-            return max(0, value.intValue)
-        }
-
-        if let value = rawValue as? String,
-           let parsed = Int(value.trimmingCharacters(in: .whitespacesAndNewlines)) {
-            return max(0, parsed)
-        }
-
-        return max(0, defaultValue)
-    }
-
-    private static func stringArrayValue(_ rawValue: Any?) -> [String] {
-        guard let values = rawValue as? [String] else {
-            return []
-        }
-
-        return Array(ApplicationBundleIDPolicy.normalizedSet(Set(values))).sorted()
-    }
-
-    private static func dateValue(_ rawValue: Any?, defaultValue: Date) -> Date {
-        if let value = rawValue as? Date {
-            return value
-        }
-
-        if let value = rawValue as? NSNumber {
-            return Date(timeIntervalSince1970: value.doubleValue)
-        }
-
-        if let value = rawValue as? String {
-            let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
-            if let seconds = TimeInterval(trimmed) {
-                return Date(timeIntervalSince1970: seconds)
-            }
-
-            let formatter = DateFormatter()
-            formatter.locale = Locale(identifier: "en_US_POSIX")
-            formatter.dateFormat = "yyyy-MM-dd HH:mm:ss Z"
-            formatter.timeZone = TimeZone(secondsFromGMT: 0)
-            if let parsed = formatter.date(from: trimmed) {
-                return parsed
-            }
-        }
-
-        return defaultValue
     }
 }

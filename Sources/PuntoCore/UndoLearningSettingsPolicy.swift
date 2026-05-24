@@ -34,8 +34,14 @@ public enum UndoLearningSettingsPolicy {
         }
 
         return UndoLearningSettingsSnapshot(
-            undoCollectionEnabled: boolValue(dictionary[undoCollectionEnabledKey]) ?? defaultSnapshot.undoCollectionEnabled,
-            mustShowUndoWindow: boolValue(dictionary[mustShowUndoWindowKey]) ?? defaultSnapshot.mustShowUndoWindow,
+            undoCollectionEnabled: LegacyValuePolicy.bool(
+                dictionary[undoCollectionEnabledKey],
+                defaultValue: defaultSnapshot.undoCollectionEnabled
+            ),
+            mustShowUndoWindow: LegacyValuePolicy.bool(
+                dictionary[mustShowUndoWindowKey],
+                defaultValue: defaultSnapshot.mustShowUndoWindow
+            ),
             undoDictionary: stringDictionary(dictionary[undoDictionaryKey]) ?? defaultSnapshot.undoDictionary
         )
     }
@@ -48,26 +54,6 @@ public enum UndoLearningSettingsPolicy {
                 return
             }
             result[key] = value
-        }
-    }
-
-    private static func boolValue(_ value: Any?) -> Bool? {
-        switch value {
-        case let value as Bool:
-            return value
-        case let value as NSNumber:
-            return value.boolValue
-        case let value as String:
-            switch value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
-            case "1", "true", "yes":
-                return true
-            case "0", "false", "no":
-                return false
-            default:
-                return nil
-            }
-        default:
-            return nil
         }
     }
 

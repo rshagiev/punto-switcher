@@ -61,26 +61,10 @@ public enum LegacyUserRulePolicy {
     }
 
     private static func boolValue(_ value: Any?, defaultValue: Bool) -> Bool {
-        boolValue(value) ?? defaultValue
+        LegacyValuePolicy.bool(value, defaultValue: defaultValue)
     }
 
     private static func boolValue(_ value: Any?) -> Bool? {
-        switch value {
-        case let value as Bool:
-            return value
-        case let value as NSNumber:
-            return value.boolValue
-        case let value as String:
-            switch value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
-            case "true", "yes", "1", "on":
-                return true
-            case "false", "no", "0", "off":
-                return false
-            default:
-                return nil
-            }
-        default:
-            return nil
-        }
+        LegacyValuePolicy.bool(value)
     }
 }

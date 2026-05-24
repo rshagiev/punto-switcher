@@ -67,16 +67,40 @@ public enum ApplicationUpdateSettingsPolicy {
 
     public static func snapshot(from dictionary: [String: Any]) -> ApplicationUpdateSettingsSnapshot {
         ApplicationUpdateSettingsSnapshot(
-            configVersion: max(0, intValue(dictionary[configVersionKey]) ?? defaultSnapshot.configVersion),
-            isFirstInstallation: boolValue(dictionary[isFirstInstallationKey]) ?? defaultSnapshot.isFirstInstallation,
-            isJustInstalled: boolValue(dictionary[isJustInstalledKey]) ?? defaultSnapshot.isJustInstalled,
-            isJustUpdated: boolValue(dictionary[isJustUpdatedKey]) ?? defaultSnapshot.isJustUpdated,
-            isUpdating: boolValue(dictionary[isUpdatingKey]) ?? defaultSnapshot.isUpdating,
-            shouldCheckForUpdatesAutomatically: boolValue(dictionary[shouldCheckForUpdatesAutomaticallyKey]) ?? defaultSnapshot.shouldCheckForUpdatesAutomatically,
-            updateRequestRateInDays: max(0, intValue(dictionary[updateRequestRateInDaysKey]) ?? defaultSnapshot.updateRequestRateInDays),
-            lastStatisticsRequestDate: dateValue(dictionary[lastStatisticsRequestDateKey]) ?? defaultSnapshot.lastStatisticsRequestDate,
-            lastUpdateRequestDate: dateValue(dictionary[lastUpdateRequestDateKey]) ?? defaultSnapshot.lastUpdateRequestDate,
-            lastUpdateShownDate: dateValue(dictionary[lastUpdateShownDateKey]) ?? defaultSnapshot.lastUpdateShownDate
+            configVersion: LegacyValuePolicy.nonNegativeInt(
+                dictionary[configVersionKey],
+                defaultValue: defaultSnapshot.configVersion
+            ),
+            isFirstInstallation: LegacyValuePolicy.bool(
+                dictionary[isFirstInstallationKey],
+                defaultValue: defaultSnapshot.isFirstInstallation
+            ),
+            isJustInstalled: LegacyValuePolicy.bool(
+                dictionary[isJustInstalledKey],
+                defaultValue: defaultSnapshot.isJustInstalled
+            ),
+            isJustUpdated: LegacyValuePolicy.bool(
+                dictionary[isJustUpdatedKey],
+                defaultValue: defaultSnapshot.isJustUpdated
+            ),
+            isUpdating: LegacyValuePolicy.bool(
+                dictionary[isUpdatingKey],
+                defaultValue: defaultSnapshot.isUpdating
+            ),
+            shouldCheckForUpdatesAutomatically: LegacyValuePolicy.bool(
+                dictionary[shouldCheckForUpdatesAutomaticallyKey],
+                defaultValue: defaultSnapshot.shouldCheckForUpdatesAutomatically
+            ),
+            updateRequestRateInDays: LegacyValuePolicy.nonNegativeInt(
+                dictionary[updateRequestRateInDaysKey],
+                defaultValue: defaultSnapshot.updateRequestRateInDays
+            ),
+            lastStatisticsRequestDate: LegacyValuePolicy.date(dictionary[lastStatisticsRequestDateKey])
+                ?? defaultSnapshot.lastStatisticsRequestDate,
+            lastUpdateRequestDate: LegacyValuePolicy.date(dictionary[lastUpdateRequestDateKey])
+                ?? defaultSnapshot.lastUpdateRequestDate,
+            lastUpdateShownDate: LegacyValuePolicy.date(dictionary[lastUpdateShownDateKey])
+                ?? defaultSnapshot.lastUpdateShownDate
         )
     }
 
@@ -96,57 +120,4 @@ public enum ApplicationUpdateSettingsPolicy {
         return dictionary
     }
 
-    private static func boolValue(_ value: Any?) -> Bool? {
-        switch value {
-        case let value as Bool:
-            return value
-        case let value as NSNumber:
-            return value.boolValue
-        case let value as String:
-            switch value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
-            case "1", "true", "yes":
-                return true
-            case "0", "false", "no":
-                return false
-            default:
-                return nil
-            }
-        default:
-            return nil
-        }
-    }
-
-    private static func intValue(_ value: Any?) -> Int? {
-        switch value {
-        case let value as Int:
-            return value
-        case let value as NSNumber:
-            return value.intValue
-        case let value as String:
-            return Int(value.trimmingCharacters(in: .whitespacesAndNewlines))
-        default:
-            return nil
-        }
-    }
-
-    private static func dateValue(_ value: Any?) -> Date? {
-        switch value {
-        case let value as Date:
-            return value
-        case let value as NSNumber:
-            return Date(timeIntervalSince1970: value.doubleValue)
-        case let value as String:
-            return legacyDateFormatter.date(from: value.trimmingCharacters(in: .whitespacesAndNewlines))
-        default:
-            return nil
-        }
-    }
-
-    private static let legacyDateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = TimeZone(secondsFromGMT: 0)
-        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss Z"
-        return formatter
-    }()
 }

@@ -200,13 +200,13 @@ public enum ProductStatisticsPolicy {
         }
 
         return snapshotFromLegacyCounters(
-            typedWords: intValue(settings[dayuseTypedWordsKey]),
-            typedSymbols: intValue(settings[dayuseTypedSymbolsKey]),
-            automaticSwitches: intValue(settings[dayuseAutoSwitchesKey]),
-            manualSwitches: intValue(settings[dayuseManualSwitchesKey]),
-            reverts: intValue(settings[dayuseRevertsKey]),
-            lastDayuseDate: dateValue(settings[dayuseLastDayuseDateKey]),
-            lastProductStatDate: dateValue(settings[dayuseLastProductStatDateKey])
+            typedWords: LegacyValuePolicy.int(settings[dayuseTypedWordsKey]),
+            typedSymbols: LegacyValuePolicy.int(settings[dayuseTypedSymbolsKey]),
+            automaticSwitches: LegacyValuePolicy.int(settings[dayuseAutoSwitchesKey]),
+            manualSwitches: LegacyValuePolicy.int(settings[dayuseManualSwitchesKey]),
+            reverts: LegacyValuePolicy.int(settings[dayuseRevertsKey]),
+            lastDayuseDate: LegacyValuePolicy.date(settings[dayuseLastDayuseDateKey]),
+            lastProductStatDate: LegacyValuePolicy.date(settings[dayuseLastProductStatDateKey])
         )
     }
 
@@ -261,19 +261,6 @@ public enum ProductStatisticsPolicy {
         return text.filter { !$0.isNewline && !$0.isWhitespace }.count
     }
 
-    private static func intValue(_ value: Any?) -> Int? {
-        switch value {
-        case let value as Int:
-            return value
-        case let value as NSNumber:
-            return value.intValue
-        case let value as String:
-            return Int(value.trimmingCharacters(in: .whitespacesAndNewlines))
-        default:
-            return nil
-        }
-    }
-
     private static func snapshotForCurrentDay(
         _ snapshot: ProductStatisticsSnapshot,
         now: Date,
@@ -292,25 +279,4 @@ public enum ProductStatisticsPolicy {
             lastProductStatDate: snapshot.lastProductStatDate
         )
     }
-
-    private static func dateValue(_ value: Any?) -> Date? {
-        switch value {
-        case let value as Date:
-            return value
-        case let value as NSNumber:
-            return Date(timeIntervalSince1970: value.doubleValue)
-        case let value as String:
-            return legacyDateFormatter.date(from: value.trimmingCharacters(in: .whitespacesAndNewlines))
-        default:
-            return nil
-        }
-    }
-
-    private static let legacyDateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = TimeZone(secondsFromGMT: 0)
-        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss Z"
-        return formatter
-    }()
 }
