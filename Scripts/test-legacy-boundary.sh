@@ -387,6 +387,16 @@ for pattern in "${app_delegate_runtime_state_patterns[@]}"; do
 done
 
 app_delegate_application_runtime_patterns=(
+    "TextAccessor("
+    "InputSourceManager("
+    "HotkeyManager("
+    "TextActionRuntimeCoordinator("
+    "ManualTextActionRuntimeCoordinator("
+    "AutoCorrectionRuntimeCoordinator("
+    "UndoRuntimeCoordinator("
+    "ApplicationCommandRuntimeCoordinator("
+    "KeyPressRuntimeCoordinator("
+    "AccessibilityStateObserver {"
     "ApplicationLayoutMemory()"
     "ApplicationContextPolicy.activationAction"
     "ApplicationLayoutPolicy.restoreActionOnActivation"
