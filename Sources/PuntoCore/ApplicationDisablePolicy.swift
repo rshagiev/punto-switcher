@@ -69,6 +69,18 @@ public enum ApplicationDisablePolicy {
         )
     }
 
+    public static func canDisableApplication(bundleID: String?, ownBundleID: String?) -> Bool {
+        guard let bundleID = ApplicationBundleIDPolicy.normalized(bundleID) else {
+            return false
+        }
+
+        guard let ownBundleID = ApplicationBundleIDPolicy.normalized(ownBundleID) else {
+            return true
+        }
+
+        return bundleID != ownBundleID
+    }
+
     public static func disabledBundleIDsAfterSet(
         bundleID: String?,
         disabled: Bool,
@@ -127,8 +139,7 @@ public enum ApplicationDisablePolicy {
             return nil
         }
 
-        if let ownBundleID = ApplicationBundleIDPolicy.normalized(ownBundleID),
-           bundleID == ownBundleID {
+        guard canDisableApplication(bundleID: bundleID, ownBundleID: ownBundleID) else {
             return nil
         }
 
@@ -164,8 +175,7 @@ public enum ApplicationDisablePolicy {
             )
         }
 
-        if let ownBundleID = ApplicationBundleIDPolicy.normalized(ownBundleID),
-           bundleID == ownBundleID {
+        guard canDisableApplication(bundleID: bundleID, ownBundleID: ownBundleID) else {
             return ApplicationDisableMenuState(
                 title: "No Current App",
                 isEnabled: false,

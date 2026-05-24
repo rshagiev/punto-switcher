@@ -1,4 +1,5 @@
 import AppKit
+import PuntoCore
 import PuntoSettings
 
 final class DisabledApplicationsEditorController: NSWindowController {
@@ -121,16 +122,20 @@ final class DisabledApplicationsEditorController: NSWindowController {
 
     @objc private func addCurrentApplication(_ sender: NSButton) {
         guard let app = currentApplication(),
-              app.bundleID != Bundle.main.bundleIdentifier else {
+              let bundleID = ApplicationBundleIDPolicy.normalized(app.bundleID),
+              ApplicationDisablePolicy.canDisableApplication(
+                  bundleID: bundleID,
+                  ownBundleID: Bundle.main.bundleIdentifier
+              ) else {
             NSSound.beep()
             return
         }
 
-        settingsManager.setApplicationDisabled(bundleID: app.bundleID, disabled: true)
+        settingsManager.setApplicationDisabled(bundleID: bundleID, disabled: true)
         reload()
         onChange()
 
-        if let row = bundleIDs.firstIndex(of: app.bundleID) {
+        if let row = bundleIDs.firstIndex(of: bundleID) {
             tableView.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
         }
     }
