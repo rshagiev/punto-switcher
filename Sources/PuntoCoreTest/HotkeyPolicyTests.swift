@@ -223,56 +223,86 @@ func runHotkeyPolicyTests() throws {
         "hotkey validation falls back for plain key shortcut"
     )
     try expect(
+        LegacyHotkeyPolicy.legacyNoKeyCode,
+        UInt16(PuntoSwitcherObservedSurface.Hotkeys.noKeyCode),
+        "legacy hotkey policy keeps no-key sentinel aligned with reverse-audit anchor"
+    )
+    try expect(
+        LegacyHotkeyPolicy.legacyKeyCodeKey,
+        PuntoSwitcherObservedSurface.Hotkeys.keyCodeKey,
+        "legacy hotkey policy keeps charKeycode field aligned with reverse-audit anchor"
+    )
+    try expect(
+        LegacyHotkeyPolicy.legacyCommandKey,
+        PuntoSwitcherObservedSurface.Hotkeys.commandKey,
+        "legacy hotkey policy keeps command modifier field aligned with reverse-audit anchor"
+    )
+    try expect(
+        LegacyHotkeyPolicy.legacyOptionKey,
+        PuntoSwitcherObservedSurface.Hotkeys.optionKey,
+        "legacy hotkey policy keeps option modifier field aligned with reverse-audit anchor"
+    )
+    try expect(
+        LegacyHotkeyPolicy.legacyShiftKey,
+        PuntoSwitcherObservedSurface.Hotkeys.shiftKey,
+        "legacy hotkey policy keeps shift modifier field aligned with reverse-audit anchor"
+    )
+    try expect(
+        LegacyHotkeyPolicy.legacyControlKey,
+        PuntoSwitcherObservedSurface.Hotkeys.controlKey,
+        "legacy hotkey policy keeps control modifier field aligned with reverse-audit anchor"
+    )
+    try expect(
         LegacyHotkeyPolicy.hotkey(from: [
-            "charKeycode": 6,
-            "isCommandUsed": true,
-            "isAltUsed": NSNumber(value: true),
-            "isShiftUsed": false,
-            "isControlUsed": false
+            LegacyHotkeyPolicy.legacyKeyCodeKey: 6,
+            LegacyHotkeyPolicy.legacyCommandKey: true,
+            LegacyHotkeyPolicy.legacyOptionKey: NSNumber(value: true),
+            LegacyHotkeyPolicy.legacyShiftKey: false,
+            LegacyHotkeyPolicy.legacyControlKey: false
         ]),
         Hotkey.defaultToggleCase,
         "legacy hotkey policy reads Punto Switcher shortcut dictionaries"
     )
     try expect(
         LegacyHotkeyPolicy.hotkey(from: [
-            "charKeycode": " 6 ",
-            "isCommandUsed": "yes",
-            "isAltUsed": "0",
-            "isShiftUsed": "true",
-            "isControlUsed": "off"
+            LegacyHotkeyPolicy.legacyKeyCodeKey: " 6 ",
+            LegacyHotkeyPolicy.legacyCommandKey: "yes",
+            LegacyHotkeyPolicy.legacyOptionKey: "0",
+            LegacyHotkeyPolicy.legacyShiftKey: "true",
+            LegacyHotkeyPolicy.legacyControlKey: "off"
         ]),
         Hotkey(keyCode: 6, command: true, option: false, shift: true, control: false),
         "legacy hotkey policy reads string-backed shortcut dictionaries"
     )
     try expect(
         LegacyHotkeyPolicy.hotkey(from: [
-            "charKeycode": 666,
-            "isCommandUsed": true,
-            "isAltUsed": true,
-            "isShiftUsed": true,
-            "isControlUsed": false
+            LegacyHotkeyPolicy.legacyKeyCodeKey: LegacyHotkeyPolicy.legacyNoKeyCode,
+            LegacyHotkeyPolicy.legacyCommandKey: true,
+            LegacyHotkeyPolicy.legacyOptionKey: true,
+            LegacyHotkeyPolicy.legacyShiftKey: true,
+            LegacyHotkeyPolicy.legacyControlKey: false
         ]),
         Hotkey.defaultConvertLayout,
         "legacy hotkey policy maps Punto Switcher no-key shortcut to modifier-only hotkey"
     )
     try expect(
         LegacyHotkeyPolicy.hotkey(from: [
-            "charKeycode": 666,
-            "isCommandUsed": false,
-            "isAltUsed": false,
-            "isShiftUsed": false,
-            "isControlUsed": false
+            LegacyHotkeyPolicy.legacyKeyCodeKey: LegacyHotkeyPolicy.legacyNoKeyCode,
+            LegacyHotkeyPolicy.legacyCommandKey: false,
+            LegacyHotkeyPolicy.legacyOptionKey: false,
+            LegacyHotkeyPolicy.legacyShiftKey: false,
+            LegacyHotkeyPolicy.legacyControlKey: false
         ]),
         Hotkey.disabled,
         "legacy hotkey policy maps Punto Switcher no-key/no-modifier shortcut to disabled"
     )
     try expect(
         LegacyHotkeyPolicy.normalized([
-            "charKeycode": 666,
-            "isCommandUsed": true,
-            "isAltUsed": false,
-            "isShiftUsed": false,
-            "isControlUsed": false
+            LegacyHotkeyPolicy.legacyKeyCodeKey: LegacyHotkeyPolicy.legacyNoKeyCode,
+            LegacyHotkeyPolicy.legacyCommandKey: true,
+            LegacyHotkeyPolicy.legacyOptionKey: false,
+            LegacyHotkeyPolicy.legacyShiftKey: false,
+            LegacyHotkeyPolicy.legacyControlKey: false
         ], fallback: Hotkey.defaultToggleCase),
         Hotkey.defaultToggleCase,
         "legacy hotkey policy normalizes invalid single-modifier shortcuts"

@@ -321,11 +321,11 @@ func runSearchbarSettingsPolicyTests() throws {
     try expect(
         SearchbarSettingsPolicy.snapshot(from: [
             SearchbarSettingsPolicy.legacyActivationShortcutKey: [
-                LegacyHotkeyPolicy.keyCodeKey: NSNumber(value: 6),
-                LegacyHotkeyPolicy.commandKey: NSNumber(value: true),
-                LegacyHotkeyPolicy.optionKey: NSNumber(value: false),
-                LegacyHotkeyPolicy.shiftKey: NSNumber(value: true),
-                LegacyHotkeyPolicy.controlKey: NSNumber(value: false)
+                LegacyHotkeyPolicy.legacyKeyCodeKey: NSNumber(value: 6),
+                LegacyHotkeyPolicy.legacyCommandKey: NSNumber(value: true),
+                LegacyHotkeyPolicy.legacyOptionKey: NSNumber(value: false),
+                LegacyHotkeyPolicy.legacyShiftKey: NSNumber(value: true),
+                LegacyHotkeyPolicy.legacyControlKey: NSNumber(value: false)
             ],
             SearchbarSettingsPolicy.legacyAutoactivationKey: NSNumber(value: false),
             SearchbarSettingsPolicy.legacyAutoactivationExceptionsKey: [
@@ -352,11 +352,11 @@ func runSearchbarSettingsPolicyTests() throws {
     try expect(
         SearchbarSettingsPolicy.snapshot(from: [
             SearchbarSettingsPolicy.legacyActivationShortcutKey: [
-                LegacyHotkeyPolicy.keyCodeKey: LegacyHotkeyPolicy.noKeyCode,
-                LegacyHotkeyPolicy.commandKey: true,
-                LegacyHotkeyPolicy.optionKey: true,
-                LegacyHotkeyPolicy.shiftKey: false,
-                LegacyHotkeyPolicy.controlKey: false
+                LegacyHotkeyPolicy.legacyKeyCodeKey: LegacyHotkeyPolicy.legacyNoKeyCode,
+                LegacyHotkeyPolicy.legacyCommandKey: true,
+                LegacyHotkeyPolicy.legacyOptionKey: true,
+                LegacyHotkeyPolicy.legacyShiftKey: false,
+                LegacyHotkeyPolicy.legacyControlKey: false
             ],
             SearchbarSettingsPolicy.legacyAutoactivationKey: "yes",
             SearchbarSettingsPolicy.legacyAlertShownInKey: "2009-01-01 00:00:00 +0300",

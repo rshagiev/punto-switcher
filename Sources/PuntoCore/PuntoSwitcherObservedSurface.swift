@@ -77,6 +77,12 @@ public enum PuntoSwitcherObservedSurface {
     }
 
     public enum Hotkeys {
+        public static let noKeyCode = 666
+        public static let keyCodeKey = "charKeycode"
+        public static let commandKey = "isCommandUsed"
+        public static let optionKey = "isAltUsed"
+        public static let shiftKey = "isShiftUsed"
+        public static let controlKey = "isControlUsed"
         public static let shortcutChangeLayoutKey = "shortcutChangeLayout"
         public static let shortcutChangeCaseKey = "shortcutChangeCase"
         public static let shortcutSwitchAutocorrectionKey = "shortcutSwitchAutocorrection"

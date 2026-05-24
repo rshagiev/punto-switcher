@@ -117,12 +117,12 @@ public enum KeyCodeNames {
 }
 
 public enum LegacyHotkeyPolicy {
-    public static let noKeyCode: UInt16 = 666
-    public static let keyCodeKey = "charKeycode"
-    public static let commandKey = "isCommandUsed"
-    public static let optionKey = "isAltUsed"
-    public static let shiftKey = "isShiftUsed"
-    public static let controlKey = "isControlUsed"
+    public static let legacyNoKeyCode: UInt16 = 666
+    public static let legacyKeyCodeKey = "charKeycode"
+    public static let legacyCommandKey = "isCommandUsed"
+    public static let legacyOptionKey = "isAltUsed"
+    public static let legacyShiftKey = "isShiftUsed"
+    public static let legacyControlKey = "isControlUsed"
     public static let legacyShortcutChangeLayoutKey = "shortcutChangeLayout"
     public static let legacyShortcutChangeCaseKey = "shortcutChangeCase"
     public static let legacyShortcutSwitchAutocorrectionKey = "shortcutSwitchAutocorrection"
@@ -135,19 +135,19 @@ public enum LegacyHotkeyPolicy {
 
     public static func hotkey(from dictionary: [String: Any]?) -> Hotkey? {
         guard let dictionary,
-              let rawKeyCode = intValue(dictionary[keyCodeKey]),
+              let rawKeyCode = intValue(dictionary[legacyKeyCodeKey]),
               rawKeyCode >= 0,
               rawKeyCode <= Int(UInt16.max) else {
             return nil
         }
 
-        let command = boolValue(dictionary[commandKey]) ?? false
-        let option = boolValue(dictionary[optionKey]) ?? false
-        let shift = boolValue(dictionary[shiftKey]) ?? false
-        let control = boolValue(dictionary[controlKey]) ?? false
+        let command = boolValue(dictionary[legacyCommandKey]) ?? false
+        let option = boolValue(dictionary[legacyOptionKey]) ?? false
+        let shift = boolValue(dictionary[legacyShiftKey]) ?? false
+        let control = boolValue(dictionary[legacyControlKey]) ?? false
         let legacyKeyCode = UInt16(rawKeyCode)
 
-        if legacyKeyCode == noKeyCode {
+        if legacyKeyCode == legacyNoKeyCode {
             if [command, option, shift, control].contains(true) {
                 return Hotkey(
                     keyCode: Hotkey.modifierOnlyKeyCode,
