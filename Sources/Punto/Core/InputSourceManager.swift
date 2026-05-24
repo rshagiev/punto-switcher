@@ -52,20 +52,34 @@ final class InputSourceManager {
             preferredRussianSourceID: preferredRussianSourceID()
         )
 
+        if let logMessage = InputSourceSelectionPolicy.handleInputSourcesEnabledLogMessage(
+            sourceIDs: selection.sourceIDsToEnable
+        ) {
+            PuntoLog.info(logMessage)
+        }
+
         for source in sourceList {
             let sourceId = getSourceId(source)
             if englishSource == nil, sourceId == selection.englishSourceID {
-                englishSource = source
-                PuntoLog.info("Found English input source: \(sourceId)")
+                if prepareSelectedInputSource(source, sourceID: sourceId, selection: selection) {
+                    englishSource = source
+                    PuntoLog.info("Found English input source: \(sourceId)")
+                }
             }
 
             if russianSource == nil, sourceId == selection.russianSourceID {
-                russianSource = source
-                PuntoLog.info("Found Russian input source: \(sourceId)")
+                if prepareSelectedInputSource(source, sourceID: sourceId, selection: selection) {
+                    russianSource = source
+                    PuntoLog.info("Found Russian input source: \(sourceId)")
+                }
             }
         }
 
-        if let message = InputSourceSelectionPolicy.missingRequiredLayoutsLogMessage(selection: selection) {
+        let activeSelection = InputSourceSelection(
+            englishSourceID: englishSource.map(getSourceId),
+            russianSourceID: russianSource.map(getSourceId)
+        )
+        if let message = InputSourceSelectionPolicy.missingRequiredLayoutsLogMessage(selection: activeSelection) {
             PuntoLog.error(message)
         }
     }
@@ -165,6 +179,28 @@ final class InputSourceManager {
 
     private func isEnabledInputSource(_ source: TISInputSource) -> Bool {
         getProperty(source, kTISPropertyInputSourceIsEnabled) as? Bool ?? true
+    }
+
+    private func prepareSelectedInputSource(
+        _ source: TISInputSource,
+        sourceID: String,
+        selection: InputSourceSelection
+    ) -> Bool {
+        guard InputSourceSelectionPolicy.shouldEnableInputSource(sourceID: sourceID, selection: selection) else {
+            return true
+        }
+
+        let status = TISEnableInputSource(source)
+        guard status == noErr else {
+            PuntoLog.error(InputSourceSelectionPolicy.failedToEnableLayoutLogMessage(
+                sourceID: sourceID,
+                status: status
+            ))
+            return false
+        }
+
+        PuntoLog.info(InputSourceSelectionPolicy.inputSourceEnabledLogMessage(sourceID: sourceID))
+        return true
     }
 
     private func getSourceId(_ source: TISInputSource) -> String {

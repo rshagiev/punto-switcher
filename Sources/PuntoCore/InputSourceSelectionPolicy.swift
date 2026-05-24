@@ -17,10 +17,14 @@ public struct InputSourceCandidate: Equatable {
 public struct InputSourceSelection: Equatable {
     public let englishSourceID: String?
     public let russianSourceID: String?
+    public let sourceIDsToEnable: [String]
 
-    public init(englishSourceID: String?, russianSourceID: String?) {
+    public init(englishSourceID: String?, russianSourceID: String?, sourceIDsToEnable: [String] = []) {
         self.englishSourceID = englishSourceID
         self.russianSourceID = russianSourceID
+        self.sourceIDsToEnable = Array(
+            Set(sourceIDsToEnable.compactMap(InputSourceSelectionPolicy.normalizedSourceID))
+        ).sorted()
     }
 }
 
@@ -33,23 +37,32 @@ public enum InputSourceSelectionPolicy {
         preferredEnglishSourceID: String? = nil,
         preferredRussianSourceID: String? = nil
     ) -> InputSourceSelection {
-        let selectable = candidates.filter { $0.isSelectableKeyboard && $0.isEnabled }
+        let selectable = candidates.filter(\.isSelectableKeyboard)
         let normalizedPreferredEnglishSourceID = normalizedSourceID(preferredEnglishSourceID)
         let normalizedPreferredRussianSourceID = normalizedSourceID(preferredRussianSourceID)
 
         let englishCandidates = selectable.filter {
             InputSourceLanguagePolicy.isEnglishInputSource(sourceID: $0.sourceID, languages: $0.languages)
         }
+        let enabledEnglishCandidates = englishCandidates.filter(\.isEnabled)
 
         let explicitEnglishSourceID = englishCandidates.first {
             normalizedSourceID($0.sourceID) == normalizedPreferredEnglishSourceID
-        }.flatMap { normalizedSourceID($0.sourceID) }
+        }
 
-        let defaultEnglishSourceID = englishCandidates.first {
+        let defaultEnglishCandidate = enabledEnglishCandidates.first {
             KeyboardLayoutVariantPolicy.isDefaultEnglishSource($0.sourceID)
-        }.flatMap { normalizedSourceID($0.sourceID) }
+        }
 
-        let englishSourceID = explicitEnglishSourceID ?? defaultEnglishSourceID ?? englishCandidates.first.flatMap { normalizedSourceID($0.sourceID) }
+        let fallbackDisabledEnglishCandidate = englishCandidates.first {
+            KeyboardLayoutVariantPolicy.isDefaultEnglishSource($0.sourceID)
+        } ?? englishCandidates.first
+
+        let englishCandidate = explicitEnglishSourceID
+            ?? defaultEnglishCandidate
+            ?? enabledEnglishCandidates.first
+            ?? fallbackDisabledEnglishCandidate
+        let englishSourceID = englishCandidate.flatMap { normalizedSourceID($0.sourceID) }
 
         let russianCandidates = selectable.filter {
             guard InputSourceLanguagePolicy.isRussianInputSource(sourceID: $0.sourceID, languages: $0.languages),
@@ -58,23 +71,42 @@ public enum InputSourceSelectionPolicy {
             }
             return sourceID != englishSourceID
         }
+        let enabledRussianCandidates = russianCandidates.filter(\.isEnabled)
 
         let explicitRussianSourceID = russianCandidates.first {
             normalizedSourceID($0.sourceID) == normalizedPreferredRussianSourceID
-        }.flatMap { normalizedSourceID($0.sourceID) }
+        }
 
-        let preferredRussianSourceID = russianCandidates.first {
+        let preferredRussianCandidate = russianCandidates.first {
             KeyboardLayoutTypePolicy.isPreferredRussianSource(
                 sourceID: $0.sourceID,
                 layoutType: preferredRussianLayoutType
             )
-        }.flatMap { normalizedSourceID($0.sourceID) }
+        }
 
-        let russianSourceID = explicitRussianSourceID ?? preferredRussianSourceID ?? russianCandidates.first.flatMap { normalizedSourceID($0.sourceID) }
+        let fallbackDisabledRussianCandidate = russianCandidates.first {
+            KeyboardLayoutTypePolicy.isPreferredRussianSource(
+                sourceID: $0.sourceID,
+                layoutType: preferredRussianLayoutType
+            )
+        } ?? russianCandidates.first
+
+        let russianCandidate = explicitRussianSourceID
+            ?? preferredRussianCandidate
+            ?? enabledRussianCandidates.first
+            ?? fallbackDisabledRussianCandidate
+        let russianSourceID = russianCandidate.flatMap { normalizedSourceID($0.sourceID) }
+        let sourceIDsToEnable = [englishCandidate, russianCandidate].compactMap { candidate -> String? in
+            guard let candidate, !candidate.isEnabled else {
+                return nil
+            }
+            return normalizedSourceID(candidate.sourceID)
+        }
 
         return InputSourceSelection(
             englishSourceID: englishSourceID,
-            russianSourceID: russianSourceID
+            russianSourceID: russianSourceID,
+            sourceIDsToEnable: sourceIDsToEnable
         )
     }
 
@@ -99,6 +131,29 @@ public enum InputSourceSelectionPolicy {
             return nil
         }
         return "\(PuntoSwitcherObservedSurface.InputSources.promptUserToInstallLayoutsSelector): missing \(missing.joined(separator: "/")) input source"
+    }
+
+    public static func shouldEnableInputSource(sourceID: String?, selection: InputSourceSelection) -> Bool {
+        guard let sourceID = normalizedSourceID(sourceID) else {
+            return false
+        }
+        return selection.sourceIDsToEnable.contains(sourceID)
+    }
+
+    public static func inputSourceEnabledLogMessage(sourceID: String) -> String {
+        "\(PuntoSwitcherObservedSurface.InputSources.inputSourceEnabledSelector) \(sourceID)"
+    }
+
+    public static func handleInputSourcesEnabledLogMessage(sourceIDs: [String]) -> String? {
+        let normalized = Array(Set(sourceIDs.compactMap(normalizedSourceID))).sorted()
+        guard !normalized.isEmpty else {
+            return nil
+        }
+        return "\(PuntoSwitcherObservedSurface.InputSources.handleInputSourcesEnabledSelector): \(normalized.joined(separator: ", "))"
+    }
+
+    public static func failedToEnableLayoutLogMessage(sourceID: String, status: Int32) -> String {
+        "Failed to enable layout \(sourceID)! Error code: \(status)"
     }
 
     public static func normalizedSourceID(_ sourceID: String?) -> String? {

@@ -5807,6 +5807,22 @@ private func runInputSourceLanguagePolicyTests() throws {
         InputSourceSelectionPolicy.selection(
             from: [
                 InputSourceCandidate(sourceID: "com.apple.keylayout.ABC", languages: ["en"], isSelectableKeyboard: true),
+                InputSourceCandidate(sourceID: "com.apple.keylayout.Russian", languages: ["ru"], isSelectableKeyboard: true, isEnabled: true),
+                InputSourceCandidate(sourceID: "com.apple.keylayout.RussianWin", languages: ["ru"], isSelectableKeyboard: true, isEnabled: false)
+            ],
+            preferredRussianLayoutType: .windows
+        ),
+        InputSourceSelection(
+            englishSourceID: "com.apple.keylayout.ABC",
+            russianSourceID: "com.apple.keylayout.RussianWin",
+            sourceIDsToEnable: ["com.apple.keylayout.RussianWin"]
+        ),
+        "input source selection policy chooses disabled RussianWin for Punto-style enabling when Windows layout is configured"
+    )
+    try expect(
+        InputSourceSelectionPolicy.selection(
+            from: [
+                InputSourceCandidate(sourceID: "com.apple.keylayout.ABC", languages: ["en"], isSelectableKeyboard: true),
                 InputSourceCandidate(sourceID: "com.apple.keylayout.Russian", languages: ["ru"], isSelectableKeyboard: true)
             ],
             preferredEnglishSourceID: "com.apple.keylayout.Missing",
@@ -5839,9 +5855,10 @@ private func runInputSourceLanguagePolicyTests() throws {
         ]),
         InputSourceSelection(
             englishSourceID: "com.apple.keylayout.Dvorak",
-            russianSourceID: "com.apple.keylayout.RussianWin"
+            russianSourceID: "com.apple.keylayout.Russian",
+            sourceIDsToEnable: ["com.apple.keylayout.Russian"]
         ),
-        "input source selection policy ignores disabled layout candidates"
+        "input source selection policy enables disabled preferred Mac Russian before falling back to Windows Russian"
     )
     try expect(
         InputSourceSelectionPolicy.selection(
@@ -5856,21 +5873,46 @@ private func runInputSourceLanguagePolicyTests() throws {
             preferredRussianSourceID: "com.apple.keylayout.RussianWin"
         ),
         InputSourceSelection(
-            englishSourceID: "com.apple.keylayout.ABC",
-            russianSourceID: "com.apple.keylayout.Russian"
+            englishSourceID: "com.apple.keylayout.Dvorak",
+            russianSourceID: "com.apple.keylayout.RussianWin",
+            sourceIDsToEnable: [
+                "com.apple.keylayout.Dvorak",
+                "com.apple.keylayout.RussianWin"
+            ]
         ),
-        "input source selection policy falls back when preferred layout ids are disabled"
+        "input source selection policy chooses disabled explicit preferred layouts for Punto-style enabling"
     )
-    try expect(
-        InputSourceSelectionPolicy.selection(from: [
+    let allDisabledSelection = InputSourceSelectionPolicy.selection(from: [
             InputSourceCandidate(sourceID: "com.apple.keylayout.ABC", languages: ["en"], isSelectableKeyboard: true, isEnabled: false),
             InputSourceCandidate(sourceID: "com.apple.keylayout.Russian", languages: ["ru"], isSelectableKeyboard: true, isEnabled: false)
-        ]),
+    ])
+    try expect(
+        allDisabledSelection,
         InputSourceSelection(
-            englishSourceID: nil,
-            russianSourceID: nil
+            englishSourceID: "com.apple.keylayout.ABC",
+            russianSourceID: "com.apple.keylayout.Russian",
+            sourceIDsToEnable: [
+                "com.apple.keylayout.ABC",
+                "com.apple.keylayout.Russian"
+            ]
         ),
-        "input source selection policy reports missing layouts when all candidates are disabled"
+        "input source selection policy chooses disabled required layouts for Punto-style enabling"
+    )
+    try expect(
+        InputSourceSelectionPolicy.shouldEnableInputSource(
+            sourceID: " com.apple.keylayout.ABC ",
+            selection: allDisabledSelection
+        ),
+        true,
+        "input source selection policy marks selected disabled English source for enabling"
+    )
+    try expect(
+        InputSourceSelectionPolicy.shouldEnableInputSource(
+            sourceID: "com.apple.keylayout.US",
+            selection: allDisabledSelection
+        ),
+        false,
+        "input source selection policy does not enable unselected sources"
     )
     let missingSelection = InputSourceSelection(englishSourceID: nil, russianSourceID: "com.apple.keylayout.Russian")
     try expect(
@@ -5902,6 +5944,32 @@ private func runInputSourceLanguagePolicyTests() throws {
         InputSourceSelectionPolicy.missingRequiredLayoutsLogMessage(selection: missingSelection),
         "promptUserToInstallLayouts: missing English input source",
         "input source selection policy logs observed prompt path for missing layout"
+    )
+    try expect(
+        InputSourceSelectionPolicy.inputSourceEnabledLogMessage(sourceID: "com.apple.keylayout.Russian"),
+        "inputSourceEnabled: com.apple.keylayout.Russian",
+        "input source selection policy logs observed enabled-layout selector shape"
+    )
+    try expect(
+        InputSourceSelectionPolicy.handleInputSourcesEnabledLogMessage(sourceIDs: [
+            "com.apple.keylayout.Russian",
+            " com.apple.keylayout.ABC ",
+            "com.apple.keylayout.Russian"
+        ]),
+        "handleInputSourcesEnabled: com.apple.keylayout.ABC, com.apple.keylayout.Russian",
+        "input source selection policy logs observed enabled-layout handler shape"
+    )
+    try expectNil(
+        InputSourceSelectionPolicy.handleInputSourcesEnabledLogMessage(sourceIDs: [" ", "UNDEFINED"]),
+        "input source selection policy skips empty enabled-layout handler logs"
+    )
+    try expect(
+        InputSourceSelectionPolicy.failedToEnableLayoutLogMessage(
+            sourceID: "com.apple.keylayout.Russian",
+            status: -50
+        ),
+        "Failed to enable layout com.apple.keylayout.Russian! Error code: -50",
+        "input source selection policy logs observed failed-enable shape"
     )
     try expectNil(
         InputSourceSelectionPolicy.missingRequiredLayoutsLogMessage(

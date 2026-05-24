@@ -443,6 +443,11 @@ struct ConversionResult {
 // Russian: primary language "ru" (including ru-RU/ru_RU) or known source id token: Russian
 ```
 
+Selectable but disabled explicit/required EN/RU sources are not treated as
+missing immediately. `InputSourceSelectionPolicy` returns them with
+`sourceIDsToEnable`, and `InputSourceManager` attempts `TISEnableInputSource`
+before falling back to the `promptUserToInstallLayouts` diagnostic.
+
 #### Переключение
 
 ```swift
