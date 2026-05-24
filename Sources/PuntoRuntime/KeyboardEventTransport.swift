@@ -7,6 +7,34 @@ import PuntoCore
 /// to use; this adapter only creates and posts the actual keyboard events.
 final class KeyboardEventTransport {
 
+    func currentModifierSnapshot() -> ModifierFlagsSnapshot {
+        modifierSnapshot(from: CGEventSource.flagsState(.hidSystemState))
+    }
+
+    func waitForModifierRelease() -> ModifierFlagsSnapshot {
+        Thread.sleep(forTimeInterval: KeyboardReplacementPolicy.modifierReleaseSettleDelay)
+
+        let deadline = Date().addingTimeInterval(KeyboardReplacementPolicy.modifierReleaseMaxWait)
+        var snapshot = currentModifierSnapshot()
+        while !snapshot.noModifiersPressed, Date() < deadline {
+            Thread.sleep(forTimeInterval: KeyboardReplacementPolicy.modifierReleasePollInterval)
+            snapshot = currentModifierSnapshot()
+        }
+
+        return snapshot
+    }
+
+    @discardableResult
+    func releaseLatchedModifiers(_ flags: ModifierFlagsSnapshot) -> Int {
+        guard KeyboardModifierCleanupPolicy.shouldPostCleanup(for: flags) else {
+            return 0
+        }
+
+        let count = postKeyUps(KeyboardModifierCleanupPolicy.keyUpCodes(for: flags))
+        PuntoLog.info("replaceLastWord: sent modifier key-up cleanup for \(KeyboardModifierCleanupPolicy.description(for: flags))")
+        return count
+    }
+
     @discardableResult
     func postCommandCopyAnnotated() -> Bool {
         postKeyPair(
@@ -119,5 +147,14 @@ final class KeyboardEventTransport {
         keyUp.flags = flags
         keyUp.post(tap: tap)
         return true
+    }
+
+    private func modifierSnapshot(from flags: CGEventFlags) -> ModifierFlagsSnapshot {
+        ModifierFlagsSnapshot(
+            command: flags.contains(.maskCommand),
+            option: flags.contains(.maskAlternate),
+            shift: flags.contains(.maskShift),
+            control: flags.contains(.maskControl)
+        )
     }
 }

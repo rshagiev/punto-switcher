@@ -80,6 +80,20 @@ func runKeyboardReplacementPolicyTests() throws {
         "keyboard modifier cleanup skips empty modifier state"
     )
     try expect(
+        KeyboardModifierCleanupPolicy.description(
+            for: ModifierFlagsSnapshot(command: false, option: false, shift: false, control: false)
+        ),
+        "none",
+        "keyboard modifier cleanup describes empty modifier state"
+    )
+    try expect(
+        KeyboardModifierCleanupPolicy.description(
+            for: ModifierFlagsSnapshot(command: true, option: true, shift: true, control: true)
+        ),
+        "⌘⌥⇧⌃",
+        "keyboard modifier cleanup describes latched modifiers in stable order"
+    )
+    try expect(
         KeyboardModifierCleanupPolicy.keyUpCodes(
             for: ModifierFlagsSnapshot(command: true, option: false, shift: false, control: false)
         ),

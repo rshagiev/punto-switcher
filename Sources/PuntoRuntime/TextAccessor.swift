@@ -221,17 +221,17 @@ public final class TextAccessor {
         PuntoLog.info("replaceLastWord: deleting \(wordLength) chars, replacing with '\(replacement)'")
 
         // Check current modifier state BEFORE delay
-        let modifiersBefore = CGEventSource.flagsState(.hidSystemState)
-        let modDescBefore = describeModifiers(modifiersBefore)
+        let modifiersBefore = keyboardEvents.currentModifierSnapshot()
+        let modDescBefore = KeyboardModifierCleanupPolicy.description(for: modifiersBefore)
         PuntoLog.info("replaceLastWord: modifiers BEFORE delay: \(modDescBefore)")
-        releaseLatchedKeyboardModifiers(modifiersBefore)
+        keyboardEvents.releaseLatchedModifiers(modifiersBefore)
 
         // Wait until the hotkey modifiers are fully released before sending destructive keys.
-        let modifiersAfter = waitForModifierRelease()
-        let modDescAfter = describeModifiers(modifiersAfter)
+        let modifiersAfter = keyboardEvents.waitForModifierRelease()
+        let modDescAfter = KeyboardModifierCleanupPolicy.description(for: modifiersAfter)
         PuntoLog.info("replaceLastWord: modifiers AFTER release wait: \(modDescAfter)")
         if !KeyboardReplacementPolicy.shouldStartKeyboardEventsAfterModifierWait(
-            modifiersArePressed: hasKeyboardModifiers(modifiersAfter)
+            modifiersArePressed: !modifiersAfter.noModifiersPressed
         ) {
             PuntoLog.info("replaceLastWord: aborting keyboard replacement because modifiers are still pressed after release wait")
             return false
@@ -268,53 +268,6 @@ public final class TextAccessor {
     }
 
     // MARK: - Helpers
-
-    // MARK: - Debugging Helpers
-
-    /// Describes current modifier key state
-    private func describeModifiers(_ flags: CGEventFlags) -> String {
-        var parts: [String] = []
-        if flags.contains(.maskCommand) { parts.append("⌘") }
-        if flags.contains(.maskAlternate) { parts.append("⌥") }
-        if flags.contains(.maskShift) { parts.append("⇧") }
-        if flags.contains(.maskControl) { parts.append("⌃") }
-        return parts.isEmpty ? "none" : parts.joined()
-    }
-
-    private func waitForModifierRelease() -> CGEventFlags {
-        Thread.sleep(forTimeInterval: KeyboardReplacementPolicy.modifierReleaseSettleDelay)
-
-        let deadline = Date().addingTimeInterval(KeyboardReplacementPolicy.modifierReleaseMaxWait)
-        var flags = CGEventSource.flagsState(.hidSystemState)
-        while hasKeyboardModifiers(flags), Date() < deadline {
-            Thread.sleep(forTimeInterval: KeyboardReplacementPolicy.modifierReleasePollInterval)
-            flags = CGEventSource.flagsState(.hidSystemState)
-        }
-
-        return flags
-    }
-
-    private func releaseLatchedKeyboardModifiers(_ flags: CGEventFlags) {
-        let snapshot = ModifierFlagsSnapshot(
-            command: flags.contains(.maskCommand),
-            option: flags.contains(.maskAlternate),
-            shift: flags.contains(.maskShift),
-            control: flags.contains(.maskControl)
-        )
-        guard KeyboardModifierCleanupPolicy.shouldPostCleanup(for: snapshot) else {
-            return
-        }
-
-        _ = keyboardEvents.postKeyUps(KeyboardModifierCleanupPolicy.keyUpCodes(for: snapshot))
-        PuntoLog.info("replaceLastWord: sent modifier key-up cleanup for \(describeModifiers(flags))")
-    }
-
-    private func hasKeyboardModifiers(_ flags: CGEventFlags) -> Bool {
-        flags.contains(.maskCommand)
-            || flags.contains(.maskAlternate)
-            || flags.contains(.maskShift)
-            || flags.contains(.maskControl)
-    }
 
     /// Checks keyboard focus state via AX API.
     private func checkKeyboardFocusEvidence() -> KeyboardFocusEvidence {
