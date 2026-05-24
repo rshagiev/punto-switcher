@@ -31,10 +31,6 @@ for ((i = 1; i <= ITERATIONS; i++)); do
     swift run PuntoParityTest
 
     echo
-    echo "=== iteration $i/$ITERATIONS: PuntoTest all ==="
-    swift run PuntoTest all
-
-    echo
     echo "=== iteration $i/$ITERATIONS: PuntoDiag converter ==="
     swift run PuntoDiag converter
 

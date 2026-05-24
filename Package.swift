@@ -12,8 +12,7 @@ let package = Package(
         .executable(name: "PuntoDiag", targets: ["PuntoDiag"]),
         .executable(name: "PuntoHarness", targets: ["PuntoHarness"]),
         .executable(name: "PuntoCoreTest", targets: ["PuntoCoreTest"]),
-        .executable(name: "PuntoParityTest", targets: ["PuntoParityTest"]),
-        .executable(name: "PuntoTest", targets: ["PuntoTest"])
+        .executable(name: "PuntoParityTest", targets: ["PuntoParityTest"])
     ],
     targets: [
         .target(
@@ -48,11 +47,6 @@ let package = Package(
             name: "PuntoParityTest",
             dependencies: ["PuntoCore"],
             path: "Sources/PuntoParityTest"
-        ),
-        .executableTarget(
-            name: "PuntoTest",
-            dependencies: ["PuntoCore"],
-            path: "Sources/PuntoTest"
         )
     ]
 )

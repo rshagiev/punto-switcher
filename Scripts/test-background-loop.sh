@@ -50,7 +50,6 @@ run_loop() {
         ./Scripts/test-native-bundle-audit.sh
         swift run PuntoCoreTest
         swift run PuntoParityTest
-        swift run PuntoTest all
         swift run PuntoDiag converter
         swift run PuntoDiag tracker
         swift run PuntoDiag autocorrect

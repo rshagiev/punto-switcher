@@ -47,6 +47,20 @@ if rg --fixed-strings --quiet "Placeholder - actual tests" Tests 2>/dev/null; th
 fi
 echo "PASS placeholder SwiftPM tests absent"
 
+if rg --fixed-strings --quiet "PuntoTest" \
+    Package.swift \
+    Scripts/test-cycle.sh \
+    Scripts/test-background-loop.sh \
+    Scripts/debug.sh; then
+    echo "legacy boundary failed: retired PuntoTest target or script reference returned" >&2
+    exit 1
+fi
+if [ -e Sources/PuntoTest ]; then
+    echo "legacy boundary failed: retired Sources/PuntoTest directory returned" >&2
+    exit 1
+fi
+echo "PASS retired PuntoTest target absent"
+
 puntotest_copy_heavy_patterns=(
     "Repeated Undo Toggle State"
     "var undoOriginal"
@@ -69,15 +83,20 @@ puntotest_copy_heavy_patterns=(
     "SHIFT+NUMBER MAPPING TESTS"
     "runToggleCaseTests"
     "TOGGLE CASE TESTS"
-    "func toggleCase(_ text: String) -> String"
+    "private func toggleCase(_ text: String) -> String"
 )
 
 for pattern in "${puntotest_copy_heavy_patterns[@]}"; do
-    if rg --fixed-strings --quiet "$pattern" Sources/PuntoTest/main.swift; then
-        echo "legacy boundary failed: copy-heavy PuntoTest simulation returned: $pattern" >&2
+    if rg --fixed-strings --quiet "$pattern" \
+        Sources \
+        Package.swift \
+        Scripts/debug.sh \
+        Scripts/test-cycle.sh \
+        Scripts/test-background-loop.sh; then
+        echo "legacy boundary failed: copy-heavy legacy simulation returned: $pattern" >&2
         exit 1
     fi
-    echo "PASS PuntoTest copy-heavy simulation absent: $pattern"
+    echo "PASS copy-heavy legacy simulation absent: $pattern"
 done
 
 /usr/bin/python3 - "$ROOT_DIR/Sources/Punto/Settings/SettingsManager.swift" <<'PY'

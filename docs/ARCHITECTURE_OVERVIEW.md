@@ -8,7 +8,7 @@ Punto now has a small importable `PuntoCore` module and a macOS app target.
 - `Punto`: macOS integration layer: app lifecycle, event tap, Accessibility, clipboard, input source switching, status bar, settings UI.
 - `PuntoCoreTest`: executable test harness that imports real `PuntoCore` classes. This exists because the installed CLT Swift toolchain currently does not provide `XCTest` or Swift `Testing`.
 - `PuntoParityTest`: executable corpus harness over production `PuntoCore`, derived from the documented user-facing conversion, layout-detection, word-tracking, terminal capture, and replacement parity cases.
-- `PuntoTest`: legacy broad simulation harness. It is still useful, but much of it is copy-based, so it should not be the only regression gate.
+- Retired `PuntoTest`: the old broad simulation executable was removed after its useful cases moved into production-code harnesses. `PuntoCoreTest`, `PuntoParityTest`, `PuntoDiag`, reverse audit, native bundle audit, and focused macOS harness scripts are the active regression gates.
 - `PuntoDiag`: command-line diagnostics that exercise real production modules. `Scripts/debug.sh components` delegates to `PuntoCoreTest` and `PuntoDiag`; it must not carry inline copies of `LayoutConverter`, `WordTracker`, or other core logic.
 
 ## Native Punto Switcher Equivalents
@@ -186,7 +186,7 @@ Export writes the normalized effective rule set as JSON so user-authored rules c
 - Prompt-prefixed terminal selections are accepted only when the trimmed AX selection ends with the exact tracked typed tail and the prompt marker is the final non-whitespace character before that tail. Partial terminal selections and terminal-tail rewrites share `WordBoundaryPolicy.hasCommandSuffixBoundary(...)`, so a suffix is accepted only when it starts at the same command boundary in both capture and replacement; prefix, middle, and partial-word suffix selections are blocked. Passive clipboard terminal selections remain stricter: they must equal the tracked typed tail exactly.
 - Last-word and auto-correction tracked-tail updates use the same suffix-boundary guard, so a stale/glued tail like `otherghbdtn` cannot be rewritten as if `ghbdtn` were the current word.
 - Production `WordTracker` keeps a larger typed-tail buffer than the compact last-word buffer, so terminal command-tail validation can cover longer commands without making ordinary last-word conversion stale.
-- `PuntoTest` remains copy-heavy. It can catch scenario drift, but it cannot prove production classes still behave the same. High-value cases should keep moving into `PuntoCoreTest` or the production-core `PuntoParityTest` corpus; dash-suffix auto-correction, mapped-punctuation boundaries, repeated hotkey undo/redo, passive clipboard tail validation, prompt-prefixed terminal-tail extraction, hotkey routing/display/validation, shift-number symbol mapping, toggle-case behavior, and terminal-tail rewrite safety now exercise production `WordBoundaryPolicy`, `WordTracker`, `AutoCorrectionReplacementPolicy`, `TextCapturePolicy`, `TextReplacementPolicy`, `ConversionSession`, `UndoRuntimePolicy`, `Hotkey`, `HotkeyValidationPolicy`, `KeyDownEventPolicy`, `ModifierOnlyHotkeyStateMachine`, `LayoutConverter`, and `CaseConverter` directly. The old local-variable repeated-undo simulation, terminal text-access strategy copy, `TestWordTracker` adapter, repeated-conversion simulation, rapid-conversion simulation, selected-text clipboard simulation, hotkey simulation, shift-number simulation, and local toggle-case function were removed from `PuntoTest`, and `Scripts/test-legacy-boundary.sh` now blocks those copies from returning. Remaining broad scenarios that need a tracker call production `WordTracker` directly.
+- The old `PuntoTest` broad simulation executable is retired. Its high-value scenarios now live in `PuntoCoreTest` and the production-core `PuntoParityTest` corpus: dash-suffix auto-correction, mapped-punctuation boundaries, repeated hotkey undo/redo, passive clipboard tail validation, prompt-prefixed terminal-tail extraction, hotkey routing/display/validation, shift-number symbol mapping, toggle-case behavior, selected-text conversion corpus, repeated/rapid conversion corpus, terminal-tail rewrite safety, mixed-layout stability, Unicode/control-character pass-through, layout thresholds, and word-tracker boundaries exercise production `WordBoundaryPolicy`, `WordTracker`, `AutoCorrectionReplacementPolicy`, `TextCapturePolicy`, `TextReplacementPolicy`, `ConversionSession`, `UndoRuntimePolicy`, `Hotkey`, `HotkeyValidationPolicy`, `KeyDownEventPolicy`, `ModifierOnlyHotkeyStateMachine`, `LayoutConverter`, and `CaseConverter` directly. `Scripts/test-legacy-boundary.sh` now blocks the retired executable, package target, script references, and old copy-heavy simulations from returning.
 - `PuntoParityTest` keeps the documented broad behavior corpus executable without depending on XCTest. It is intentionally higher-level than `PuntoCoreTest`: if a user-visible mapping, word-boundary, terminal-tail, or layout-threshold case is added to docs, the matching production-core corpus should move with it.
 - Diagnostic scripts should compose production harnesses instead of recreating core classes inline. `Scripts/test-legacy-boundary.sh` now fails if `Scripts/debug.sh` grows duplicate `LayoutConverter` / `WordTracker` implementations again.
 - The installed CLT Swift toolchain still has no usable XCTest/Swift Testing module, so placeholder `Tests/` targets are misleading. `Scripts/test-legacy-boundary.sh` fails if the old placeholder SwiftPM test file returns; real coverage must stay in executable harnesses until the toolchain changes.
@@ -203,7 +203,7 @@ Export writes the normalized effective rule set as JSON so user-authored rules c
 Keep app-facing behavior stable and extract testable policies one at a time:
 
 1. Continue shrinking `TextAccessor` by extracting replacement planning and verification policies.
-2. Convert high-value scenarios from `PuntoTest` into `PuntoCoreTest` as production-code tests.
+2. Keep broad scenarios in `PuntoCoreTest` / `PuntoParityTest` and delete new copy-based harnesses instead of reviving `PuntoTest`.
 3. Add integration scripts only around real macOS surfaces, with explicit preconditions and log assertions.
 
 ## Test Cycle
@@ -214,7 +214,6 @@ Fast local loop:
 ./Scripts/test-legacy-boundary.sh
 swift run PuntoCoreTest
 swift run PuntoParityTest
-swift run PuntoTest all
 swift run PuntoDiag converter
 swift run PuntoDiag tracker
 swift run PuntoDiag autocorrect

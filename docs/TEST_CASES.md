@@ -264,16 +264,9 @@ Z→Я  X→Ч  C→С  V→М  B→И  N→Т  M→Ь
 
 ### Running Tests
 ```bash
-# Run all tests
-swift run PuntoTest all
-
-# Run specific test suites
-swift run PuntoTest convert    # Conversion tests
-swift run PuntoTest track      # Word tracking tests
-swift run PuntoTest sim        # Simulation
-swift run PuntoTest stress     # Stress tests
-swift run PuntoTest bugs       # Bug hunt
-swift run PuntoTest edge       # Edge cases (new)
+# Run production-code test harnesses
+swift run PuntoCoreTest
+swift run PuntoParityTest
 
 # Run diagnostics
 swift run PuntoDiag converter

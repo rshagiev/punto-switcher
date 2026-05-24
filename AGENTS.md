@@ -18,7 +18,8 @@
 ./Scripts/deploy.sh
 
 # Run tests
-swift run PuntoTest all
+swift run PuntoCoreTest
+swift run PuntoParityTest
 
 # View logs
 tail -f /tmp/punto.log

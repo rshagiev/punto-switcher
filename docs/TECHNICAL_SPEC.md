@@ -872,13 +872,12 @@ tail -f /tmp/punto.log
 
 ```bash
 # Запуск тестов
-swift run PuntoTest all
 swift run PuntoCoreTest
+swift run PuntoParityTest
 
 # Отдельные тесты
-swift run PuntoTest convert   # Тест конвертации
-swift run PuntoTest track     # Тест WordTracker
-swift run PuntoTest sim       # Симуляция ввода
+swift run PuntoDiag converter # Диагностика конвертации
+swift run PuntoDiag tracker   # Диагностика WordTracker
 ```
 
 ### Диагностика
@@ -930,7 +929,7 @@ Punto/
 │   │       └── Styles.swift
 │   ├── PuntoDiag/
 │   │   └── main.swift
-│   └── PuntoTest/
+│   └── PuntoParityTest/
 │       └── main.swift
 ├── Resources/
 │   ├── Info.plist
