@@ -119,12 +119,10 @@ public final class HotkeyManager {
 
         isRunning = true
         PuntoLog.info("HotkeyManager started")
-        PuntoLog.info("Convert hotkey: \(settingsManager.convertLayoutHotkey.displayString) (keyCode: \(settingsManager.convertLayoutHotkey.keyCode))")
-        PuntoLog.info("Toggle case hotkey: \(settingsManager.toggleCaseHotkey.displayString) (keyCode: \(settingsManager.toggleCaseHotkey.keyCode))")
-        PuntoLog.info("Toggle auto-correction hotkey: \(settingsManager.toggleAutoCorrectionHotkey.displayString) (keyCode: \(settingsManager.toggleAutoCorrectionHotkey.keyCode))")
-        PuntoLog.info("Cancel layout change hotkey: \(settingsManager.cancelLayoutChangeHotkey.displayString) (keyCode: \(settingsManager.cancelLayoutChangeHotkey.keyCode))")
-        PuntoLog.info("Find in Yandex hotkey: \(settingsManager.findInYandexHotkey.displayString) (keyCode: \(settingsManager.findInYandexHotkey.keyCode))")
-        PuntoLog.info("Find in Slovari hotkey: \(settingsManager.findInSlovariHotkey.displayString) (keyCode: \(settingsManager.findInSlovariHotkey.keyCode))")
+        for command in HotkeyCommandPolicy.displayOrder {
+            let hotkey = settingsManager.hotkey(for: command.slot)
+            PuntoLog.info("\(command.title) hotkey: \(hotkey.displayString) (keyCode: \(hotkey.keyCode))")
+        }
     }
 
     public func stop() {
@@ -254,12 +252,7 @@ public final class HotkeyManager {
         switch KeyDownEventPolicy.action(
             keyCode: keyCode,
             flags: modifierFlags,
-            convertHotkey: settingsManager.convertLayoutHotkey,
-            toggleCaseHotkey: settingsManager.toggleCaseHotkey,
-            toggleAutoCorrectionHotkey: settingsManager.toggleAutoCorrectionHotkey,
-            cancelLayoutChangeHotkey: settingsManager.cancelLayoutChangeHotkey,
-            findInYandexHotkey: settingsManager.findInYandexHotkey,
-            findInSlovariHotkey: settingsManager.findInSlovariHotkey
+            hotkeyAssignments: settingsManager.hotkeyAssignments
         ) {
         case .convertLayoutHotkey:
             return routeKeyBasedHotkey(kind: .convertLayout, keyCode: keyCode, event: event) { [weak self] in

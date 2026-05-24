@@ -30,6 +30,22 @@ public enum KeyDownEventPolicy {
     public static func action(
         keyCode: UInt16,
         flags: ModifierFlagsSnapshot,
+        hotkeyAssignments: [HotkeyAssignment]
+    ) -> KeyDownAction {
+        if let hotkeyAction = matchedHotkeyAction(
+            keyCode: keyCode,
+            flags: flags,
+            hotkeyAssignments: hotkeyAssignments
+        ) {
+            return hotkeyAction
+        }
+
+        return nonHotkeyAction(keyCode: keyCode, flags: flags)
+    }
+
+    public static func action(
+        keyCode: UInt16,
+        flags: ModifierFlagsSnapshot,
         convertHotkey: Hotkey,
         toggleCaseHotkey: Hotkey,
         toggleAutoCorrectionHotkey: Hotkey = .defaultToggleAutoCorrection,
@@ -37,30 +53,54 @@ public enum KeyDownEventPolicy {
         findInYandexHotkey: Hotkey = .defaultFindInYandex,
         findInSlovariHotkey: Hotkey = .defaultFindInSlovari
     ) -> KeyDownAction {
-        if matchesHotkey(keyCode: keyCode, flags: flags, hotkey: convertHotkey) {
-            return .convertLayoutHotkey
+        action(
+            keyCode: keyCode,
+            flags: flags,
+            hotkeyAssignments: [
+                HotkeyAssignment(slot: .convertLayout, hotkey: convertHotkey),
+                HotkeyAssignment(slot: .toggleCase, hotkey: toggleCaseHotkey),
+                HotkeyAssignment(slot: .toggleAutoCorrection, hotkey: toggleAutoCorrectionHotkey),
+                HotkeyAssignment(slot: .cancelLayoutChange, hotkey: cancelLayoutChangeHotkey),
+                HotkeyAssignment(slot: .findInYandex, hotkey: findInYandexHotkey),
+                HotkeyAssignment(slot: .findInSlovari, hotkey: findInSlovariHotkey)
+            ]
+        )
+    }
+
+    public static func matchesHotkey(keyCode: UInt16, flags: ModifierFlagsSnapshot, hotkey: Hotkey) -> Bool {
+        guard !hotkey.isDisabled else {
+            return false
         }
 
-        if matchesHotkey(keyCode: keyCode, flags: flags, hotkey: toggleCaseHotkey) {
-            return .toggleCaseHotkey
+        guard !hotkey.isModifierOnly, keyCode == hotkey.keyCode else {
+            return false
         }
 
-        if matchesHotkey(keyCode: keyCode, flags: flags, hotkey: toggleAutoCorrectionHotkey) {
-            return .toggleAutoCorrectionHotkey
+        return flags.exactlyMatches(hotkey)
+    }
+
+    public static func shouldTrackOrdinaryKeyPress(flags: ModifierFlagsSnapshot) -> Bool {
+        !flags.command && !flags.option && !flags.control
+    }
+
+    private static func matchedHotkeyAction(
+        keyCode: UInt16,
+        flags: ModifierFlagsSnapshot,
+        hotkeyAssignments: [HotkeyAssignment]
+    ) -> KeyDownAction? {
+        for command in HotkeyCommandPolicy.displayOrder {
+            guard let hotkey = hotkeyAssignments.first(where: { $0.slot == command.slot })?.hotkey else {
+                continue
+            }
+            if matchesHotkey(keyCode: keyCode, flags: flags, hotkey: hotkey) {
+                return command.keyDownAction
+            }
         }
 
-        if matchesHotkey(keyCode: keyCode, flags: flags, hotkey: cancelLayoutChangeHotkey) {
-            return .cancelLayoutChangeHotkey
-        }
+        return nil
+    }
 
-        if matchesHotkey(keyCode: keyCode, flags: flags, hotkey: findInYandexHotkey) {
-            return .findInYandexHotkey
-        }
-
-        if matchesHotkey(keyCode: keyCode, flags: flags, hotkey: findInSlovariHotkey) {
-            return .findInSlovariHotkey
-        }
-
+    private static func nonHotkeyAction(keyCode: UInt16, flags: ModifierFlagsSnapshot) -> KeyDownAction {
         if flags.command && !flags.option && !flags.control && keyCode == pasteKeyCode {
             return .clearTrackedText(reason: "paste")
         }
@@ -98,22 +138,6 @@ public enum KeyDownEventPolicy {
         }
 
         return .ignore
-    }
-
-    public static func matchesHotkey(keyCode: UInt16, flags: ModifierFlagsSnapshot, hotkey: Hotkey) -> Bool {
-        guard !hotkey.isDisabled else {
-            return false
-        }
-
-        guard !hotkey.isModifierOnly, keyCode == hotkey.keyCode else {
-            return false
-        }
-
-        return flags.exactlyMatches(hotkey)
-    }
-
-    public static func shouldTrackOrdinaryKeyPress(flags: ModifierFlagsSnapshot) -> Bool {
-        !flags.command && !flags.option && !flags.control
     }
 
     private static func isModifiedDeletion(keyCode: UInt16, flags: ModifierFlagsSnapshot) -> Bool {

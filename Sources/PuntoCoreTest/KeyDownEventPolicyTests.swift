@@ -97,6 +97,32 @@ func runKeyDownEventPolicyTests() throws {
         "keyDown policy treats disabled search shortcut as ordinary modified shortcut"
     )
 
+    let collidingAssignments = [
+        HotkeyAssignment(slot: .findInYandex, hotkey: Hotkey(keyCode: 3, command: true, option: true, shift: false, control: false)),
+        HotkeyAssignment(slot: .toggleCase, hotkey: Hotkey(keyCode: 3, command: true, option: true, shift: false, control: false))
+    ]
+    try expect(
+        KeyDownEventPolicy.action(
+            keyCode: 3,
+            flags: commandOption,
+            hotkeyAssignments: collidingAssignments
+        ),
+        .toggleCaseHotkey,
+        "keyDown policy resolves colliding assignments by hotkey command display order"
+    )
+
+    try expect(
+        KeyDownEventPolicy.action(
+            keyCode: 3,
+            flags: commandOption,
+            hotkeyAssignments: [
+                HotkeyAssignment(slot: .findInYandex, hotkey: findInYandexHotkey)
+            ]
+        ),
+        .findInYandexHotkey,
+        "keyDown policy can route from slot-based hotkey assignments"
+    )
+
     let keyBasedConvert = Hotkey(keyCode: 49, command: true, option: true, shift: false, control: false)
     try expect(
         KeyDownEventPolicy.action(

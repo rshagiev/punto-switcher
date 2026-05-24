@@ -4,12 +4,7 @@ import PuntoSettings
 
 final class HotkeySettingsController: NSObject {
     private let settingsManager: SettingsManager
-    private var convertLayoutRecorder: HotkeyRecorderView?
-    private var toggleCaseRecorder: HotkeyRecorderView?
-    private var toggleAutoCorrectionRecorder: HotkeyRecorderView?
-    private var cancelLayoutChangeRecorder: HotkeyRecorderView?
-    private var findInYandexRecorder: HotkeyRecorderView?
-    private var findInSlovariRecorder: HotkeyRecorderView?
+    private var recorders: [HotkeySlot: HotkeyRecorderView] = [:]
 
     init(settingsManager: SettingsManager) {
         self.settingsManager = settingsManager
@@ -53,14 +48,7 @@ final class HotkeySettingsController: NSObject {
     }
 
     private var hotkeyAssignments: [HotkeyAssignment] {
-        [
-            HotkeyAssignment(slot: .convertLayout, hotkey: settingsManager.convertLayoutHotkey),
-            HotkeyAssignment(slot: .toggleCase, hotkey: settingsManager.toggleCaseHotkey),
-            HotkeyAssignment(slot: .toggleAutoCorrection, hotkey: settingsManager.toggleAutoCorrectionHotkey),
-            HotkeyAssignment(slot: .cancelLayoutChange, hotkey: settingsManager.cancelLayoutChangeHotkey),
-            HotkeyAssignment(slot: .findInYandex, hotkey: settingsManager.findInYandexHotkey),
-            HotkeyAssignment(slot: .findInSlovari, hotkey: settingsManager.findInSlovariHotkey)
-        ]
+        settingsManager.hotkeyAssignments
     }
 
     private func recordHotkey(_ hotkey: Hotkey, for slot: HotkeySlot) {
@@ -76,20 +64,7 @@ final class HotkeySettingsController: NSObject {
     }
 
     private func savedHotkey(for slot: HotkeySlot) -> Hotkey {
-        switch slot {
-        case .convertLayout:
-            return settingsManager.convertLayoutHotkey
-        case .toggleCase:
-            return settingsManager.toggleCaseHotkey
-        case .toggleAutoCorrection:
-            return settingsManager.toggleAutoCorrectionHotkey
-        case .cancelLayoutChange:
-            return settingsManager.cancelLayoutChangeHotkey
-        case .findInYandex:
-            return settingsManager.findInYandexHotkey
-        case .findInSlovari:
-            return settingsManager.findInSlovariHotkey
-        }
+        settingsManager.hotkey(for: slot)
     }
 
     private func defaultHotkey(for slot: HotkeySlot) -> Hotkey {
@@ -97,54 +72,15 @@ final class HotkeySettingsController: NSObject {
     }
 
     private func setHotkey(_ hotkey: Hotkey, for slot: HotkeySlot) {
-        switch slot {
-        case .convertLayout:
-            settingsManager.convertLayoutHotkey = hotkey
-        case .toggleCase:
-            settingsManager.toggleCaseHotkey = hotkey
-        case .toggleAutoCorrection:
-            settingsManager.toggleAutoCorrectionHotkey = hotkey
-        case .cancelLayoutChange:
-            settingsManager.cancelLayoutChangeHotkey = hotkey
-        case .findInYandex:
-            settingsManager.findInYandexHotkey = hotkey
-        case .findInSlovari:
-            settingsManager.findInSlovariHotkey = hotkey
-        }
+        settingsManager.setHotkey(hotkey, for: slot)
     }
 
     private func recorder(for slot: HotkeySlot) -> HotkeyRecorderView? {
-        switch slot {
-        case .convertLayout:
-            return convertLayoutRecorder
-        case .toggleCase:
-            return toggleCaseRecorder
-        case .toggleAutoCorrection:
-            return toggleAutoCorrectionRecorder
-        case .cancelLayoutChange:
-            return cancelLayoutChangeRecorder
-        case .findInYandex:
-            return findInYandexRecorder
-        case .findInSlovari:
-            return findInSlovariRecorder
-        }
+        recorders[slot]
     }
 
     private func setRecorder(_ recorder: HotkeyRecorderView, for slot: HotkeySlot) {
-        switch slot {
-        case .convertLayout:
-            convertLayoutRecorder = recorder
-        case .toggleCase:
-            toggleCaseRecorder = recorder
-        case .toggleAutoCorrection:
-            toggleAutoCorrectionRecorder = recorder
-        case .cancelLayoutChange:
-            cancelLayoutChangeRecorder = recorder
-        case .findInYandex:
-            findInYandexRecorder = recorder
-        case .findInSlovari:
-            findInSlovariRecorder = recorder
-        }
+        recorders[slot] = recorder
     }
 
     private func createResetButton(tag: Int) -> NSButton {
@@ -164,7 +100,7 @@ final class HotkeySettingsController: NSObject {
         guard let slot = slot(forTag: sender.tag) else {
             return
         }
-        setHotkey(defaultHotkey(for: slot), for: slot)
+        settingsManager.resetHotkey(for: slot)
         recorder(for: slot)?.updateHotkey(savedHotkey(for: slot))
     }
 

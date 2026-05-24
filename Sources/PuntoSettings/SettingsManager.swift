@@ -149,6 +149,50 @@ public final class SettingsManager {
         }
     }
 
+    public var hotkeyAssignments: [HotkeyAssignment] {
+        HotkeyCommandPolicy.displayOrder.map {
+            HotkeyAssignment(slot: $0.slot, hotkey: hotkey(for: $0.slot))
+        }
+    }
+
+    public func hotkey(for slot: HotkeySlot) -> Hotkey {
+        switch slot {
+        case .convertLayout:
+            return convertLayoutHotkey
+        case .toggleCase:
+            return toggleCaseHotkey
+        case .toggleAutoCorrection:
+            return toggleAutoCorrectionHotkey
+        case .cancelLayoutChange:
+            return cancelLayoutChangeHotkey
+        case .findInYandex:
+            return findInYandexHotkey
+        case .findInSlovari:
+            return findInSlovariHotkey
+        }
+    }
+
+    public func setHotkey(_ hotkey: Hotkey, for slot: HotkeySlot) {
+        switch slot {
+        case .convertLayout:
+            convertLayoutHotkey = hotkey
+        case .toggleCase:
+            toggleCaseHotkey = hotkey
+        case .toggleAutoCorrection:
+            toggleAutoCorrectionHotkey = hotkey
+        case .cancelLayoutChange:
+            cancelLayoutChangeHotkey = hotkey
+        case .findInYandex:
+            findInYandexHotkey = hotkey
+        case .findInSlovari:
+            findInSlovariHotkey = hotkey
+        }
+    }
+
+    public func resetHotkey(for slot: HotkeySlot) {
+        setHotkey(HotkeyCommandPolicy.defaultHotkey(for: slot), for: slot)
+    }
+
     public var searchSelectedTextByDoubleClick: Bool {
         get {
             resolver.searchSelectedTextByDoubleClick(
@@ -482,27 +526,27 @@ public final class SettingsManager {
     // MARK: - Reset to Defaults
 
     public func resetConvertLayoutHotkey() {
-        convertLayoutHotkey = Hotkey.defaultConvertLayout
+        resetHotkey(for: .convertLayout)
     }
 
     public func resetToggleCaseHotkey() {
-        toggleCaseHotkey = Hotkey.defaultToggleCase
+        resetHotkey(for: .toggleCase)
     }
 
     public func resetToggleAutoCorrectionHotkey() {
-        toggleAutoCorrectionHotkey = Hotkey.defaultToggleAutoCorrection
+        resetHotkey(for: .toggleAutoCorrection)
     }
 
     public func resetCancelLayoutChangeHotkey() {
-        cancelLayoutChangeHotkey = Hotkey.defaultCancelLayoutChange
+        resetHotkey(for: .cancelLayoutChange)
     }
 
     public func resetFindInYandexHotkey() {
-        findInYandexHotkey = Hotkey.defaultFindInYandex
+        resetHotkey(for: .findInYandex)
     }
 
     public func resetFindInSlovariHotkey() {
-        findInSlovariHotkey = Hotkey.defaultFindInSlovari
+        resetHotkey(for: .findInSlovari)
     }
 
     private func setPreferredInputSourceID(_ sourceID: String?, nativeKey: String) {

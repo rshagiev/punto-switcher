@@ -240,6 +240,31 @@ func runInputSourceNotificationTests() throws {
     )
 }
 
+func runHotkeySlotAccessTests() throws {
+    let fixture = try DefaultsFixture("hotkey-slots")
+    let settings = fixture.manager()
+    let customToggleCase = Hotkey(keyCode: 31, command: true, option: true, shift: false, control: false)
+
+    settings.setHotkey(customToggleCase, for: .toggleCase)
+
+    try expect(
+        settings.hotkey(for: .toggleCase) == customToggleCase,
+        "settings manager writes hotkeys through slot-based access"
+    )
+    try expect(
+        settings.hotkeyAssignments == HotkeyCommandPolicy.displayOrder.map {
+            HotkeyAssignment(slot: $0.slot, hotkey: settings.hotkey(for: $0.slot))
+        },
+        "settings manager exposes hotkey assignments in command policy order"
+    )
+
+    settings.resetHotkey(for: .toggleCase)
+    try expect(
+        settings.hotkey(for: .toggleCase) == Hotkey.defaultToggleCase,
+        "settings manager resets hotkeys through slot-based access"
+    )
+}
+
 do {
     print("PuntoSettingsTest starting")
     try runSearchbarImportTests()
@@ -249,6 +274,7 @@ do {
     try runUpdateImportTests()
     try runUserRuleImportTests()
     try runInputSourceNotificationTests()
+    try runHotkeySlotAccessTests()
     print("PuntoSettingsTest passed")
 } catch {
     fputs("PuntoSettingsTest failed: \(error)\n", stderr)

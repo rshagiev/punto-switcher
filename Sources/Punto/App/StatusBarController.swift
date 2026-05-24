@@ -224,24 +224,8 @@ final class StatusBarController: NSObject {
 
     func updateHotkeyDisplay() {
         for command in HotkeyCommandPolicy.displayOrder {
-            hotkeyMenuItems[command.slot]?.title = "\(command.title)\t\(hotkey(for: command.slot).displayString)"
-        }
-    }
-
-    private func hotkey(for slot: HotkeySlot) -> Hotkey {
-        switch slot {
-        case .convertLayout:
-            return settingsManager.convertLayoutHotkey
-        case .toggleCase:
-            return settingsManager.toggleCaseHotkey
-        case .toggleAutoCorrection:
-            return settingsManager.toggleAutoCorrectionHotkey
-        case .cancelLayoutChange:
-            return settingsManager.cancelLayoutChangeHotkey
-        case .findInYandex:
-            return settingsManager.findInYandexHotkey
-        case .findInSlovari:
-            return settingsManager.findInSlovariHotkey
+            let hotkey = settingsManager.hotkey(for: command.slot)
+            hotkeyMenuItems[command.slot]?.title = "\(command.title)\t\(hotkey.displayString)"
         }
     }
 
