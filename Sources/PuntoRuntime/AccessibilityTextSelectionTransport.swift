@@ -6,7 +6,7 @@ import PuntoCore
 /// This adapter owns live selected-text reads/writes, descendant selection
 /// probing, cached editable selection targets, AX write verification, and
 /// replacement reselection. Policy modules own traversal decisions and safety
-/// checks; `TextAccessor` owns cross-transport capture/replacement routing.
+/// checks; text-access runtime composition owns cross-transport routing.
 final class AccessibilityTextSelectionTransport {
     enum CaptureResult {
         case text(String, AXUIElement, replacementSupported: Bool)

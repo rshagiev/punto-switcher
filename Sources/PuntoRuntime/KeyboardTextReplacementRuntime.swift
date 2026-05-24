@@ -3,7 +3,7 @@ import PuntoCore
 
 /// Executes destructive keyboard-tail replacement.
 ///
-/// `TextAccessor` decides which replacement method is needed. This runner owns
+/// `TextReplacementRuntime` decides which replacement method is needed. This runner owns
 /// the ordered live checks and transports needed for the keyboard backspace +
 /// paste path used on terminal-like surfaces.
 final class KeyboardTextReplacementRuntime {

@@ -110,6 +110,24 @@ for pattern in "${text_accessor_ax_selection_transport_patterns[@]}"; do
     echo "PASS TextAccessor AX selected-text transport absent: $pattern"
 done
 
+text_accessor_runtime_graph_patterns=(
+    "KeyboardEventTransport("
+    "AccessibilityElementClient("
+    "AccessibilityTextSelectionTransport("
+    "ClipboardTransport("
+    "TextCaptureRuntime("
+    "KeyboardTextReplacementRuntime("
+    "TextReplacementRuntime("
+)
+
+for pattern in "${text_accessor_runtime_graph_patterns[@]}"; do
+    if rg --fixed-strings --quiet "$pattern" Sources/PuntoRuntime/TextAccessor.swift; then
+        echo "legacy boundary failed: TextAccessor reopened text runtime dependency graph: $pattern" >&2
+        exit 1
+    fi
+    echo "PASS TextAccessor runtime dependency graph absent: $pattern"
+done
+
 app_target_live_transport_patterns=(
     "AXUIElementCopyAttributeValue"
     "AXUIElementSetAttributeValue"

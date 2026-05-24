@@ -1,4 +1,3 @@
-import AppKit
 import ApplicationServices
 import Carbon.HIToolbox
 import PuntoCore
@@ -10,53 +9,18 @@ public final class TextAccessor {
     public typealias ReplacementMethod = TextReplacementMethod
     public typealias CapturedText = PuntoCore.CapturedText
 
-    private let keyboardEvents: KeyboardEventTransport
-    private let accessibilityElements: AccessibilityElementClient
-    private let accessibilitySelection: AccessibilityTextSelectionTransport
-    private let clipboard: ClipboardTransport
-    private let textCapture: TextCaptureRuntime
-    private let keyboardReplacement: KeyboardTextReplacementRuntime
-    private let textReplacement: TextReplacementRuntime
+    private let runtime: TextAccessorRuntimeContainer
 
     public convenience init(shouldRestorePasteboard: @escaping () -> Bool = { true }) {
         self.init(
-            shouldRestorePasteboard: shouldRestorePasteboard,
-            keyboardEvents: KeyboardEventTransport(),
-            accessibilityElements: AccessibilityElementClient()
+            runtime: TextAccessorRuntimeContainer(
+                shouldRestorePasteboard: shouldRestorePasteboard
+            )
         )
     }
 
-    init(
-        shouldRestorePasteboard: @escaping () -> Bool,
-        keyboardEvents: KeyboardEventTransport = KeyboardEventTransport(),
-        accessibilityElements: AccessibilityElementClient = AccessibilityElementClient(),
-        accessibilitySelection: AccessibilityTextSelectionTransport? = nil,
-        clipboard: ClipboardTransport? = nil
-    ) {
-        self.keyboardEvents = keyboardEvents
-        self.accessibilityElements = accessibilityElements
-        self.accessibilitySelection = accessibilitySelection ?? AccessibilityTextSelectionTransport(
-            accessibilityElements: accessibilityElements
-        )
-        self.clipboard = clipboard ?? ClipboardTransport(
-            shouldRestorePasteboard: shouldRestorePasteboard,
-            keyboardEvents: keyboardEvents
-        )
-        self.textCapture = TextCaptureRuntime(
-            accessibilityElements: self.accessibilityElements,
-            accessibilitySelection: self.accessibilitySelection,
-            clipboard: self.clipboard
-        )
-        self.keyboardReplacement = KeyboardTextReplacementRuntime(
-            keyboardEvents: self.keyboardEvents,
-            accessibilityElements: self.accessibilityElements,
-            clipboard: self.clipboard
-        )
-        self.textReplacement = TextReplacementRuntime(
-            accessibilitySelection: self.accessibilitySelection,
-            clipboard: self.clipboard,
-            keyboardReplacement: self.keyboardReplacement
-        )
+    init(runtime: TextAccessorRuntimeContainer) {
+        self.runtime = runtime
     }
 
     // MARK: - Security Detection
@@ -70,11 +34,11 @@ public final class TextAccessor {
     /// Checks if focused element is a secure/password text field
     /// Used to skip conversion in browser password fields
     public func isPasswordField() -> Bool {
-        accessibilityElements.isPasswordField()
+        runtime.isPasswordField()
     }
 
     public func canDoSearchClick(bundleID: String?) -> Bool {
-        accessibilityElements.canDoSearchClick(bundleID: bundleID)
+        runtime.canDoSearchClick(bundleID: bundleID)
     }
 
     // MARK: - Get Selected Text
@@ -88,7 +52,7 @@ public final class TextAccessor {
     ///   passive clipboard selection when it ends with the tracked input tail.
     /// - Apps without useful AX selection still get the active Cmd+C fallback.
     public func captureSelectedText(lastTrackedWord: String?, lastTrackedTail: String?) -> CapturedText? {
-        textCapture.captureSelectedText(
+        runtime.captureSelectedText(
             lastTrackedWord: lastTrackedWord,
             lastTrackedTail: lastTrackedTail
         )
@@ -102,12 +66,12 @@ public final class TextAccessor {
     ///   - keepSelection: If true, the inserted text will be selected after insertion (for undo support)
     @discardableResult
     public func setSelectedText(_ text: String, keepSelection: Bool = false) -> Bool {
-        textReplacement.setSelectedText(text, keepSelection: keepSelection)
+        runtime.setSelectedText(text, keepSelection: keepSelection)
     }
 
     @discardableResult
     public func replaceCapturedText(_ capturedText: CapturedText, with replacement: String, keepSelection: Bool = false) -> Bool {
-        textReplacement.replaceCapturedText(
+        runtime.replaceCapturedText(
             capturedText,
             with: replacement,
             keepSelection: keepSelection
@@ -119,7 +83,7 @@ public final class TextAccessor {
     /// Deletes the last word and pastes the replacement via clipboard
     @discardableResult
     public func replaceLastWord(wordLength: Int, with replacement: String) -> Bool {
-        textReplacement.replaceLastWord(wordLength: wordLength, with: replacement)
+        runtime.replaceLastWord(wordLength: wordLength, with: replacement)
     }
 
     @discardableResult
