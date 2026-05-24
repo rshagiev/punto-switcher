@@ -5,18 +5,26 @@ import PuntoCore
 
 /// Handles getting and setting selected text using Accessibility API
 /// Falls back to clipboard-based approach for apps that don't support Accessibility
-final class TextAccessor {
+public final class TextAccessor {
 
-    typealias ReplacementMethod = TextReplacementMethod
-    typealias CapturedText = PuntoCore.CapturedText
+    public typealias ReplacementMethod = TextReplacementMethod
+    public typealias CapturedText = PuntoCore.CapturedText
 
     private let keyboardEvents: KeyboardEventTransport
     private let accessibilityElements: AccessibilityElementClient
     private let accessibilitySelection: AccessibilityTextSelectionTransport
     private let clipboard: ClipboardTransport
 
+    public convenience init(shouldRestorePasteboard: @escaping () -> Bool = { true }) {
+        self.init(
+            shouldRestorePasteboard: shouldRestorePasteboard,
+            keyboardEvents: KeyboardEventTransport(),
+            accessibilityElements: AccessibilityElementClient()
+        )
+    }
+
     init(
-        shouldRestorePasteboard: @escaping () -> Bool = { true },
+        shouldRestorePasteboard: @escaping () -> Bool,
         keyboardEvents: KeyboardEventTransport = KeyboardEventTransport(),
         accessibilityElements: AccessibilityElementClient = AccessibilityElementClient(),
         accessibilitySelection: AccessibilityTextSelectionTransport? = nil,
@@ -37,17 +45,17 @@ final class TextAccessor {
 
     /// Checks if Secure Keyboard Input is enabled (e.g., in Terminal password prompts)
     /// When enabled, CGEvent simulation is blocked for security
-    func isSecureInputEnabled() -> Bool {
+    public func isSecureInputEnabled() -> Bool {
         return IsSecureEventInputEnabled()
     }
 
     /// Checks if focused element is a secure/password text field
     /// Used to skip conversion in browser password fields
-    func isPasswordField() -> Bool {
+    public func isPasswordField() -> Bool {
         accessibilityElements.isPasswordField()
     }
 
-    func canDoSearchClick(bundleID: String?) -> Bool {
+    public func canDoSearchClick(bundleID: String?) -> Bool {
         accessibilityElements.canDoSearchClick(bundleID: bundleID)
     }
 
@@ -61,7 +69,7 @@ final class TextAccessor {
     /// - Non-editable text surfaces are treated as terminal-like. We only accept
     ///   passive clipboard selection when it ends with the tracked input tail.
     /// - Apps without useful AX selection still get the active Cmd+C fallback.
-    func captureSelectedText(lastTrackedWord: String?, lastTrackedTail: String?) -> CapturedText? {
+    public func captureSelectedText(lastTrackedWord: String?, lastTrackedTail: String?) -> CapturedText? {
         let axResult = accessibilitySelection.captureSelection()
         let observation = axResult.observation
         var activeClipboardText: String?
@@ -137,7 +145,7 @@ final class TextAccessor {
     ///   - text: The text to insert
     ///   - keepSelection: If true, the inserted text will be selected after insertion (for undo support)
     @discardableResult
-    func setSelectedText(_ text: String, keepSelection: Bool = false) -> Bool {
+    public func setSelectedText(_ text: String, keepSelection: Bool = false) -> Bool {
         PuntoLog.info("setSelectedText called with \(text.count) chars, keepSelection=\(keepSelection)")
 
         // Try Accessibility API first
@@ -152,7 +160,7 @@ final class TextAccessor {
     }
 
     @discardableResult
-    func replaceCapturedText(_ capturedText: CapturedText, with replacement: String, keepSelection: Bool = false) -> Bool {
+    public func replaceCapturedText(_ capturedText: CapturedText, with replacement: String, keepSelection: Bool = false) -> Bool {
         PuntoLog.info("replaceCapturedText: method=\(capturedText.replacementMethod), source=\(capturedText.source)")
         switch TextReplacementPolicy.plan(
             for: capturedText,
@@ -184,7 +192,7 @@ final class TextAccessor {
 
     /// Deletes the last word and pastes the replacement via clipboard
     @discardableResult
-    func replaceLastWord(wordLength: Int, with replacement: String) -> Bool {
+    public func replaceLastWord(wordLength: Int, with replacement: String) -> Bool {
         let startTime = Date()
 
         guard KeyboardReplacementPolicy.shouldAttemptKeyboardReplacement(deleteLength: wordLength) else {
@@ -252,7 +260,7 @@ final class TextAccessor {
     }
 
     @discardableResult
-    func replaceRecentText(length: Int, with replacement: String) -> Bool {
+    public func replaceRecentText(length: Int, with replacement: String) -> Bool {
         replaceLastWord(wordLength: length, with: replacement)
     }
 

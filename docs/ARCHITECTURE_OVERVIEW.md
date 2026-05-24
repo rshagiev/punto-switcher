@@ -2,11 +2,12 @@
 
 ## Runtime Boundaries
 
-Punto now has small importable `PuntoCore` and `PuntoSettings` modules plus a macOS app target.
+Punto now has small importable `PuntoCore`, `PuntoSettings`, and `PuntoRuntime` modules plus a macOS app target.
 
 - `PuntoCore`: deterministic logic that can be tested without Accessibility permissions or global event taps.
 - `PuntoSettings`: native settings facade, storage adapter, and Punto Switcher import fallback resolver.
-- `Punto`: macOS integration layer: app lifecycle, event tap, Accessibility, clipboard, input source switching, status bar, settings UI.
+- `PuntoRuntime`: macOS live transport adapters for event taps, Accessibility, clipboard, keyboard events, selected-text access, and TIS input source switching. It imports `PuntoCore` and `PuntoSettings`, but it does not own app lifecycle or UI.
+- `Punto`: macOS app shell: lifecycle, coordinator wiring, status bar, settings UI, and calls into `PuntoRuntime`.
 - `PuntoCoreTest`: executable test harness that imports real `PuntoCore` classes. This exists because the installed CLT Swift toolchain currently does not provide `XCTest` or Swift `Testing`.
 - `PuntoSettingsTest`: executable test harness over isolated `UserDefaults` suites. It verifies native-over-legacy precedence, read-only import fallbacks, settings notifications, and normalized input-source ids through the real `SettingsManager`.
 - `PuntoParityTest`: executable corpus harness over production `PuntoCore`, derived from the documented user-facing conversion, layout-detection, word-tracking, terminal capture, and replacement parity cases.
@@ -93,12 +94,15 @@ The read-only Punto Switcher pass exposed a useful boundary split. Punto now mir
 - `ApplicationDisablePolicy`: native disabled-app rules equivalent to Punto Switcher application exceptions, including current-app toggle actions, status-menu state, state-clear decisions and cleanup reasons when an app is newly disabled, toggle log shape, a `disabledApps` / `setDisabledApplications:` legacy persistence alias, the observed disabled-app preferences-controller strings, and the `CompletelyDisableInExceptionApps` distinction between partial exceptions and full manual-action blocking. `ApplicationCommandRuntimeCoordinator` applies current-app exception toggles and global enabled-state cleanup so `AppDelegate` does not own those policy transitions.
 - `ApplicationBundleIDPolicy`: shared bundle-id normalization plus observed volatile system contexts. `com.apple.ScreenSaver.Engine` is treated as volatile for per-app layout memory so lock/screen-saver transitions clear stale text state without creating remembered-layout records for the screen saver process.
 
-The macOS app target wires these policies into:
+`PuntoRuntime` wires live macOS transports into these policies:
 
 - `TextAccessor`: Accessibility, clipboard, and CGEvent adapter.
 - `InputSourceManager`: TIS input source discovery, current layout id, and switching. It refreshes cached EN/RU sources from the current selectable and enabled catalog through `InputSourceSelectionPolicy` instead of keeping stale source handles across refreshes, reselects the preferred English/Russian source when explicit source IDs, source enabled state, or the Mac/Windows Russian layout setting change, and verifies the current layout id after each `TISSelectInputSource` call before reporting success.
-- `AppDelegate`: orchestration only: lifecycle wiring, hotkey callbacks, conversion/search/toggle/auto-correction flow entrypoints, and app activation events.
 - `HotkeyManager`: CGEvent adapter over `ModifierOnlyHotkeyStateMachine` and `KeyDownEventPolicy`.
+
+The macOS app target wires `PuntoRuntime` into:
+
+- `AppDelegate`: orchestration only: lifecycle wiring, hotkey callbacks, conversion/search/toggle/auto-correction flow entrypoints, and app activation events.
 
 ## Current Conversion Flow
 

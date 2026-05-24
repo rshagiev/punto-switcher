@@ -163,7 +163,7 @@ applicationDidFinishLaunching()
 
 ### 3.2 HotkeyManager
 
-**Файл:** `Sources/Punto/Core/HotkeyManager.swift`
+**Файл:** `Sources/PuntoRuntime/HotkeyManager.swift`
 
 Перехватывает глобальные клавиатурные события через CGEvent Tap.
 
@@ -237,7 +237,7 @@ if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
 
 ### 3.3 TextAccessor
 
-**Файл:** `Sources/Punto/Core/TextAccessor.swift`
+**Файл:** `Sources/PuntoRuntime/TextAccessor.swift`
 
 Получает и устанавливает текст в активном приложении через Accessibility API с fallback на clipboard.
 
@@ -331,7 +331,7 @@ func isPasswordField() -> Bool {
 
 ### 3.4 WordTracker
 
-**Файл:** `Sources/Punto/Core/WordTracker.swift`
+**Файл:** `Sources/PuntoCore/WordTracker.swift`
 
 Отслеживает последнее напечатанное слово в кольцевом буфере. Отдельный typed-tail буфер хранит контекст текущей terminal-like команды для безопасной проверки selection/clipboard fallback.
 
@@ -387,7 +387,7 @@ func getLastWord() -> String? {
 
 ### 3.5 LayoutConverter
 
-**Файл:** `Sources/Punto/Core/LayoutConverter.swift`
+**Файл:** `Sources/PuntoCore/LayoutConverter.swift`
 
 Конвертирует текст между EN и RU раскладками.
 
@@ -432,7 +432,7 @@ struct ConversionResult {
 
 ### 3.6 InputSourceManager
 
-**Файл:** `Sources/Punto/Core/InputSourceManager.swift`
+**Файл:** `Sources/PuntoRuntime/InputSourceManager.swift`
 
 Управляет системными раскладками клавиатуры через TIS API.
 
@@ -919,18 +919,20 @@ Punto/
 │   │   ├── App/
 │   │   │   ├── AppDelegate.swift
 │   │   │   └── StatusBarController.swift
-│   │   ├── Core/
-│   │   │   ├── HotkeyManager.swift
-│   │   │   ├── TextAccessor.swift
-│   │   │   ├── LayoutConverter.swift
-│   │   │   ├── WordTracker.swift
-│   │   │   ├── InputSourceManager.swift
-│   │   │   └── Logger.swift
 │   │   └── UI/
 │   │       ├── SettingsWindowController.swift
 │   │       ├── HotkeyRecorderView.swift
 │   │       ├── OnboardingAlert.swift
 │   │       └── Styles.swift
+│   ├── PuntoCore/
+│   │   ├── LayoutConverter.swift
+│   │   ├── WordTracker.swift
+│   │   └── ...
+│   ├── PuntoRuntime/
+│   │   ├── HotkeyManager.swift
+│   │   ├── TextAccessor.swift
+│   │   ├── InputSourceManager.swift
+│   │   └── ...
 │   ├── PuntoSettings/
 │   │   ├── SettingsDefaultsStore.swift
 │   │   ├── SettingsManager.swift

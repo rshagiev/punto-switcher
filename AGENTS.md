@@ -48,11 +48,11 @@ tail -f /tmp/punto.log
 | Task | File |
 |------|------|
 | App lifecycle, orchestration | `Sources/Punto/App/AppDelegate.swift` |
-| Hotkey detection | `Sources/Punto/Core/HotkeyManager.swift` |
-| Text get/set | `Sources/Punto/Core/TextAccessor.swift` |
-| Character mapping | `Sources/Punto/Core/LayoutConverter.swift` |
-| Word tracking | `Sources/Punto/Core/WordTracker.swift` |
-| Layout switching | `Sources/Punto/Core/InputSourceManager.swift` |
+| Hotkey detection | `Sources/PuntoRuntime/HotkeyManager.swift` |
+| Text get/set | `Sources/PuntoRuntime/TextAccessor.swift` |
+| Character mapping | `Sources/PuntoCore/LayoutConverter.swift` |
+| Word tracking | `Sources/PuntoCore/WordTracker.swift` |
+| Layout switching | `Sources/PuntoRuntime/InputSourceManager.swift` |
 | Settings storage | `Sources/PuntoSettings/SettingsManager.swift` |
 | Menu bar UI | `Sources/Punto/App/StatusBarController.swift` |
 

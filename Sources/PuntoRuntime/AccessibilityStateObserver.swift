@@ -3,14 +3,14 @@ import AppKit
 import PuntoCore
 
 /// Observes focused app accessibility state that invalidates Punto's typed-tail state.
-final class AccessibilityStateObserver {
+public final class AccessibilityStateObserver {
     private var observer: AXObserver?
     private var observedApplicationElement: AXUIElement?
     private var observedPID: pid_t?
     private var observedBundleID: String?
     private let onStateInvalidated: (String, String?) -> Void
 
-    init(onStateInvalidated: @escaping (String, String?) -> Void) {
+    public init(onStateInvalidated: @escaping (String, String?) -> Void) {
         self.onStateInvalidated = onStateInvalidated
     }
 
@@ -18,7 +18,7 @@ final class AccessibilityStateObserver {
         stop()
     }
 
-    func observe(runningApplication: NSRunningApplication?) {
+    public func observe(runningApplication: NSRunningApplication?) {
         guard let runningApplication else {
             stop()
             return
@@ -85,7 +85,7 @@ final class AccessibilityStateObserver {
         PuntoLog.info("AccessibilityStateObserver: observing \(subscribed) notification(s) for app '\(runningApplication.localizedName ?? "?")'")
     }
 
-    func stop() {
+    public func stop() {
         guard let observer else {
             observedApplicationElement = nil
             observedPID = nil

@@ -49,7 +49,7 @@ text_accessor_transport_patterns=(
 )
 
 for pattern in "${text_accessor_transport_patterns[@]}"; do
-    if rg --fixed-strings --quiet "$pattern" Sources/Punto/Core/TextAccessor.swift; then
+    if rg --fixed-strings --quiet "$pattern" Sources/PuntoRuntime/TextAccessor.swift; then
         echo "legacy boundary failed: TextAccessor reopened low-level keyboard transport: $pattern" >&2
         exit 1
     fi
@@ -63,7 +63,7 @@ text_accessor_ax_client_patterns=(
 )
 
 for pattern in "${text_accessor_ax_client_patterns[@]}"; do
-    if rg --fixed-strings --quiet "$pattern" Sources/Punto/Core/TextAccessor.swift; then
+    if rg --fixed-strings --quiet "$pattern" Sources/PuntoRuntime/TextAccessor.swift; then
         echo "legacy boundary failed: TextAccessor reopened live AX focus/client plumbing: $pattern" >&2
         exit 1
     fi
@@ -79,7 +79,7 @@ text_accessor_clipboard_transport_patterns=(
 )
 
 for pattern in "${text_accessor_clipboard_transport_patterns[@]}"; do
-    if rg --fixed-strings --quiet "$pattern" Sources/Punto/Core/TextAccessor.swift; then
+    if rg --fixed-strings --quiet "$pattern" Sources/PuntoRuntime/TextAccessor.swift; then
         echo "legacy boundary failed: TextAccessor reopened pasteboard transport: $pattern" >&2
         exit 1
     fi
@@ -96,11 +96,29 @@ text_accessor_ax_selection_transport_patterns=(
 )
 
 for pattern in "${text_accessor_ax_selection_transport_patterns[@]}"; do
-    if rg --fixed-strings --quiet "$pattern" Sources/Punto/Core/TextAccessor.swift; then
+    if rg --fixed-strings --quiet "$pattern" Sources/PuntoRuntime/TextAccessor.swift; then
         echo "legacy boundary failed: TextAccessor reopened AX selected-text transport: $pattern" >&2
         exit 1
     fi
     echo "PASS TextAccessor AX selected-text transport absent: $pattern"
+done
+
+app_target_live_transport_patterns=(
+    "AXUIElementCopyAttributeValue"
+    "AXUIElementSetAttributeValue"
+    "AXObserverCreate"
+    "NSPasteboard.general"
+    "CGEvent(keyboardEventSource:"
+    "TISSelectInputSource"
+    "TISCreateInputSourceList"
+)
+
+for pattern in "${app_target_live_transport_patterns[@]}"; do
+    if rg --fixed-strings --quiet "$pattern" Sources/Punto/App Sources/Punto/UI Sources/Punto/main.swift; then
+        echo "legacy boundary failed: app shell reopened live transport instead of PuntoRuntime: $pattern" >&2
+        exit 1
+    fi
+    echo "PASS app shell live transport absent: $pattern"
 done
 
 settings_import_alias_patterns=(

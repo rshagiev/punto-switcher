@@ -4,7 +4,7 @@ import PuntoCore
 import PuntoSettings
 
 /// Manages global hotkeys using CGEvent Tap
-final class HotkeyManager {
+public final class HotkeyManager {
 
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
@@ -27,7 +27,7 @@ final class HotkeyManager {
     // Thread-safe flag to ignore events during text replacement
     private let stateQueue = DispatchQueue(label: "com.punto.hotkeymanager.state")
     private var _ignoreEvents = false
-    var ignoreEvents: Bool {
+    public var ignoreEvents: Bool {
         get { stateQueue.sync { _ignoreEvents } }
         set {
             stateQueue.sync {
@@ -42,7 +42,7 @@ final class HotkeyManager {
     // Track modifier state for modifier-only hotkeys (accessed from event tap thread)
     private let modifierOnlyStateMachine = ModifierOnlyHotkeyStateMachine()
 
-    init(
+    public init(
         settingsManager: SettingsManager,
         onConvertLayout: @escaping () -> Void,
         onToggleCase: @escaping () -> Void,
@@ -76,7 +76,7 @@ final class HotkeyManager {
 
     // MARK: - Start/Stop
 
-    func start() {
+    public func start() {
         guard !isRunning else {
             PuntoLog.info("HotkeyManager already running")
             return
@@ -130,7 +130,7 @@ final class HotkeyManager {
         PuntoLog.info("Find in Slovari hotkey: \(settingsManager.findInSlovariHotkey.displayString) (keyCode: \(settingsManager.findInSlovariHotkey.keyCode))")
     }
 
-    func stop() {
+    public func stop() {
         guard isRunning else { return }
 
         if let tap = eventTap {

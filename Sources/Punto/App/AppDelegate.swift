@@ -2,6 +2,7 @@ import AppKit
 import Carbon
 import PuntoCore
 import PuntoSettings
+import PuntoRuntime
 
 /// Main application delegate handling lifecycle and permissions
 final class AppDelegate: NSObject, NSApplicationDelegate {

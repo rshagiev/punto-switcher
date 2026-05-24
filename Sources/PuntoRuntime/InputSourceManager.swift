@@ -3,13 +3,13 @@ import Foundation
 import PuntoCore
 
 /// Язык для переключения раскладки
-enum KeyboardLanguage {
+public enum KeyboardLanguage {
     case english
     case russian
 }
 
 /// Управление системными раскладками клавиатуры через TIS API
-final class InputSourceManager {
+public final class InputSourceManager {
 
     private var englishSource: TISInputSource?
     private var russianSource: TISInputSource?
@@ -17,7 +17,7 @@ final class InputSourceManager {
     private let preferredEnglishSourceID: () -> String?
     private let preferredRussianSourceID: () -> String?
 
-    init(
+    public init(
         preferredRussianLayoutType: @escaping () -> KeyboardLayoutType = { KeyboardLayoutTypePolicy.defaultRussianLayoutType },
         preferredEnglishSourceID: @escaping () -> String? = { nil },
         preferredRussianSourceID: @escaping () -> String? = { nil }
@@ -29,7 +29,7 @@ final class InputSourceManager {
     }
 
     /// Обновить список доступных раскладок
-    func refreshInputSources() {
+    public func refreshInputSources() {
         guard let sourceList = TISCreateInputSourceList(nil, false)?.takeRetainedValue() as? [TISInputSource] else {
             return
         }
@@ -86,7 +86,7 @@ final class InputSourceManager {
 
     /// Переключить раскладку на указанный язык
     @discardableResult
-    func switchTo(_ language: KeyboardLanguage) -> Bool {
+    public func switchTo(_ language: KeyboardLanguage) -> Bool {
         let source: TISInputSource? = language == .english ? englishSource : russianSource
 
         guard let source = source else {
@@ -116,7 +116,7 @@ final class InputSourceManager {
     }
 
     @discardableResult
-    func switchToLayoutID(_ layoutID: String) -> Bool {
+    public func switchToLayoutID(_ layoutID: String) -> Bool {
         if layoutID == languageLayoutID(.english) {
             return switchTo(.english)
         }
@@ -154,14 +154,14 @@ final class InputSourceManager {
         return false
     }
 
-    func currentLayoutID() -> String? {
+    public func currentLayoutID() -> String? {
         guard let source = TISCopyCurrentKeyboardLayoutInputSource()?.takeRetainedValue() else {
             return nil
         }
         return getSourceId(source)
     }
 
-    func languageLayoutID(_ language: KeyboardLanguage) -> String? {
+    public func languageLayoutID(_ language: KeyboardLanguage) -> String? {
         let source = language == .english ? englishSource : russianSource
         guard let source else { return nil }
         return getSourceId(source)

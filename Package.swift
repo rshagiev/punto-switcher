@@ -9,6 +9,7 @@ let package = Package(
     products: [
         .library(name: "PuntoCore", targets: ["PuntoCore"]),
         .library(name: "PuntoSettings", targets: ["PuntoSettings"]),
+        .library(name: "PuntoRuntime", targets: ["PuntoRuntime"]),
         .executable(name: "Punto", targets: ["Punto"]),
         .executable(name: "PuntoDiag", targets: ["PuntoDiag"]),
         .executable(name: "PuntoHarness", targets: ["PuntoHarness"]),
@@ -26,9 +27,14 @@ let package = Package(
             dependencies: ["PuntoCore"],
             path: "Sources/PuntoSettings"
         ),
+        .target(
+            name: "PuntoRuntime",
+            dependencies: ["PuntoCore", "PuntoSettings"],
+            path: "Sources/PuntoRuntime"
+        ),
         .executableTarget(
             name: "Punto",
-            dependencies: ["PuntoCore", "PuntoSettings"],
+            dependencies: ["PuntoCore", "PuntoSettings", "PuntoRuntime"],
             path: "Sources/Punto",
             resources: [
                 .copy("../../Resources/Assets.xcassets"),
