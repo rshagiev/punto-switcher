@@ -118,6 +118,23 @@ for pattern in "${app_delegate_runtime_state_patterns[@]}"; do
     echo "PASS AppDelegate mutable text runtime state absent: $pattern"
 done
 
+app_delegate_application_runtime_patterns=(
+    "ApplicationLayoutMemory()"
+    "ApplicationContextPolicy.activationAction"
+    "ApplicationLayoutPolicy.restoreActionOnActivation"
+    "ApplicationLayoutPolicy.layoutMemoryUpdateAfterObservedInputSourceChange"
+    "ApplicationLayoutPolicy.layoutMemoryUpdateAfterProgrammaticSwitch"
+    "InputSourceChangePolicy.action("
+)
+
+for pattern in "${app_delegate_application_runtime_patterns[@]}"; do
+    if rg --fixed-strings --quiet "$pattern" Sources/Punto/App/AppDelegate.swift; then
+        echo "legacy boundary failed: AppDelegate reopened application runtime coordination: $pattern" >&2
+        exit 1
+    fi
+    echo "PASS AppDelegate application runtime coordination absent: $pattern"
+done
+
 if rg --fixed-strings --quiet "Placeholder - actual tests" Tests 2>/dev/null; then
     echo "legacy boundary failed: placeholder SwiftPM test target returned" >&2
     exit 1

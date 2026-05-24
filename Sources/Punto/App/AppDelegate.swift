@@ -17,11 +17,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var accessibilityStateObserver: AccessibilityStateObserver?
     private var permissionCheckTimer: Timer?
     private var inputSourceManager: InputSourceManager?
-    private let applicationLayoutMemory = ApplicationLayoutMemory()
     private var autoCorrectionEngine = AutoCorrectionEngine(rules: [])
-    private var activeApplicationBundleID: String?
-    private var activeApplicationName: String?
     private var textState: TextRuntimeStateCoordinator?
+    private var appRuntime: ApplicationRuntimeCoordinator?
 
     private var conversionSession: ConversionSession {
         guard let textState else {
@@ -46,6 +44,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var lastKeyPressTime: Date? {
         get { textState?.lastKeyPressTime }
         set { textState?.lastKeyPressTime = newValue }
+    }
+
+    private var activeApplicationBundleID: String? {
+        appRuntime?.activeApplicationBundleID
+    }
+
+    private var activeApplicationName: String? {
+        appRuntime?.activeApplicationName
     }
 
     // MARK: - Application Lifecycle
@@ -81,6 +87,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 settingsManager?.preferredRussianInputSourceID
             }
         )
+        appRuntime = ApplicationRuntimeCoordinator(
+            settingsManager: settingsManager!,
+            inputSourceManager: inputSourceManager!,
+            textState: textState!
+        )
         soundFeedbackController = SoundFeedbackController(settingsManager: settingsManager!)
         accessibilityStateObserver = AccessibilityStateObserver { [weak self] notificationName, observedBundleID in
             self?.accessibilityStateChanged(notificationName: notificationName, observedBundleID: observedBundleID)
@@ -106,10 +117,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.isCurrentApplicationDisabled() ?? false
             },
             currentAppBundleID: { [weak self] in
-                self?.activeApplicationBundleID ?? NSWorkspace.shared.frontmostApplication?.bundleIdentifier
+                self?.appRuntime?.effectiveCurrentApplicationBundleID(
+                    frontmostApplication: NSWorkspace.shared.frontmostApplication
+                )
             },
             currentAppName: { [weak self] in
-                self?.activeApplicationName ?? NSWorkspace.shared.frontmostApplication?.localizedName
+                self?.appRuntime?.effectiveCurrentApplicationName(
+                    frontmostApplication: NSWorkspace.shared.frontmostApplication
+                )
             }
         )
         PuntoLog.info("Status bar initialized")
@@ -152,10 +167,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Always try to start hotkey manager
         startHotkeyManager()
-        activeApplicationBundleID = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
-        activeApplicationName = NSWorkspace.shared.frontmostApplication?.localizedName
+        appRuntime?.setInitialActiveApplication(NSWorkspace.shared.frontmostApplication)
         accessibilityStateObserver?.observe(runningApplication: NSWorkspace.shared.frontmostApplication)
-        applicationLayoutMemory.replaceAll(with: settingsManager?.rememberedApplicationLayouts ?? [:])
+        appRuntime?.loadRememberedLayouts()
         reloadAutoCorrectionRules()
 
         // Subscribe to input source changes to clear WordTracker
@@ -208,127 +222,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Input Source Change
 
     @objc private func inputSourceChanged() {
-        let now = Date()
-        let action = InputSourceChangePolicy.action(
-            now: now,
-            ignoreChangesUntil: ignoreInputSourceChangesUntil,
-            isConversionInProgress: isConversionInProgress
-        )
-        ignoreInputSourceChangesUntil = InputSourceChangePolicy.nextIgnoreChangesUntil(
-            now: now,
-            currentIgnoreChangesUntil: ignoreInputSourceChangesUntil
-        )
-
-        switch action {
-        case .ignoreProgrammaticSwitch(let logMessage):
-            PuntoLog.info(logMessage)
-            return
-        case .ignoreConversionInProgress(let logMessage):
-            PuntoLog.info(logMessage)
-            return
-        case .rememberLayoutAndClearTextState(let plan):
-            rememberCurrentLayoutForActiveApplication(reason: plan.layoutMemoryReason)
-            textState?.clearTextAndConversionState(
-                trackedTextReason: plan.clearTrackedTextReason,
-                conversionSessionReason: plan.clearConversionSessionReason
-            )
-            PuntoLog.info(plan.logMessage)
-        }
+        appRuntime?.handleInputSourceChanged(frontmostApplication: NSWorkspace.shared.frontmostApplication)
     }
 
     @objc private func activeApplicationChanged(_ notification: Notification) {
         let runningApp = (notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication)
             ?? NSWorkspace.shared.frontmostApplication
-        let newBundleID = runningApp?.bundleIdentifier
-        let newName = runningApp?.localizedName
 
-        if ApplicationLayoutPolicy.shouldRecordCurrentLayoutOnApplicationActivation(
-            rememberInputSourceForEachApp: settingsManager?.rememberInputSourceForEachApp == true
-        ) {
-            rememberCurrentLayoutForActiveApplication(reason: "active application changed")
-        }
-
-        let action = ApplicationContextPolicy.activationAction(
-            previousBundleID: activeApplicationBundleID,
-            newBundleID: newBundleID,
-            ownBundleID: Bundle.main.bundleIdentifier
-        )
-
-        switch action {
-        case .preserveCurrentExternalContext(let logMessage):
-            PuntoLog.info(logMessage)
+        guard appRuntime?.handleActiveApplicationChanged(runningApplication: runningApp) == true else {
             return
-        case .activateExternal(let plan):
-            if plan.shouldResetTextState,
-               let clearTrackedTextReason = plan.clearTrackedTextReason,
-               let clearConversionSessionReason = plan.clearConversionSessionReason {
-                textState?.clearTextAndConversionState(
-                    trackedTextReason: clearTrackedTextReason,
-                    conversionSessionReason: clearConversionSessionReason
-                )
-            }
         }
 
-        activeApplicationBundleID = newBundleID
-        activeApplicationName = newName
         accessibilityStateObserver?.observe(runningApplication: runningApp)
         statusBarController?.refreshCurrentApplicationState()
-
-        guard settingsManager?.rememberInputSourceForEachApp == true else {
-            return
-        }
-
-        let restoreBundleID = ApplicationLayoutPolicy.bundleIDForLayoutRestoreOnActivation(
-            newBundleID: newBundleID,
-            ownBundleID: Bundle.main.bundleIdentifier,
-            isApplicationDisabled: settingsManager?.isApplicationDisabled(bundleID: newBundleID) == true
+        appRuntime?.restoreRememberedLayoutForActiveApplication(
+            isApplicationDisabled: settingsManager?.isApplicationDisabled(bundleID: activeApplicationBundleID) == true
         )
-
-        guard let rememberedLayoutID = applicationLayoutMemory.layoutID(for: restoreBundleID) else {
-            PuntoLog.info("No remembered layout for app '\(newBundleID ?? "?")'")
-            return
-        }
-
-        switch ApplicationLayoutPolicy.restoreActionOnActivation(
-            newBundleID: newBundleID,
-            ownBundleID: Bundle.main.bundleIdentifier,
-            isApplicationDisabled: settingsManager?.isApplicationDisabled(bundleID: newBundleID) == true,
-            rememberedLayoutID: rememberedLayoutID,
-            currentLayoutID: inputSourceManager?.currentLayoutID()
-        ) {
-        case .skip:
-            PuntoLog.info("Skipped remembered layout restore for app '\(newBundleID ?? "?")'")
-        case .alreadyActive(let layoutID):
-            PuntoLog.info("Remembered layout '\(layoutID)' already active for app '\(newBundleID ?? "?")'")
-        case .switchTo(let layoutID):
-            ignoreInputSourceChangesUntil = ConversionProtectionPolicy.inputSourceIgnoreDeadline(now: Date())
-            let switched = inputSourceManager?.switchToLayoutID(layoutID) ?? false
-            if switched {
-                PuntoLog.info("Restored remembered layout '\(layoutID)' for app '\(newBundleID ?? "?")'")
-            } else {
-                ignoreInputSourceChangesUntil = nil
-            }
-        }
-    }
-
-    private func rememberCurrentLayoutForActiveApplication(reason: String) {
-        guard settingsManager?.rememberInputSourceForEachApp == true else { return }
-        guard let layoutID = inputSourceManager?.currentLayoutID() else { return }
-
-        guard let update = ApplicationLayoutPolicy.layoutMemoryUpdateAfterObservedInputSourceChange(
-            rememberInputSourceForEachApp: settingsManager?.rememberInputSourceForEachApp == true,
-            activeBundleID: activeApplicationBundleID ?? NSWorkspace.shared.frontmostApplication?.bundleIdentifier,
-            frontmostBundleID: NSWorkspace.shared.frontmostApplication?.bundleIdentifier,
-            ownBundleID: Bundle.main.bundleIdentifier,
-            currentLayoutID: layoutID
-        ) else {
-            PuntoLog.info("Skipped layout memory update (reason: \(reason))")
-            return
-        }
-
-        applicationLayoutMemory.remember(bundleID: update.bundleID, layoutID: update.layoutID)
-        settingsManager?.rememberedApplicationLayouts = applicationLayoutMemory.snapshot()
-        PuntoLog.info("Remembered layout '\(update.layoutID)' for app '\(update.bundleID)' (reason: \(reason))")
     }
 
     private func accessibilityStateChanged(notificationName: String, observedBundleID: String?) {
@@ -818,7 +727,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let targetLayoutID = inputSourceManager?.languageLayoutID(language)
             let didSwitch = inputSourceManager?.switchTo(language) ?? false
             playInputSourceSwitchSound(targetLayout: request.targetLayout, didSwitch: didSwitch, context: .textReplacement)
-            rememberProgrammaticLayoutSwitch(targetLayoutID: targetLayoutID, didSwitch: didSwitch)
+            appRuntime?.rememberProgrammaticLayoutSwitch(targetLayoutID: targetLayoutID, didSwitch: didSwitch)
         }
     }
 
@@ -844,25 +753,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         soundFeedbackController?.play(event)
-    }
-
-    private func rememberProgrammaticLayoutSwitch(targetLayoutID: String?, didSwitch: Bool) {
-        guard let update = ApplicationLayoutPolicy.layoutMemoryUpdateAfterProgrammaticSwitch(
-            rememberInputSourceForEachApp: settingsManager?.rememberInputSourceForEachApp == true,
-            activeBundleID: activeApplicationBundleID ?? NSWorkspace.shared.frontmostApplication?.bundleIdentifier,
-            ownBundleID: Bundle.main.bundleIdentifier,
-            targetLayoutID: targetLayoutID,
-            didSwitch: didSwitch
-        ) else {
-            if !didSwitch {
-                ignoreInputSourceChangesUntil = nil
-            }
-            return
-        }
-
-        applicationLayoutMemory.remember(bundleID: update.bundleID, layoutID: update.layoutID)
-        settingsManager?.rememberedApplicationLayouts = applicationLayoutMemory.snapshot()
-        PuntoLog.info("Remembered programmatic layout '\(update.layoutID)' for app '\(update.bundleID)'")
     }
 
     private func reloadAutoCorrectionRules() {
