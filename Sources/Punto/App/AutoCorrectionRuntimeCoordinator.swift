@@ -52,7 +52,7 @@ final class AutoCorrectionRuntimeCoordinator {
             isConversionInProgress: textState.isConversionInProgress,
             isCurrentApplicationDisabled: isCurrentApplicationDisabled(),
             isSecureInputEnabled: textAccessor.isSecureInputEnabled(),
-            isPasswordField: textAccessor.isPasswordField()
+            isPasswordField: textAccessor.isPasswordFieldFast()
         )
 
         let plan: AutoCorrectionRuntimeAttemptPlan

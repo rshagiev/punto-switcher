@@ -37,6 +37,15 @@ public final class TextAccessor {
         runtime.isPasswordField()
     }
 
+    /// Cheap password-field probe for high-frequency keyDown routing.
+    ///
+    /// Manual conversions still use `isPasswordField()` with the full fallback
+    /// path. The key tracking path avoids retrying AX focus lookup on every
+    /// character, because event taps are time-sensitive.
+    public func isPasswordFieldFast() -> Bool {
+        runtime.isPasswordFieldFast()
+    }
+
     public func canDoSearchClick(bundleID: String?) -> Bool {
         runtime.canDoSearchClick(bundleID: bundleID)
     }

@@ -187,9 +187,9 @@ keeping their native write targets separate.
   uses reverse-audit naming for a runtime alias, URL fragment, default, or
   sentinel value. The input-source `UNDEFINED` sentinel, Accessibility
   System Settings URL fragments, startup/accessibility log aliases, Yandex
-  selected-text search URL markers, sound-resource import keys, and
-  undo-learning nested keys are now covered by audit-only anchors plus
-  behavior-policy alignment tests.
+  selected-text search URL markers, updater install-state key/default markers,
+  sound-resource import keys, and undo-learning nested keys are now covered by
+  audit-only anchors plus behavior-policy alignment tests.
 - Add an explicit export path if we ever need to generate Punto Switcher-shaped
   settings intentionally; keep routine runtime writes native-only.
 - Keep searchbar/click-search split this way: selected-text Yandex shortcuts and

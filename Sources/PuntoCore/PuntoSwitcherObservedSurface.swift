@@ -220,6 +220,8 @@ public enum PuntoSwitcherObservedSurface {
         public static let lastStatisticsRequestDateKey = "lastStatisticsRequestDate"
         public static let lastUpdateRequestDateKey = "lastUpdateRequestDate"
         public static let lastUpdateShownDateKey = "lastUpdateShownDate"
+        public static let defaultConfigVersion = 8
+        public static let initialDateUnixTimestamp: Double = 1_230_757_200
     }
 
     public enum SoundFeedback {

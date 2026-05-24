@@ -97,6 +97,19 @@ final class AccessibilityElementClient {
         return false
     }
 
+    func isPasswordFieldFast() -> Bool {
+        guard let element = focusedElementWithoutRetry() else {
+            return false
+        }
+
+        if elementOrDescendantIsPasswordField(element, depth: 0) {
+            PuntoLog.info("isPasswordFieldFast: secure field detected from focused element tree")
+            return true
+        }
+
+        return false
+    }
+
     func canDoSearchClick(bundleID: String?) -> Bool {
         guard let focusedElement = focusedElement() else {
             PuntoLog.info("canDoSearchClick: no focused element")
@@ -209,6 +222,29 @@ final class AccessibilityElementClient {
         }
 
         return (appResult, focusedAppElement)
+    }
+
+    private func focusedElementWithoutRetry() -> AXUIElement? {
+        let systemWide = AXUIElementCreateSystemWide()
+        let (appResult, appElement) = AccessibilityValueBridge.elementAttributeResult(
+            kAXFocusedApplicationAttribute as CFString,
+            from: systemWide,
+            context: "isPasswordFieldFast: focused app"
+        )
+        guard appResult == .success, let appElement else {
+            return nil
+        }
+
+        let (elementResult, element) = AccessibilityValueBridge.elementAttributeResult(
+            kAXFocusedUIElementAttribute as CFString,
+            from: appElement,
+            context: "isPasswordFieldFast: focusedUIElement"
+        )
+        guard elementResult == .success else {
+            return nil
+        }
+
+        return element
     }
 
     private func elementOrDescendantIsPasswordField(_ element: AXUIElement, depth: Int) -> Bool {

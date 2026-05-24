@@ -51,6 +51,10 @@ final class TextAccessorRuntimeContainer {
         accessibilityElements.isPasswordField()
     }
 
+    func isPasswordFieldFast() -> Bool {
+        accessibilityElements.isPasswordFieldFast()
+    }
+
     func canDoSearchClick(bundleID: String?) -> Bool {
         accessibilityElements.canDoSearchClick(bundleID: bundleID)
     }

@@ -4,57 +4,67 @@ import PuntoCore
 func runApplicationUpdateSettingsPolicyTests() throws {
     try expect(
         ApplicationUpdateSettingsPolicy.legacyConfigVersionKey,
-        "configVersion",
-        "update settings policy preserves observed config-version key"
+        PuntoSwitcherObservedSurface.ApplicationUpdateSettings.configVersionKey,
+        "update settings policy keeps config-version import key aligned with reverse-audit anchor"
     )
     try expect(
         ApplicationUpdateSettingsPolicy.legacyIsFirstInstallationKey,
-        "isFirstInstallation",
-        "update settings policy preserves observed first-install key"
+        PuntoSwitcherObservedSurface.ApplicationUpdateSettings.isFirstInstallationKey,
+        "update settings policy keeps first-install import key aligned with reverse-audit anchor"
     )
     try expect(
         ApplicationUpdateSettingsPolicy.legacyIsJustInstalledKey,
-        "isJustInstalled",
-        "update settings policy preserves observed just-installed key"
+        PuntoSwitcherObservedSurface.ApplicationUpdateSettings.isJustInstalledKey,
+        "update settings policy keeps just-installed import key aligned with reverse-audit anchor"
     )
     try expect(
         ApplicationUpdateSettingsPolicy.legacyIsJustUpdatedKey,
-        "isJustUpdated",
-        "update settings policy preserves observed just-updated key"
+        PuntoSwitcherObservedSurface.ApplicationUpdateSettings.isJustUpdatedKey,
+        "update settings policy keeps just-updated import key aligned with reverse-audit anchor"
     )
     try expect(
         ApplicationUpdateSettingsPolicy.legacyIsUpdatingKey,
-        "isUpdating",
-        "update settings policy preserves observed updating key"
+        PuntoSwitcherObservedSurface.ApplicationUpdateSettings.isUpdatingKey,
+        "update settings policy keeps updating import key aligned with reverse-audit anchor"
     )
     try expect(
         ApplicationUpdateSettingsPolicy.legacyShouldCheckForUpdatesAutomaticallyKey,
-        "shouldCheckForUpdatesAutomatically",
-        "update settings policy preserves observed automatic-update-check key"
+        PuntoSwitcherObservedSurface.ApplicationUpdateSettings.shouldCheckForUpdatesAutomaticallyKey,
+        "update settings policy keeps automatic-update-check import key aligned with reverse-audit anchor"
     )
     try expect(
         ApplicationUpdateSettingsPolicy.legacyUpdateRequestRateInDaysKey,
-        "updateRequestRateInDays",
-        "update settings policy preserves observed update-request-rate key"
+        PuntoSwitcherObservedSurface.ApplicationUpdateSettings.updateRequestRateInDaysKey,
+        "update settings policy keeps update-request-rate import key aligned with reverse-audit anchor"
     )
     try expect(
         ApplicationUpdateSettingsPolicy.legacyLastStatisticsRequestDateKey,
-        "lastStatisticsRequestDate",
-        "update settings policy preserves observed statistics-request date key"
+        PuntoSwitcherObservedSurface.ApplicationUpdateSettings.lastStatisticsRequestDateKey,
+        "update settings policy keeps statistics-request import key aligned with reverse-audit anchor"
     )
     try expect(
         ApplicationUpdateSettingsPolicy.legacyLastUpdateRequestDateKey,
-        "lastUpdateRequestDate",
-        "update settings policy preserves observed update-request date key"
+        PuntoSwitcherObservedSurface.ApplicationUpdateSettings.lastUpdateRequestDateKey,
+        "update settings policy keeps update-request import key aligned with reverse-audit anchor"
     )
     try expect(
         ApplicationUpdateSettingsPolicy.legacyLastUpdateShownDateKey,
-        "lastUpdateShownDate",
-        "update settings policy preserves observed update-shown date key"
+        PuntoSwitcherObservedSurface.ApplicationUpdateSettings.lastUpdateShownDateKey,
+        "update settings policy keeps update-shown import key aligned with reverse-audit anchor"
+    )
+    try expect(
+        ApplicationUpdateSettingsPolicy.legacyDefaultConfigVersion,
+        PuntoSwitcherObservedSurface.ApplicationUpdateSettings.defaultConfigVersion,
+        "update settings policy keeps default config version aligned with reverse-audit anchor"
+    )
+    try expect(
+        ApplicationUpdateSettingsPolicy.legacyInitialDate,
+        Date(timeIntervalSince1970: PuntoSwitcherObservedSurface.ApplicationUpdateSettings.initialDateUnixTimestamp),
+        "update settings policy keeps initial date marker aligned with reverse-audit anchor"
     )
     try expect(
         ApplicationUpdateSettingsPolicy.defaultSnapshot.configVersion,
-        8,
+        PuntoSwitcherObservedSurface.ApplicationUpdateSettings.defaultConfigVersion,
         "update settings policy defaults to observed Punto Switcher config version"
     )
     try expect(

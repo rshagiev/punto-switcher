@@ -54,7 +54,7 @@ final class KeyPressRuntimeCoordinator {
             isEnabled: settingsManager.isEnabled,
             isCurrentApplicationDisabled: isCurrentApplicationDisabled(),
             isSecureInputEnabled: textAccessor.isSecureInputEnabled(),
-            isPasswordField: textAccessor.isPasswordField()
+            isPasswordField: textAccessor.isPasswordFieldFast()
         ) {
         case .skipRouting(let logMessage):
             PuntoLog.info(logMessage)
