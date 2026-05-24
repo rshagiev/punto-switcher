@@ -10,7 +10,13 @@ let suites = [
         try runWordTrackerTests()
     },
     TestSuite(name: "text", aliases: ["capture", "replacement", "undo"]) {
-        try runTextCapturePolicyTests()
+        try runClipboardCapturePolicyTests()
+        try runTerminalTailCapturePolicyTests()
+        try runNonSettableContentCapturePolicyTests()
+        try runTextTailReplacementPolicyTests()
+        try runTextCaptureDecisionPolicyTests()
+        try runClipboardContentCapturePolicyTests()
+        try runTextCaptureFallbackPolicyTests()
         try runLayoutConversionReplacementPolicyTests()
         try runManualLayoutConversionPolicyTests()
         try runManualLayoutConversionRuntimePolicyTests()
