@@ -37,7 +37,7 @@ public enum SearchClickPolicy {
         guard eventTypeRawValue == PointerEventPolicy.leftMouseDownRawValue else {
             return false
         }
-        guard clickCount >= 2 else {
+        guard clickCount == 2 else {
             return false
         }
         return shouldSearchByDoubleClick
