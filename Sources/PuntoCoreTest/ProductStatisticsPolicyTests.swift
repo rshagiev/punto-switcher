@@ -1,149 +1,6 @@
 import Foundation
 import PuntoCore
 
-func runUndoLearningSettingsPolicyTests() throws {
-    try expect(
-        UndoLearningSettingsPolicy.defaultSnapshot,
-        UndoLearningSettingsSnapshot(
-            undoCollectionEnabled: false,
-            mustShowUndoWindow: true,
-            undoDictionary: [:]
-        ),
-        "undo learning policy mirrors observed Punto Switcher defaults"
-    )
-    try expect(
-        PuntoSwitcherObservedSurface.UndoLearning.setUndoCollectionEnabledSelector,
-        "setUndoCollectionEnabled:",
-        "observed surface preserves undo learning collection setter"
-    )
-    try expect(
-        PuntoSwitcherObservedSurface.UndoLearning.setMustShowUndoWindowSelector,
-        "setMustShowUndoWindow:",
-        "observed surface preserves undo learning undo-window setter"
-    )
-    try expect(
-        PuntoSwitcherObservedSurface.UndoLearning.setUndoDictionarySelector,
-        "setUndoDictionary:",
-        "observed surface preserves undo learning undo dictionary setter"
-    )
-    try expect(
-        PuntoSwitcherObservedSurface.UndoLearning.undoWindowControllerClassName,
-        "UndoWindowController",
-        "observed surface preserves undo window controller name"
-    )
-    try expect(
-        PuntoSwitcherObservedSurface.UndoLearning.undoWindowDelegateProtocolName,
-        "UndoWindowDelegate",
-        "observed surface preserves undo window delegate name"
-    )
-    try expect(
-        PuntoSwitcherObservedSurface.UndoLearning.undoWindowResourceName,
-        "UndoWindow",
-        "observed surface preserves undo window resource name"
-    )
-    try expect(
-        PuntoSwitcherObservedSurface.UndoLearning.undoAlertFormatKey,
-        "PMUserRuleUndoAlertFormat",
-        "observed surface preserves undo alert format key"
-    )
-    try expect(
-        PuntoSwitcherObservedSurface.UndoLearning.showUndoLearningWindowCheckboxChangedSelector,
-        "showUndoLearningWindowCheckboxChanged:",
-        "observed surface preserves undo show-window checkbox selector"
-    )
-    try expect(
-        PuntoSwitcherObservedSurface.UndoLearning.undoLearningCheckboxChangedSelector,
-        "undoLearningCheckboxChanged:",
-        "observed surface preserves undo learning checkbox selector"
-    )
-    try expect(
-        PuntoSwitcherObservedSurface.UndoLearning.undoLearningCheckboxKey,
-        "undoLearningCheckbox",
-        "observed surface preserves undo learning checkbox key"
-    )
-    try expect(
-        PuntoSwitcherObservedSurface.UndoLearning.showUndoLearningWindowCheckboxKey,
-        "showUndoLearningWindowCheckbox",
-        "observed surface preserves undo show-window checkbox key"
-    )
-    try expect(
-        PuntoSwitcherObservedSurface.UndoLearning.undoTriesKey,
-        "undoTries",
-        "observed surface preserves undo tries key"
-    )
-    try expect(
-        PuntoSwitcherObservedSurface.UndoLearning.undoPersistsKey,
-        "undoPersists",
-        "observed surface preserves undo persistence key"
-    )
-    try expect(
-        PuntoSwitcherObservedSurface.UndoLearning.undoWasDoneKey,
-        "undoWasDone",
-        "observed surface preserves undo completion key"
-    )
-    try expect(
-        PuntoSwitcherObservedSurface.UndoLearning.undoConvertionSelector,
-        "undoConvertion",
-        "observed surface preserves legacy undo selector spelling"
-    )
-    try expect(
-        PuntoSwitcherObservedSurface.UndoLearning.resetUndoBufferSelector,
-        "resetUndoBuffer",
-        "observed surface preserves undo-buffer reset selector"
-    )
-    try expectNil(
-        UndoLearningSettingsPolicy.snapshot(from: nil),
-        "undo learning policy rejects missing dictionary"
-    )
-    try expect(
-        UndoLearningSettingsPolicy.snapshot(from: [
-            UndoLearningSettingsPolicy.undoCollectionEnabledKey: NSNumber(value: false),
-            UndoLearningSettingsPolicy.mustShowUndoWindowKey: NSNumber(value: true),
-            UndoLearningSettingsPolicy.undoDictionaryKey: [:]
-        ]),
-        UndoLearningSettingsPolicy.defaultSnapshot,
-        "undo learning policy reads observed Punto Switcher plist shape"
-    )
-    try expect(
-        UndoLearningSettingsPolicy.snapshot(from: [
-            UndoLearningSettingsPolicy.undoCollectionEnabledKey: "yes",
-            UndoLearningSettingsPolicy.mustShowUndoWindowKey: "0",
-            UndoLearningSettingsPolicy.undoDictionaryKey: [
-                " teh ": " the ",
-                "": "ignored",
-                "adn": " "
-            ]
-        ]),
-        UndoLearningSettingsSnapshot(
-            undoCollectionEnabled: true,
-            mustShowUndoWindow: false,
-            undoDictionary: ["teh": "the"]
-        ),
-        "undo learning policy parses imported string-backed values and normalizes undo dictionary"
-    )
-    try expect(
-        UndoLearningSettingsPolicy.legacyUndoCollectionEnabled(from: [
-            UndoLearningSettingsPolicy.undoCollectionEnabledKey: NSNumber(value: true)
-        ]),
-        true,
-        "undo learning policy exposes imported undoCollectionEnabled for settings fallback"
-    )
-    try expectNil(
-        UndoLearningSettingsPolicy.legacyUndoCollectionEnabled(from: nil),
-        "undo learning policy ignores missing undoLearning dictionaries"
-    )
-
-    try expect(
-        UndoLearningSettingsPolicy.normalizedUndoDictionary([
-            " ghbdtn ": " привет ",
-            "": "ignored",
-            "adn": " "
-        ]),
-        ["ghbdtn": "привет"],
-        "undo learning policy normalizes imported undo dictionary entries"
-    )
-}
-
 func runProductStatisticsPolicyTests() throws {
     var utcCalendar = Calendar(identifier: .gregorian)
     utcCalendar.timeZone = TimeZone(secondsFromGMT: 0)!
@@ -248,6 +105,31 @@ func runProductStatisticsPolicyTests() throws {
             lastProductStatDate: lastProductStatDate
         ),
         "product statistics policy resets day-use counters when the day changes"
+    )
+    try expect(
+        ProductStatisticsPolicy.currentDaySnapshot(
+            ProductStatisticsSnapshot(
+                typedWords: 2,
+                typedSymbols: 9,
+                automaticSwitches: 3,
+                manualSwitches: 4,
+                reverts: 5,
+                lastDayuseDate: today,
+                lastProductStatDate: lastProductStatDate
+            ),
+            now: tomorrow,
+            calendar: utcCalendar
+        ),
+        ProductStatisticsSnapshot(
+            typedWords: 0,
+            typedSymbols: 0,
+            automaticSwitches: 0,
+            manualSwitches: 0,
+            reverts: 0,
+            lastDayuseDate: today,
+            lastProductStatDate: lastProductStatDate
+        ),
+        "product statistics policy exposes current-day rollover without recording new activity"
     )
     try expect(
         ProductStatisticsPolicy.snapshotFromLegacyCounters(
@@ -547,149 +429,56 @@ func runProductStatisticsPolicyTests() throws {
         ProductStatisticsSnapshot(typedSymbols: 7),
         "product statistics policy falls back to legacy counters"
     )
-}
-
-func runApplicationUpdateSettingsPolicyTests() throws {
     try expect(
-        ApplicationUpdateSettingsPolicy.configVersionKey,
-        "configVersion",
-        "update settings policy preserves observed config-version key"
-    )
-    try expect(
-        ApplicationUpdateSettingsPolicy.isFirstInstallationKey,
-        "isFirstInstallation",
-        "update settings policy preserves observed first-install key"
-    )
-    try expect(
-        ApplicationUpdateSettingsPolicy.isJustInstalledKey,
-        "isJustInstalled",
-        "update settings policy preserves observed just-installed key"
-    )
-    try expect(
-        ApplicationUpdateSettingsPolicy.isJustUpdatedKey,
-        "isJustUpdated",
-        "update settings policy preserves observed just-updated key"
-    )
-    try expect(
-        ApplicationUpdateSettingsPolicy.isUpdatingKey,
-        "isUpdating",
-        "update settings policy preserves observed updating key"
+        ProductStatisticsPolicy.effectiveSnapshot(
+            persistedSnapshot: ProductStatisticsSnapshot(
+                typedWords: 5,
+                typedSymbols: 6,
+                automaticSwitches: 7,
+                manualSwitches: 8,
+                reverts: 9,
+                lastDayuseDate: today,
+                lastProductStatDate: lastProductStatDate
+            ),
+            legacyCountersSnapshot: ProductStatisticsSnapshot(typedWords: 1),
+            now: tomorrow,
+            calendar: utcCalendar
+        ),
+        ProductStatisticsSnapshot(
+            typedWords: 0,
+            typedSymbols: 0,
+            automaticSwitches: 0,
+            manualSwitches: 0,
+            reverts: 0,
+            lastDayuseDate: today,
+            lastProductStatDate: lastProductStatDate
+        ),
+        "product statistics policy rolls over native day-use counters when resolving current statistics"
     )
     try expect(
-        ApplicationUpdateSettingsPolicy.shouldCheckForUpdatesAutomaticallyKey,
-        "shouldCheckForUpdatesAutomatically",
-        "update settings policy preserves observed automatic-update-check key"
+        ProductStatisticsPolicy.effectiveSnapshot(
+            persistedSnapshot: nil,
+            legacyCountersSnapshot: ProductStatisticsSnapshot(
+                typedWords: 5,
+                typedSymbols: 6,
+                automaticSwitches: 7,
+                manualSwitches: 8,
+                reverts: 9,
+                lastDayuseDate: today,
+                lastProductStatDate: lastProductStatDate
+            ),
+            now: tomorrow,
+            calendar: utcCalendar
+        ),
+        ProductStatisticsSnapshot(
+            typedWords: 0,
+            typedSymbols: 0,
+            automaticSwitches: 0,
+            manualSwitches: 0,
+            reverts: 0,
+            lastDayuseDate: today,
+            lastProductStatDate: lastProductStatDate
+        ),
+        "product statistics policy rolls over imported legacy day-use counters when resolving current statistics"
     )
-    try expect(
-        ApplicationUpdateSettingsPolicy.updateRequestRateInDaysKey,
-        "updateRequestRateInDays",
-        "update settings policy preserves observed update-request-rate key"
-    )
-    try expect(
-        ApplicationUpdateSettingsPolicy.lastStatisticsRequestDateKey,
-        "lastStatisticsRequestDate",
-        "update settings policy preserves observed statistics-request date key"
-    )
-    try expect(
-        ApplicationUpdateSettingsPolicy.lastUpdateRequestDateKey,
-        "lastUpdateRequestDate",
-        "update settings policy preserves observed update-request date key"
-    )
-    try expect(
-        ApplicationUpdateSettingsPolicy.lastUpdateShownDateKey,
-        "lastUpdateShownDate",
-        "update settings policy preserves observed update-shown date key"
-    )
-    try expect(
-        ApplicationUpdateSettingsPolicy.defaultSnapshot.configVersion,
-        8,
-        "update settings policy defaults to observed Punto Switcher config version"
-    )
-    try expect(
-        ApplicationUpdateSettingsPolicy.defaultSnapshot.isUpdating,
-        false,
-        "update settings policy defaults to non-updating state"
-    )
-    try expect(
-        ApplicationUpdateSettingsPolicy.defaultSnapshot.shouldCheckForUpdatesAutomatically,
-        true,
-        "update settings policy mirrors observed automatic update check preference"
-    )
-    try expect(
-        ApplicationUpdateSettingsPolicy.defaultSnapshot.updateRequestRateInDays,
-        0,
-        "update settings policy mirrors observed update request rate"
-    )
-    try expect(
-        ApplicationUpdateSettingsPolicy.defaultSnapshot.lastStatisticsRequestDate,
-        ApplicationUpdateSettingsPolicy.legacyInitialDate,
-        "update settings policy mirrors observed initial statistics date"
-    )
-    try expect(
-        ApplicationUpdateSettingsPolicy.snapshot(from: [
-            ApplicationUpdateSettingsPolicy.configVersionKey: NSNumber(value: 8),
-            ApplicationUpdateSettingsPolicy.isFirstInstallationKey: NSNumber(value: true),
-            ApplicationUpdateSettingsPolicy.isJustInstalledKey: NSNumber(value: false),
-            ApplicationUpdateSettingsPolicy.isJustUpdatedKey: NSNumber(value: false),
-            ApplicationUpdateSettingsPolicy.isUpdatingKey: NSNumber(value: false),
-            ApplicationUpdateSettingsPolicy.shouldCheckForUpdatesAutomaticallyKey: NSNumber(value: true),
-            ApplicationUpdateSettingsPolicy.updateRequestRateInDaysKey: NSNumber(value: 0),
-            ApplicationUpdateSettingsPolicy.lastStatisticsRequestDateKey: "2008-12-31 21:00:00 +0000",
-            ApplicationUpdateSettingsPolicy.lastUpdateShownDateKey: "2008-12-31 21:00:00 +0000"
-        ]),
-        ApplicationUpdateSettingsPolicy.defaultSnapshot,
-        "update settings policy reads observed Punto Switcher updater/install state"
-    )
-
-    let updateRequestDate = Date(timeIntervalSince1970: 1_768_132_509)
-    let snapshot = ApplicationUpdateSettingsPolicy.snapshot(from: [
-        ApplicationUpdateSettingsPolicy.configVersionKey: "9",
-        ApplicationUpdateSettingsPolicy.isFirstInstallationKey: "0",
-        ApplicationUpdateSettingsPolicy.isJustInstalledKey: "yes",
-        ApplicationUpdateSettingsPolicy.isJustUpdatedKey: NSNumber(value: true),
-        ApplicationUpdateSettingsPolicy.isUpdatingKey: "false",
-        ApplicationUpdateSettingsPolicy.shouldCheckForUpdatesAutomaticallyKey: "no",
-        ApplicationUpdateSettingsPolicy.updateRequestRateInDaysKey: " 14 ",
-        ApplicationUpdateSettingsPolicy.lastStatisticsRequestDateKey: ApplicationUpdateSettingsPolicy.legacyInitialDate,
-        ApplicationUpdateSettingsPolicy.lastUpdateRequestDateKey: updateRequestDate.timeIntervalSince1970,
-        ApplicationUpdateSettingsPolicy.lastUpdateShownDateKey: "2008-12-31 21:00:00 +0000"
-    ])
-    try expect(snapshot.configVersion, 9, "update settings policy parses string config version")
-    try expect(snapshot.isFirstInstallation, false, "update settings policy parses string first-install flag")
-    try expect(snapshot.isJustInstalled, true, "update settings policy parses yes boolean")
-    try expect(snapshot.isJustUpdated, true, "update settings policy parses NSNumber boolean")
-    try expect(snapshot.isUpdating, false, "update settings policy parses false boolean")
-    try expect(snapshot.shouldCheckForUpdatesAutomatically, false, "update settings policy parses no boolean")
-    try expect(snapshot.updateRequestRateInDays, 14, "update settings policy parses string update request rate")
-    try expect(snapshot.lastUpdateRequestDate, updateRequestDate, "update settings policy parses numeric date")
-
-    let clamped = ApplicationUpdateSettingsPolicy.snapshot(from: [
-        ApplicationUpdateSettingsPolicy.configVersionKey: -1,
-        ApplicationUpdateSettingsPolicy.updateRequestRateInDaysKey: -7
-    ])
-    try expect(clamped.configVersion, 0, "update settings policy clamps negative config version")
-    try expect(clamped.updateRequestRateInDays, 0, "update settings policy clamps negative update request rate")
-
-    let encoded = try JSONEncoder().encode(snapshot)
-    let decoded = try JSONDecoder().decode(ApplicationUpdateSettingsSnapshot.self, from: encoded)
-    try expect(decoded, snapshot, "update settings snapshot supports native Codable persistence")
-
-    let normalized = ApplicationUpdateSettingsPolicy.normalized(
-        ApplicationUpdateSettingsSnapshot(
-            configVersion: -2,
-            isFirstInstallation: false,
-            isJustInstalled: true,
-            isJustUpdated: true,
-            isUpdating: false,
-            shouldCheckForUpdatesAutomatically: false,
-            updateRequestRateInDays: -5,
-            lastStatisticsRequestDate: nil,
-            lastUpdateRequestDate: updateRequestDate,
-            lastUpdateShownDate: nil
-        )
-    )
-    try expect(normalized.configVersion, 0, "update settings native snapshot clamps config version")
-    try expect(normalized.updateRequestRateInDays, 0, "update settings native snapshot clamps update rate")
-    try expect(normalized.isJustInstalled, true, "update settings native snapshot preserves install flag")
-    try expect(normalized.lastUpdateRequestDate, updateRequestDate, "update settings native snapshot preserves update date")
 }

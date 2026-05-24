@@ -114,6 +114,41 @@ func runStatisticsImportTests() throws {
         fixture.defaults.integer(forKey: ProductStatisticsPolicy.legacyTypedWordsKey) == 7,
         "settings manager keeps legacy statistics read-only"
     )
+
+    let staleDayuseFixture = try DefaultsFixture("statistics-stale-dayuse")
+    let previousDay = Date(timeIntervalSince1970: 1_704_067_200)
+    staleDayuseFixture.defaults.set([
+        ProductStatisticsPolicy.dayuseTypedWordsKey: 5,
+        ProductStatisticsPolicy.dayuseTypedSymbolsKey: 6,
+        ProductStatisticsPolicy.dayuseAutoSwitchesKey: 7,
+        ProductStatisticsPolicy.dayuseManualSwitchesKey: 8,
+        ProductStatisticsPolicy.dayuseRevertsKey: 9,
+        ProductStatisticsPolicy.dayuseLastDayuseDateKey: previousDay
+    ], forKey: ProductStatisticsPolicy.dayuseSettingsKey)
+
+    let staleDayuseSettings = staleDayuseFixture.manager()
+    try expect(staleDayuseSettings.productStatistics.typedWords == 0, "settings manager rolls over stale legacy dayuse typed words")
+    try expect(staleDayuseSettings.productStatistics.typedSymbols == 0, "settings manager rolls over stale legacy dayuse typed symbols")
+    try expect(staleDayuseSettings.productStatistics.automaticSwitches == 0, "settings manager rolls over stale legacy dayuse automatic switches")
+    try expect(staleDayuseSettings.productStatistics.manualSwitches == 0, "settings manager rolls over stale legacy dayuse manual switches")
+    try expect(staleDayuseSettings.productStatistics.reverts == 0, "settings manager rolls over stale legacy dayuse reverts")
+
+    let staleNativeFixture = try DefaultsFixture("statistics-stale-native")
+    var staleNativeSettings = staleNativeFixture.manager()
+    staleNativeSettings.productStatistics = ProductStatisticsSnapshot(
+        typedWords: 5,
+        typedSymbols: 6,
+        automaticSwitches: 7,
+        manualSwitches: 8,
+        reverts: 9,
+        lastDayuseDate: previousDay
+    )
+    staleNativeSettings = staleNativeFixture.manager()
+    try expect(staleNativeSettings.productStatistics.typedWords == 0, "settings manager rolls over stale native dayuse typed words")
+    try expect(staleNativeSettings.productStatistics.typedSymbols == 0, "settings manager rolls over stale native dayuse typed symbols")
+    try expect(staleNativeSettings.productStatistics.automaticSwitches == 0, "settings manager rolls over stale native dayuse automatic switches")
+    try expect(staleNativeSettings.productStatistics.manualSwitches == 0, "settings manager rolls over stale native dayuse manual switches")
+    try expect(staleNativeSettings.productStatistics.reverts == 0, "settings manager rolls over stale native dayuse reverts")
 }
 
 func runUpdateImportTests() throws {

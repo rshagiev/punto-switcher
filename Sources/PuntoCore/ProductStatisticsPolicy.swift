@@ -97,7 +97,7 @@ public enum ProductStatisticsPolicy {
         now: Date = Date(),
         calendar: Calendar = .current
     ) -> ProductStatisticsSnapshot {
-        let current = snapshotForCurrentDay(normalized(current), now: now, calendar: calendar)
+        let current = currentDaySnapshot(current, now: now, calendar: calendar)
         switch event {
         case .typedText(let text):
             let symbolCount = typedSymbolCount(text)
@@ -252,17 +252,23 @@ public enum ProductStatisticsPolicy {
 
     public static func effectiveSnapshot(
         persistedSnapshot: ProductStatisticsSnapshot?,
-        legacyCountersSnapshot: ProductStatisticsSnapshot?
+        legacyCountersSnapshot: ProductStatisticsSnapshot?,
+        now: Date? = nil,
+        calendar: Calendar = .current
     ) -> ProductStatisticsSnapshot {
+        let snapshot: ProductStatisticsSnapshot
         if let persistedSnapshot {
-            return normalized(persistedSnapshot)
+            snapshot = normalized(persistedSnapshot)
+        } else if let legacyCountersSnapshot {
+            snapshot = normalized(legacyCountersSnapshot)
+        } else {
+            snapshot = emptySnapshot
         }
 
-        if let legacyCountersSnapshot {
-            return normalized(legacyCountersSnapshot)
+        guard let now else {
+            return snapshot
         }
-
-        return emptySnapshot
+        return currentDaySnapshot(snapshot, now: now, calendar: calendar)
     }
 
     public static func typedSymbolCount(_ text: String?) -> Int {
@@ -270,6 +276,14 @@ public enum ProductStatisticsPolicy {
             return 0
         }
         return text.filter { !$0.isNewline && !$0.isWhitespace }.count
+    }
+
+    public static func currentDaySnapshot(
+        _ snapshot: ProductStatisticsSnapshot,
+        now: Date = Date(),
+        calendar: Calendar = .current
+    ) -> ProductStatisticsSnapshot {
+        snapshotForCurrentDay(normalized(snapshot), now: now, calendar: calendar)
     }
 
     private static func snapshotForCurrentDay(

@@ -166,7 +166,8 @@ final class SettingsValueResolver {
         )
         return ProductStatisticsPolicy.effectiveSnapshot(
             persistedSnapshot: persistedSnapshot,
-            legacyCountersSnapshot: legacyCountersSnapshot
+            legacyCountersSnapshot: legacyCountersSnapshot,
+            now: Date()
         )
     }
 
