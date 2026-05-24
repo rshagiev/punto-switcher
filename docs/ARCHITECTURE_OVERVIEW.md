@@ -103,7 +103,7 @@ The read-only Punto Switcher pass exposed a useful boundary split. Punto now mir
 The macOS app target wires `PuntoRuntime` into:
 
 - `AppDelegate`: orchestration only: lifecycle wiring, hotkey callbacks, conversion/search/toggle/auto-correction flow entrypoints, and app activation events.
-- `SettingsWindowController`: main settings composition and simple setting actions. Dedicated child controllers own list-editor windows for auto-correction rules, disabled applications, reset-on-return application tokens, and remembered per-app layout state, while `ApplicationDisplayNameResolver` keeps bundle-id display lookup shared across those editors.
+- `SettingsWindowController`: preferences window shell and editor lifecycle. `HotkeySettingsController` owns shortcut recorder UI, `GeneralSettingsController` owns General/Advanced setting rows and their actions, and dedicated child controllers own list-editor windows for auto-correction rules, disabled applications, reset-on-return application tokens, and remembered per-app layout state. `ApplicationDisplayNameResolver` keeps bundle-id display lookup shared across those editors.
 
 ## Current Conversion Flow
 
@@ -183,7 +183,7 @@ Export writes the normalized effective rule set as JSON so user-authored rules c
 
 ## Settings UI Boundaries
 
-`SettingsWindowController` owns the main preferences window and high-level setting rows. Hotkey recorder lifecycle, shortcut collision handling, and reset actions live in `HotkeySettingsController`, while shared glass-section/header construction lives in `SettingsSectionFactory`. Repeated app-specific subwindows are split into focused controllers:
+`SettingsWindowController` owns the main preferences window shell and editor lifecycle. Hotkey recorder lifecycle, shortcut collision handling, and reset actions live in `HotkeySettingsController`; General/Advanced rows, setting toggles, count labels, and managed-row actions live in `GeneralSettingsController`; shared glass-section/header construction lives in `SettingsSectionFactory`. Repeated app-specific subwindows are split into focused controllers:
 
 - `DisabledApplicationsEditorController`: current-app exception editor backed by `SettingsManager.disabledApplicationBundleIDs`.
 - `ResetOnReturnEditorController`: Return-key reset bundle-component editor backed by `SettingsManager.resetOnReturnBundleComponents`.
