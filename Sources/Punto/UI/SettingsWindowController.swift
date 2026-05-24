@@ -8,12 +8,7 @@ final class SettingsWindowController: NSWindowController {
     private let settingsManager: SettingsManager
     private let currentApplication: () -> (bundleID: String, name: String?)?
     private let setLoginItemEnabled: (Bool) -> Void
-    private var convertLayoutRecorder: HotkeyRecorderView?
-    private var toggleCaseRecorder: HotkeyRecorderView?
-    private var toggleAutoCorrectionRecorder: HotkeyRecorderView?
-    private var cancelLayoutChangeRecorder: HotkeyRecorderView?
-    private var findInYandexRecorder: HotkeyRecorderView?
-    private var findInSlovariRecorder: HotkeyRecorderView?
+    private let hotkeySettingsController: HotkeySettingsController
     private var preferredEnglishInputSourceIDField: NSTextField?
     private var preferredRussianInputSourceIDField: NSTextField?
     private var autoCorrectionRulesEditor: AutoCorrectionRulesEditorController?
@@ -30,6 +25,7 @@ final class SettingsWindowController: NSWindowController {
         self.settingsManager = settingsManager
         self.currentApplication = currentApplication
         self.setLoginItemEnabled = setLoginItemEnabled
+        self.hotkeySettingsController = HotkeySettingsController(settingsManager: settingsManager)
 
         // Create window
         let window = NSWindow(
@@ -90,117 +86,15 @@ final class SettingsWindowController: NSWindowController {
         ])
 
         // Sections
-        mainStack.addArrangedSubview(createHotkeysSection())
+        mainStack.addArrangedSubview(hotkeySettingsController.createView())
         mainStack.addArrangedSubview(createGeneralSection())
         mainStack.addArrangedSubview(createFooter())
-    }
-
-    // MARK: - Hotkeys Section
-
-    private func createHotkeysSection() -> NSView {
-        let section = createSection(title: "Keyboard Shortcuts", iconName: "keyboard")
-
-        let grid = NSGridView(numberOfColumns: 3, rows: 0)
-        grid.rowSpacing = 10
-        grid.columnSpacing = 12
-        grid.translatesAutoresizingMaskIntoConstraints = false
-        grid.column(at: 0).xPlacement = .leading
-        grid.column(at: 1).xPlacement = .fill
-        grid.column(at: 2).xPlacement = .trailing
-
-        // Convert Layout
-        let convertRecorder = HotkeyRecorderView(
-            hotkey: settingsManager.convertLayoutHotkey,
-            onRecord: { [weak self] hotkey in
-                self?.recordHotkey(hotkey, for: .convertLayout)
-            }
-        )
-        self.convertLayoutRecorder = convertRecorder
-        grid.addRow(with: [
-            createIconLabel("Convert Layout", systemName: "textformat.abc"),
-            convertRecorder,
-            createResetButton(tag: 0)
-        ])
-
-        // Toggle Case
-        let toggleRecorder = HotkeyRecorderView(
-            hotkey: settingsManager.toggleCaseHotkey,
-            onRecord: { [weak self] hotkey in
-                self?.recordHotkey(hotkey, for: .toggleCase)
-            }
-        )
-        self.toggleCaseRecorder = toggleRecorder
-        grid.addRow(with: [
-            createIconLabel("Toggle Case", systemName: "textformat"),
-            toggleRecorder,
-            createResetButton(tag: 1)
-        ])
-
-        // Toggle Auto-correction
-        let toggleAutoCorrectionRecorder = HotkeyRecorderView(
-            hotkey: settingsManager.toggleAutoCorrectionHotkey,
-            onRecord: { [weak self] hotkey in
-                self?.recordHotkey(hotkey, for: .toggleAutoCorrection)
-            }
-        )
-        self.toggleAutoCorrectionRecorder = toggleAutoCorrectionRecorder
-        grid.addRow(with: [
-            createIconLabel("Toggle Auto-correction", systemName: "wand.and.stars"),
-            toggleAutoCorrectionRecorder,
-            createResetButton(tag: 2)
-        ])
-
-        // Cancel Last Conversion
-        let cancelLayoutChangeRecorder = HotkeyRecorderView(
-            hotkey: settingsManager.cancelLayoutChangeHotkey,
-            onRecord: { [weak self] hotkey in
-                self?.recordHotkey(hotkey, for: .cancelLayoutChange)
-            }
-        )
-        self.cancelLayoutChangeRecorder = cancelLayoutChangeRecorder
-        grid.addRow(with: [
-            createIconLabel("Cancel Last Conversion", systemName: "arrow.uturn.backward"),
-            cancelLayoutChangeRecorder,
-            createResetButton(tag: 3)
-        ])
-
-        // Find in Yandex
-        let findInYandexRecorder = HotkeyRecorderView(
-            hotkey: settingsManager.findInYandexHotkey,
-            onRecord: { [weak self] hotkey in
-                self?.recordHotkey(hotkey, for: .findInYandex)
-            }
-        )
-        self.findInYandexRecorder = findInYandexRecorder
-        grid.addRow(with: [
-            createIconLabel("Find in Yandex", systemName: "magnifyingglass"),
-            findInYandexRecorder,
-            createResetButton(tag: 4)
-        ])
-
-        // Find in Translate
-        let findInSlovariRecorder = HotkeyRecorderView(
-            hotkey: settingsManager.findInSlovariHotkey,
-            onRecord: { [weak self] hotkey in
-                self?.recordHotkey(hotkey, for: .findInSlovari)
-            }
-        )
-        self.findInSlovariRecorder = findInSlovariRecorder
-        grid.addRow(with: [
-            createIconLabel("Find in Translate", systemName: "character.book.closed"),
-            findInSlovariRecorder,
-            createResetButton(tag: 5)
-        ])
-
-        section.contentStack.addArrangedSubview(grid)
-
-        return section.container
     }
 
     // MARK: - General Section
 
     private func createGeneralSection() -> NSView {
-        let section = createSection(title: "General", iconName: "slider.horizontal.3")
+        let section = SettingsSectionFactory.createSection(title: "General", iconName: "slider.horizontal.3")
 
         let stack = NSStackView()
         stack.orientation = .vertical
@@ -344,88 +238,6 @@ final class SettingsWindowController: NSWindowController {
     }
 
     // MARK: - Components
-
-    private func createSection(title: String, iconName: String) -> (container: NSView, contentStack: NSStackView) {
-        let container = NSStackView()
-        container.orientation = .vertical
-        container.alignment = .leading
-        container.spacing = 8
-        container.translatesAutoresizingMaskIntoConstraints = false
-
-        // Header
-        let headerIcon = NSImageView()
-        headerIcon.image = NSImage(systemSymbolName: iconName, accessibilityDescription: nil)
-        headerIcon.contentTintColor = .secondaryLabelColor
-
-        let headerLabel = NSTextField(labelWithString: title)
-        headerLabel.font = .systemFont(ofSize: 12, weight: .semibold)
-        headerLabel.textColor = .secondaryLabelColor
-
-        let headerRow = NSStackView(views: [headerIcon, headerLabel])
-        headerRow.orientation = .horizontal
-        headerRow.alignment = .centerY
-        headerRow.spacing = 6
-        container.addArrangedSubview(headerRow)
-
-        // Glass box using NSVisualEffectView
-        let visualEffect = NSVisualEffectView()
-        visualEffect.material = .hudWindow
-        visualEffect.blendingMode = .withinWindow
-        visualEffect.state = .active
-        visualEffect.wantsLayer = true
-        visualEffect.layer?.cornerRadius = 14
-        visualEffect.layer?.masksToBounds = true
-        visualEffect.layer?.borderWidth = 1
-        visualEffect.layer?.borderColor = NSColor.white.withAlphaComponent(0.08).cgColor
-        visualEffect.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.08).cgColor
-        visualEffect.translatesAutoresizingMaskIntoConstraints = false
-
-        // Content stack inside glass box
-        let contentStack = NSStackView()
-        contentStack.orientation = .vertical
-        contentStack.alignment = .leading
-        contentStack.spacing = 10
-        contentStack.translatesAutoresizingMaskIntoConstraints = false
-        contentStack.edgeInsets = NSEdgeInsets(top: 14, left: 16, bottom: 14, right: 16)
-
-        visualEffect.addSubview(contentStack)
-
-        NSLayoutConstraint.activate([
-            contentStack.topAnchor.constraint(equalTo: visualEffect.topAnchor),
-            contentStack.leadingAnchor.constraint(equalTo: visualEffect.leadingAnchor),
-            contentStack.trailingAnchor.constraint(equalTo: visualEffect.trailingAnchor),
-            contentStack.bottomAnchor.constraint(equalTo: visualEffect.bottomAnchor),
-            visualEffect.widthAnchor.constraint(equalToConstant: 400)
-        ])
-
-        container.addArrangedSubview(visualEffect)
-
-        return (container, contentStack)
-    }
-
-    private func createLabel(_ text: String) -> NSTextField {
-        let label = NSTextField(labelWithString: text)
-        label.font = .systemFont(ofSize: 13, weight: .medium)
-        label.alignment = .left
-        label.textColor = .labelColor
-        return label
-    }
-
-    private func createIconLabel(_ title: String, systemName: String) -> NSView {
-        let icon = NSImageView()
-        icon.image = NSImage(systemSymbolName: systemName, accessibilityDescription: nil)
-        icon.contentTintColor = .secondaryLabelColor
-
-        let label = NSTextField(labelWithString: title)
-        label.font = .systemFont(ofSize: 13, weight: .medium)
-        label.textColor = .labelColor
-
-        let stack = NSStackView(views: [icon, label])
-        stack.orientation = .horizontal
-        stack.alignment = .centerY
-        stack.spacing = 6
-        return stack
-    }
 
     private func createToggleRow(_ title: String, isOn: Bool, action: Selector, systemName: String) -> NSView {
         let icon = NSImageView()
@@ -745,19 +557,6 @@ final class SettingsWindowController: NSWindowController {
         return row
     }
 
-    private func createResetButton(tag: Int) -> NSButton {
-        let button = NSButton()
-        button.image = NSImage(systemSymbolName: "arrow.counterclockwise", accessibilityDescription: "Reset")
-        button.imagePosition = .imageOnly
-        button.bezelStyle = .accessoryBarAction
-        button.isBordered = false
-        button.tag = tag
-        button.target = self
-        button.action = #selector(resetHotkey(_:))
-        button.contentTintColor = .tertiaryLabelColor
-        return button
-    }
-
     private func createFooter() -> NSView {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0.0"
         let label = NSTextField(labelWithString: "Punto v\(version)")
@@ -768,119 +567,6 @@ final class SettingsWindowController: NSWindowController {
     }
 
     // MARK: - Actions
-
-    private var hotkeyAssignments: [HotkeyAssignment] {
-        [
-            HotkeyAssignment(slot: .convertLayout, hotkey: settingsManager.convertLayoutHotkey),
-            HotkeyAssignment(slot: .toggleCase, hotkey: settingsManager.toggleCaseHotkey),
-            HotkeyAssignment(slot: .toggleAutoCorrection, hotkey: settingsManager.toggleAutoCorrectionHotkey),
-            HotkeyAssignment(slot: .cancelLayoutChange, hotkey: settingsManager.cancelLayoutChangeHotkey),
-            HotkeyAssignment(slot: .findInYandex, hotkey: settingsManager.findInYandexHotkey),
-            HotkeyAssignment(slot: .findInSlovari, hotkey: settingsManager.findInSlovariHotkey)
-        ]
-    }
-
-    private func recordHotkey(_ hotkey: Hotkey, for slot: HotkeySlot) {
-        let normalized = HotkeyValidationPolicy.normalized(hotkey, fallback: defaultHotkey(for: slot))
-        guard HotkeyCollisionPolicy.canAllowShortcut(normalized, in: hotkeyAssignments, excluding: slot) else {
-            NSSound.beep()
-            recorder(for: slot)?.updateHotkey(savedHotkey(for: slot))
-            return
-        }
-
-        setHotkey(normalized, for: slot)
-        recorder(for: slot)?.updateHotkey(savedHotkey(for: slot))
-    }
-
-    private func savedHotkey(for slot: HotkeySlot) -> Hotkey {
-        switch slot {
-        case .convertLayout:
-            return settingsManager.convertLayoutHotkey
-        case .toggleCase:
-            return settingsManager.toggleCaseHotkey
-        case .toggleAutoCorrection:
-            return settingsManager.toggleAutoCorrectionHotkey
-        case .cancelLayoutChange:
-            return settingsManager.cancelLayoutChangeHotkey
-        case .findInYandex:
-            return settingsManager.findInYandexHotkey
-        case .findInSlovari:
-            return settingsManager.findInSlovariHotkey
-        }
-    }
-
-    private func defaultHotkey(for slot: HotkeySlot) -> Hotkey {
-        switch slot {
-        case .convertLayout:
-            return Hotkey.defaultConvertLayout
-        case .toggleCase:
-            return Hotkey.defaultToggleCase
-        case .toggleAutoCorrection:
-            return Hotkey.defaultToggleAutoCorrection
-        case .cancelLayoutChange:
-            return Hotkey.defaultCancelLayoutChange
-        case .findInYandex:
-            return Hotkey.defaultFindInYandex
-        case .findInSlovari:
-            return Hotkey.defaultFindInSlovari
-        }
-    }
-
-    private func setHotkey(_ hotkey: Hotkey, for slot: HotkeySlot) {
-        switch slot {
-        case .convertLayout:
-            settingsManager.convertLayoutHotkey = hotkey
-        case .toggleCase:
-            settingsManager.toggleCaseHotkey = hotkey
-        case .toggleAutoCorrection:
-            settingsManager.toggleAutoCorrectionHotkey = hotkey
-        case .cancelLayoutChange:
-            settingsManager.cancelLayoutChangeHotkey = hotkey
-        case .findInYandex:
-            settingsManager.findInYandexHotkey = hotkey
-        case .findInSlovari:
-            settingsManager.findInSlovariHotkey = hotkey
-        }
-    }
-
-    private func recorder(for slot: HotkeySlot) -> HotkeyRecorderView? {
-        switch slot {
-        case .convertLayout:
-            return convertLayoutRecorder
-        case .toggleCase:
-            return toggleCaseRecorder
-        case .toggleAutoCorrection:
-            return toggleAutoCorrectionRecorder
-        case .cancelLayoutChange:
-            return cancelLayoutChangeRecorder
-        case .findInYandex:
-            return findInYandexRecorder
-        case .findInSlovari:
-            return findInSlovariRecorder
-        }
-    }
-
-    @objc private func resetHotkey(_ sender: NSButton) {
-        if sender.tag == 0 {
-            settingsManager.resetConvertLayoutHotkey()
-            convertLayoutRecorder?.updateHotkey(settingsManager.convertLayoutHotkey)
-        } else if sender.tag == 1 {
-            settingsManager.resetToggleCaseHotkey()
-            toggleCaseRecorder?.updateHotkey(settingsManager.toggleCaseHotkey)
-        } else if sender.tag == 2 {
-            settingsManager.resetToggleAutoCorrectionHotkey()
-            toggleAutoCorrectionRecorder?.updateHotkey(settingsManager.toggleAutoCorrectionHotkey)
-        } else if sender.tag == 3 {
-            settingsManager.resetCancelLayoutChangeHotkey()
-            cancelLayoutChangeRecorder?.updateHotkey(settingsManager.cancelLayoutChangeHotkey)
-        } else if sender.tag == 4 {
-            settingsManager.resetFindInYandexHotkey()
-            findInYandexRecorder?.updateHotkey(settingsManager.findInYandexHotkey)
-        } else if sender.tag == 5 {
-            settingsManager.resetFindInSlovariHotkey()
-            findInSlovariRecorder?.updateHotkey(settingsManager.findInSlovariHotkey)
-        }
-    }
 
     @objc private func toggleLaunchAtLogin(_ sender: NSSwitch) {
         let isEnabled = sender.state == .on

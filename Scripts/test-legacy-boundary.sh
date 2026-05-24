@@ -545,6 +545,27 @@ for pattern in "${app_delegate_log_lifecycle_patterns[@]}"; do
     echo "PASS AppDelegate log lifecycle internals absent: $pattern"
 done
 
+settings_window_hotkey_patterns=(
+    "HotkeyCollisionPolicy."
+    "HotkeyValidationPolicy."
+    "private func recordHotkey"
+    "private func resetHotkey"
+    "convertLayoutRecorder"
+    "toggleCaseRecorder"
+    "toggleAutoCorrectionRecorder"
+    "cancelLayoutChangeRecorder"
+    "findInYandexRecorder"
+    "findInSlovariRecorder"
+)
+
+for pattern in "${settings_window_hotkey_patterns[@]}"; do
+    if rg --fixed-strings --quiet "$pattern" Sources/Punto/UI/SettingsWindowController.swift; then
+        echo "legacy boundary failed: SettingsWindowController reopened hotkey recorder internals: $pattern" >&2
+        exit 1
+    fi
+    echo "PASS SettingsWindowController hotkey recorder internals absent: $pattern"
+done
+
 if rg --fixed-strings --quiet "Placeholder - actual tests" Tests 2>/dev/null; then
     echo "legacy boundary failed: placeholder SwiftPM test target returned" >&2
     exit 1

@@ -183,7 +183,7 @@ Export writes the normalized effective rule set as JSON so user-authored rules c
 
 ## Settings UI Boundaries
 
-`SettingsWindowController` owns the main preferences window, hotkey recorders, high-level setting rows, the auto-correction rule editor, and the remembered-layout inspector. Repeated app-specific subwindows are split into focused controllers:
+`SettingsWindowController` owns the main preferences window and high-level setting rows. Hotkey recorder lifecycle, shortcut collision handling, and reset actions live in `HotkeySettingsController`, while shared glass-section/header construction lives in `SettingsSectionFactory`. Repeated app-specific subwindows are split into focused controllers:
 
 - `DisabledApplicationsEditorController`: current-app exception editor backed by `SettingsManager.disabledApplicationBundleIDs`.
 - `ResetOnReturnEditorController`: Return-key reset bundle-component editor backed by `SettingsManager.resetOnReturnBundleComponents`.
