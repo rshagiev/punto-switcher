@@ -11,6 +11,90 @@ func runHotkeyPolicyTests() throws {
     try expect(Hotkey.defaultFindInSlovari.displayString, "Not Set", "default find-in-Slovari hotkey is unassigned")
     try expect(KeyCodeNames.name(for: 49), "Space", "key code name lookup")
     try expectNil(KeyCodeNames.name(for: UInt16.max), "modifier-only key has no key name")
+    try expect(
+        HotkeyCommandPolicy.displayOrder,
+        [
+            HotkeyCommandMetadata(
+                slot: .convertLayout,
+                title: "Convert Layout",
+                systemName: "textformat.abc",
+                resetTag: 0,
+                defaultHotkey: .defaultConvertLayout,
+                routingKind: .convertLayout,
+                keyDownAction: .convertLayoutHotkey
+            ),
+            HotkeyCommandMetadata(
+                slot: .toggleCase,
+                title: "Toggle Case",
+                systemName: "textformat",
+                resetTag: 1,
+                defaultHotkey: .defaultToggleCase,
+                routingKind: .toggleCase,
+                keyDownAction: .toggleCaseHotkey
+            ),
+            HotkeyCommandMetadata(
+                slot: .toggleAutoCorrection,
+                title: "Toggle Auto-correction",
+                systemName: "wand.and.stars",
+                resetTag: 2,
+                defaultHotkey: .defaultToggleAutoCorrection,
+                routingKind: .toggleAutoCorrection,
+                keyDownAction: .toggleAutoCorrectionHotkey
+            ),
+            HotkeyCommandMetadata(
+                slot: .cancelLayoutChange,
+                title: "Cancel Last Conversion",
+                systemName: "arrow.uturn.backward",
+                resetTag: 3,
+                defaultHotkey: .defaultCancelLayoutChange,
+                routingKind: .cancelLayoutChange,
+                keyDownAction: .cancelLayoutChangeHotkey
+            ),
+            HotkeyCommandMetadata(
+                slot: .findInYandex,
+                title: "Find in Yandex",
+                systemName: "magnifyingglass",
+                resetTag: 4,
+                defaultHotkey: .defaultFindInYandex,
+                routingKind: .findInYandex,
+                keyDownAction: .findInYandexHotkey
+            ),
+            HotkeyCommandMetadata(
+                slot: .findInSlovari,
+                title: "Find in Translate",
+                systemName: "character.book.closed",
+                resetTag: 5,
+                defaultHotkey: .defaultFindInSlovari,
+                routingKind: .findInSlovari,
+                keyDownAction: .findInSlovariHotkey
+            )
+        ],
+        "hotkey command policy owns settings display order, defaults, routing, and keyDown actions"
+    )
+    try expect(
+        HotkeyCommandPolicy.displayOrder.map(\.slot),
+        HotkeySlot.allCases,
+        "hotkey command policy lists every supported hotkey slot in UI order"
+    )
+    try expect(
+        Set(HotkeyCommandPolicy.displayOrder.map(\.resetTag)).count,
+        HotkeyCommandPolicy.displayOrder.count,
+        "hotkey command policy reset tags are unique"
+    )
+    try expect(
+        HotkeyCommandPolicy.defaultHotkey(for: .toggleCase),
+        .defaultToggleCase,
+        "hotkey command policy resolves default hotkeys by slot"
+    )
+    try expect(
+        HotkeyCommandPolicy.slot(forResetTag: 4),
+        .findInYandex,
+        "hotkey command policy resolves reset tags back to slots"
+    )
+    try expectNil(
+        HotkeyCommandPolicy.slot(forResetTag: 99),
+        "hotkey command policy rejects unknown reset tags"
+    )
 
     let encoded = try JSONEncoder().encode(Hotkey.defaultConvertLayout)
     let decoded = try JSONDecoder().decode(Hotkey.self, from: encoded)
@@ -335,14 +419,9 @@ func runHotkeyPolicyTests() throws {
         "hotkey collision policy preserves observed shortcut allowed-keycode selector"
     )
 
-    let assignments = [
-        HotkeyAssignment(slot: .convertLayout, hotkey: Hotkey.defaultConvertLayout),
-        HotkeyAssignment(slot: .toggleCase, hotkey: Hotkey.defaultToggleCase),
-        HotkeyAssignment(slot: .toggleAutoCorrection, hotkey: Hotkey.defaultToggleAutoCorrection),
-        HotkeyAssignment(slot: .cancelLayoutChange, hotkey: Hotkey.defaultCancelLayoutChange),
-        HotkeyAssignment(slot: .findInYandex, hotkey: Hotkey.defaultFindInYandex),
-        HotkeyAssignment(slot: .findInSlovari, hotkey: Hotkey.defaultFindInSlovari)
-    ]
+    let assignments = HotkeyCommandPolicy.displayOrder.map {
+        HotkeyAssignment(slot: $0.slot, hotkey: $0.defaultHotkey)
+    }
     try expect(
         HotkeyCollisionPolicy.collidingSlot(
             for: Hotkey.defaultToggleCase,

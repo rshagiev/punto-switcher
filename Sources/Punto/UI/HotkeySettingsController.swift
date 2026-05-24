@@ -26,48 +26,9 @@ final class HotkeySettingsController: NSObject {
         grid.column(at: 1).xPlacement = .fill
         grid.column(at: 2).xPlacement = .trailing
 
-        addHotkeyRow(
-            to: grid,
-            slot: .convertLayout,
-            title: "Convert Layout",
-            systemName: "textformat.abc",
-            tag: 0
-        )
-        addHotkeyRow(
-            to: grid,
-            slot: .toggleCase,
-            title: "Toggle Case",
-            systemName: "textformat",
-            tag: 1
-        )
-        addHotkeyRow(
-            to: grid,
-            slot: .toggleAutoCorrection,
-            title: "Toggle Auto-correction",
-            systemName: "wand.and.stars",
-            tag: 2
-        )
-        addHotkeyRow(
-            to: grid,
-            slot: .cancelLayoutChange,
-            title: "Cancel Last Conversion",
-            systemName: "arrow.uturn.backward",
-            tag: 3
-        )
-        addHotkeyRow(
-            to: grid,
-            slot: .findInYandex,
-            title: "Find in Yandex",
-            systemName: "magnifyingglass",
-            tag: 4
-        )
-        addHotkeyRow(
-            to: grid,
-            slot: .findInSlovari,
-            title: "Find in Translate",
-            systemName: "character.book.closed",
-            tag: 5
-        )
+        for command in HotkeyCommandPolicy.displayOrder {
+            addHotkeyRow(to: grid, command: command)
+        }
 
         section.contentStack.addArrangedSubview(grid)
         return section.container
@@ -75,22 +36,19 @@ final class HotkeySettingsController: NSObject {
 
     private func addHotkeyRow(
         to grid: NSGridView,
-        slot: HotkeySlot,
-        title: String,
-        systemName: String,
-        tag: Int
+        command: HotkeyCommandMetadata
     ) {
         let recorder = HotkeyRecorderView(
-            hotkey: savedHotkey(for: slot),
+            hotkey: savedHotkey(for: command.slot),
             onRecord: { [weak self] hotkey in
-                self?.recordHotkey(hotkey, for: slot)
+                self?.recordHotkey(hotkey, for: command.slot)
             }
         )
-        setRecorder(recorder, for: slot)
+        setRecorder(recorder, for: command.slot)
         grid.addRow(with: [
-            SettingsSectionFactory.createIconLabel(title, systemName: systemName),
+            SettingsSectionFactory.createIconLabel(command.title, systemName: command.systemName),
             recorder,
-            createResetButton(tag: tag)
+            createResetButton(tag: command.resetTag)
         ])
     }
 
@@ -135,20 +93,7 @@ final class HotkeySettingsController: NSObject {
     }
 
     private func defaultHotkey(for slot: HotkeySlot) -> Hotkey {
-        switch slot {
-        case .convertLayout:
-            return Hotkey.defaultConvertLayout
-        case .toggleCase:
-            return Hotkey.defaultToggleCase
-        case .toggleAutoCorrection:
-            return Hotkey.defaultToggleAutoCorrection
-        case .cancelLayoutChange:
-            return Hotkey.defaultCancelLayoutChange
-        case .findInYandex:
-            return Hotkey.defaultFindInYandex
-        case .findInSlovari:
-            return Hotkey.defaultFindInSlovari
-        }
+        HotkeyCommandPolicy.defaultHotkey(for: slot)
     }
 
     private func setHotkey(_ hotkey: Hotkey, for slot: HotkeySlot) {
@@ -224,21 +169,6 @@ final class HotkeySettingsController: NSObject {
     }
 
     private func slot(forTag tag: Int) -> HotkeySlot? {
-        switch tag {
-        case 0:
-            return .convertLayout
-        case 1:
-            return .toggleCase
-        case 2:
-            return .toggleAutoCorrection
-        case 3:
-            return .cancelLayoutChange
-        case 4:
-            return .findInYandex
-        case 5:
-            return .findInSlovari
-        default:
-            return nil
-        }
+        HotkeyCommandPolicy.slot(forResetTag: tag)
     }
 }

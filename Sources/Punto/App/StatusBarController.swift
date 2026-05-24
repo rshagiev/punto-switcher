@@ -18,12 +18,7 @@ final class StatusBarController: NSObject {
     private var enabledMenuItem: NSMenuItem?
     private var soundEffectsMenuItem: NSMenuItem?
     private var disableCurrentAppMenuItem: NSMenuItem?
-    private var convertHotkeyMenuItem: NSMenuItem?
-    private var toggleCaseHotkeyMenuItem: NSMenuItem?
-    private var toggleAutoCorrectionHotkeyMenuItem: NSMenuItem?
-    private var cancelLayoutChangeHotkeyMenuItem: NSMenuItem?
-    private var findInYandexHotkeyMenuItem: NSMenuItem?
-    private var findInSlovariHotkeyMenuItem: NSMenuItem?
+    private var hotkeyMenuItems: [HotkeySlot: NSMenuItem] = [:]
     private var isFlashing = false
     private var currentIconState: StatusIconState?
 
@@ -128,29 +123,13 @@ final class StatusBarController: NSObject {
         menu.addItem(NSMenuItem.separator())
 
         // Hotkey info (non-clickable) - show actual hotkeys from settings
-        convertHotkeyMenuItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
-        convertHotkeyMenuItem?.isEnabled = false
-        menu.addItem(convertHotkeyMenuItem!)
-
-        toggleCaseHotkeyMenuItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
-        toggleCaseHotkeyMenuItem?.isEnabled = false
-        menu.addItem(toggleCaseHotkeyMenuItem!)
-
-        toggleAutoCorrectionHotkeyMenuItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
-        toggleAutoCorrectionHotkeyMenuItem?.isEnabled = false
-        menu.addItem(toggleAutoCorrectionHotkeyMenuItem!)
-
-        cancelLayoutChangeHotkeyMenuItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
-        cancelLayoutChangeHotkeyMenuItem?.isEnabled = false
-        menu.addItem(cancelLayoutChangeHotkeyMenuItem!)
-
-        findInYandexHotkeyMenuItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
-        findInYandexHotkeyMenuItem?.isEnabled = false
-        menu.addItem(findInYandexHotkeyMenuItem!)
-
-        findInSlovariHotkeyMenuItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
-        findInSlovariHotkeyMenuItem?.isEnabled = false
-        menu.addItem(findInSlovariHotkeyMenuItem!)
+        hotkeyMenuItems.removeAll()
+        for command in HotkeyCommandPolicy.displayOrder {
+            let menuItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+            menuItem.isEnabled = false
+            hotkeyMenuItems[command.slot] = menuItem
+            menu.addItem(menuItem)
+        }
         updateHotkeyDisplay()
 
         menu.addItem(NSMenuItem.separator())
@@ -244,12 +223,26 @@ final class StatusBarController: NSObject {
     }
 
     func updateHotkeyDisplay() {
-        convertHotkeyMenuItem?.title = "Convert Layout\t\(settingsManager.convertLayoutHotkey.displayString)"
-        toggleCaseHotkeyMenuItem?.title = "Toggle Case\t\(settingsManager.toggleCaseHotkey.displayString)"
-        toggleAutoCorrectionHotkeyMenuItem?.title = "Toggle Auto-correction\t\(settingsManager.toggleAutoCorrectionHotkey.displayString)"
-        cancelLayoutChangeHotkeyMenuItem?.title = "Cancel Last Conversion\t\(settingsManager.cancelLayoutChangeHotkey.displayString)"
-        findInYandexHotkeyMenuItem?.title = "Find in Yandex\t\(settingsManager.findInYandexHotkey.displayString)"
-        findInSlovariHotkeyMenuItem?.title = "Find in Translate\t\(settingsManager.findInSlovariHotkey.displayString)"
+        for command in HotkeyCommandPolicy.displayOrder {
+            hotkeyMenuItems[command.slot]?.title = "\(command.title)\t\(hotkey(for: command.slot).displayString)"
+        }
+    }
+
+    private func hotkey(for slot: HotkeySlot) -> Hotkey {
+        switch slot {
+        case .convertLayout:
+            return settingsManager.convertLayoutHotkey
+        case .toggleCase:
+            return settingsManager.toggleCaseHotkey
+        case .toggleAutoCorrection:
+            return settingsManager.toggleAutoCorrectionHotkey
+        case .cancelLayoutChange:
+            return settingsManager.cancelLayoutChangeHotkey
+        case .findInYandex:
+            return settingsManager.findInYandexHotkey
+        case .findInSlovari:
+            return settingsManager.findInSlovariHotkey
+        }
     }
 
     func refreshCurrentApplicationState() {
