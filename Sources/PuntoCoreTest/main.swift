@@ -72,6 +72,7 @@ let suites = [
         try runAutoCorrectionRuntimePolicyTests()
         try runAutoCorrectionUndoLearningPolicyTests()
         try runAutoCorrectionRuleStoreTests()
+        try runLegacyUserRulePolicyTests()
         try runAutoCorrectionRuleSourcePolicyTests()
         try runAutoCorrectionStarterCatalogTests()
         try runApplicationReturnKeyPolicyTests()
