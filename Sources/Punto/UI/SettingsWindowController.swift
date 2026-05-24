@@ -20,14 +20,8 @@ final class SettingsWindowController: NSWindowController {
     private var rulesSearchField: NSSearchField?
     private var rulesStatusLabel: NSTextField?
     private var filteredRuleIndexes: [Int] = []
-    private var disabledAppsWindow: NSWindow?
-    private var disabledAppsTableView: NSTableView?
-    private var disabledAppsStatusLabel: NSTextField?
-    private var disabledAppBundleIDs: [String] = []
-    private var resetOnReturnWindow: NSWindow?
-    private var resetOnReturnTableView: NSTableView?
-    private var resetOnReturnStatusLabel: NSTextField?
-    private var resetOnReturnBundleComponents: [String] = []
+    private var disabledApplicationsEditor: DisabledApplicationsEditorController?
+    private var resetOnReturnEditor: ResetOnReturnEditorController?
     private var layoutMemoryWindow: NSWindow?
     private var layoutMemoryTableView: NSTableView?
     private var layoutMemoryStatusLabel: NSTextField?
@@ -1085,166 +1079,24 @@ final class SettingsWindowController: NSWindowController {
     }
 
     @objc private func showDisabledAppsEditor(_ sender: NSButton) {
-        if let disabledAppsWindow {
-            disabledAppsWindow.makeKeyAndOrderFront(nil)
-            NSApp.activate(ignoringOtherApps: true)
-            return
+        if disabledApplicationsEditor == nil {
+            disabledApplicationsEditor = DisabledApplicationsEditorController(
+                settingsManager: settingsManager,
+                currentApplication: currentApplication,
+                onChange: { [weak self] in self?.refreshDisabledAppCount() }
+            )
         }
-
-        let editorWindow = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 640, height: 360),
-            styleMask: [.titled, .closable, .miniaturizable],
-            backing: .buffered,
-            defer: false
-        )
-        editorWindow.title = "Disabled Applications"
-        editorWindow.center()
-        editorWindow.isReleasedWhenClosed = false
-        editorWindow.delegate = self
-
-        let root = NSStackView()
-        root.orientation = .vertical
-        root.alignment = .leading
-        root.spacing = 10
-        root.edgeInsets = NSEdgeInsets(top: 16, left: 16, bottom: 16, right: 16)
-        root.translatesAutoresizingMaskIntoConstraints = false
-
-        let tableView = NSTableView()
-        tableView.usesAlternatingRowBackgroundColors = true
-        tableView.allowsMultipleSelection = true
-        tableView.dataSource = self
-        tableView.delegate = self
-
-        addRuleColumn(to: tableView, identifier: "appName", title: "Application", width: 220)
-        addRuleColumn(to: tableView, identifier: "bundleID", title: "Bundle ID", width: 360)
-
-        let scrollView = NSScrollView()
-        scrollView.hasVerticalScroller = true
-        scrollView.borderType = .bezelBorder
-        scrollView.documentView = tableView
-        scrollView.translatesAutoresizingMaskIntoConstraints = false
-
-        let statusLabel = NSTextField(labelWithString: "")
-        statusLabel.font = .systemFont(ofSize: 12)
-        statusLabel.textColor = .secondaryLabelColor
-
-        let addCurrentButton = NSButton(title: "Add Current App", target: self, action: #selector(addCurrentDisabledApplication(_:)))
-        let removeButton = NSButton(title: "Remove", target: self, action: #selector(removeSelectedDisabledApplications(_:)))
-        let closeButton = NSButton(title: "Close", target: self, action: #selector(closeDisabledAppsEditor(_:)))
-
-        let spacer = NSView()
-        spacer.translatesAutoresizingMaskIntoConstraints = false
-        let buttonRow = NSStackView(views: [addCurrentButton, removeButton, spacer, closeButton])
-        buttonRow.orientation = .horizontal
-        buttonRow.alignment = .centerY
-        buttonRow.spacing = 8
-        buttonRow.translatesAutoresizingMaskIntoConstraints = false
-        spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
-
-        root.addArrangedSubview(scrollView)
-        root.addArrangedSubview(statusLabel)
-        root.addArrangedSubview(buttonRow)
-
-        editorWindow.contentView?.addSubview(root)
-        NSLayoutConstraint.activate([
-            root.topAnchor.constraint(equalTo: editorWindow.contentView!.topAnchor),
-            root.leadingAnchor.constraint(equalTo: editorWindow.contentView!.leadingAnchor),
-            root.trailingAnchor.constraint(equalTo: editorWindow.contentView!.trailingAnchor),
-            root.bottomAnchor.constraint(equalTo: editorWindow.contentView!.bottomAnchor),
-            scrollView.widthAnchor.constraint(equalTo: root.widthAnchor),
-            scrollView.heightAnchor.constraint(equalToConstant: 260),
-            statusLabel.widthAnchor.constraint(equalTo: root.widthAnchor),
-            buttonRow.widthAnchor.constraint(equalTo: root.widthAnchor)
-        ])
-
-        disabledAppsWindow = editorWindow
-        disabledAppsTableView = tableView
-        disabledAppsStatusLabel = statusLabel
-        reloadDisabledAppsEditor()
-        editorWindow.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
+        disabledApplicationsEditor?.showAndActivate()
     }
 
     @objc private func showResetOnReturnEditor(_ sender: NSButton) {
-        if let resetOnReturnWindow {
-            resetOnReturnWindow.makeKeyAndOrderFront(nil)
-            NSApp.activate(ignoringOtherApps: true)
-            return
+        if resetOnReturnEditor == nil {
+            resetOnReturnEditor = ResetOnReturnEditorController(
+                settingsManager: settingsManager,
+                onChange: { [weak self] in self?.refreshResetOnReturnCount() }
+            )
         }
-
-        let editorWindow = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 520, height: 340),
-            styleMask: [.titled, .closable, .miniaturizable],
-            backing: .buffered,
-            defer: false
-        )
-        editorWindow.title = "Return Reset Apps"
-        editorWindow.center()
-        editorWindow.isReleasedWhenClosed = false
-        editorWindow.delegate = self
-
-        let root = NSStackView()
-        root.orientation = .vertical
-        root.alignment = .leading
-        root.spacing = 10
-        root.edgeInsets = NSEdgeInsets(top: 16, left: 16, bottom: 16, right: 16)
-        root.translatesAutoresizingMaskIntoConstraints = false
-
-        let tableView = NSTableView()
-        tableView.usesAlternatingRowBackgroundColors = true
-        tableView.allowsMultipleSelection = true
-        tableView.dataSource = self
-        tableView.delegate = self
-
-        addRuleColumn(to: tableView, identifier: "resetOnReturnComponent", title: "Bundle ID component", width: 460)
-
-        let scrollView = NSScrollView()
-        scrollView.hasVerticalScroller = true
-        scrollView.borderType = .bezelBorder
-        scrollView.documentView = tableView
-        scrollView.translatesAutoresizingMaskIntoConstraints = false
-
-        let statusLabel = NSTextField(labelWithString: "")
-        statusLabel.font = .systemFont(ofSize: 12)
-        statusLabel.textColor = .secondaryLabelColor
-        statusLabel.lineBreakMode = .byTruncatingTail
-
-        let addTelegramButton = NSButton(title: "Add Telegram", target: self, action: #selector(addTelegramResetOnReturnComponent(_:)))
-        let addButton = NSButton(title: "Add", target: self, action: #selector(addResetOnReturnComponent(_:)))
-        let removeButton = NSButton(title: "Remove", target: self, action: #selector(removeSelectedResetOnReturnComponents(_:)))
-        let closeButton = NSButton(title: "Close", target: self, action: #selector(closeResetOnReturnEditor(_:)))
-
-        let spacer = NSView()
-        spacer.translatesAutoresizingMaskIntoConstraints = false
-        let buttonRow = NSStackView(views: [addTelegramButton, addButton, removeButton, spacer, closeButton])
-        buttonRow.orientation = .horizontal
-        buttonRow.alignment = .centerY
-        buttonRow.spacing = 8
-        buttonRow.translatesAutoresizingMaskIntoConstraints = false
-        spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
-
-        root.addArrangedSubview(scrollView)
-        root.addArrangedSubview(statusLabel)
-        root.addArrangedSubview(buttonRow)
-
-        editorWindow.contentView?.addSubview(root)
-        NSLayoutConstraint.activate([
-            root.topAnchor.constraint(equalTo: editorWindow.contentView!.topAnchor),
-            root.leadingAnchor.constraint(equalTo: editorWindow.contentView!.leadingAnchor),
-            root.trailingAnchor.constraint(equalTo: editorWindow.contentView!.trailingAnchor),
-            root.bottomAnchor.constraint(equalTo: editorWindow.contentView!.bottomAnchor),
-            scrollView.widthAnchor.constraint(equalTo: root.widthAnchor),
-            scrollView.heightAnchor.constraint(equalToConstant: 240),
-            statusLabel.widthAnchor.constraint(equalTo: root.widthAnchor),
-            buttonRow.widthAnchor.constraint(equalTo: root.widthAnchor)
-        ])
-
-        resetOnReturnWindow = editorWindow
-        resetOnReturnTableView = tableView
-        resetOnReturnStatusLabel = statusLabel
-        reloadResetOnReturnEditor()
-        editorWindow.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
+        resetOnReturnEditor?.showAndActivate()
     }
 
     @objc private func showLayoutMemoryEditor(_ sender: NSButton) {
@@ -1452,37 +1304,6 @@ final class SettingsWindowController: NSWindowController {
         }
     }
 
-    @objc private func addTelegramResetOnReturnComponent(_ sender: NSButton) {
-        setResetOnReturnComponents(resetOnReturnBundleComponents + ["telegram"])
-        if let row = resetOnReturnBundleComponents.firstIndex(of: "telegram") {
-            resetOnReturnTableView?.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
-        }
-    }
-
-    @objc private func addResetOnReturnComponent(_ sender: NSButton) {
-        let draft = uniqueDraftResetOnReturnComponent()
-        setResetOnReturnComponents(resetOnReturnBundleComponents + [draft])
-        guard let row = resetOnReturnBundleComponents.firstIndex(of: draft) else { return }
-        resetOnReturnTableView?.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
-        resetOnReturnTableView?.editColumn(0, row: row, with: nil, select: true)
-    }
-
-    @objc private func removeSelectedResetOnReturnComponents(_ sender: NSButton) {
-        guard let tableView = resetOnReturnTableView else { return }
-        let selectedRows = tableView.selectedRowIndexes
-        guard !selectedRows.isEmpty else { return }
-
-        var components = resetOnReturnBundleComponents
-        for row in selectedRows.reversed() where row < components.count {
-            components.remove(at: row)
-        }
-        setResetOnReturnComponents(components)
-    }
-
-    @objc private func closeResetOnReturnEditor(_ sender: NSButton) {
-        resetOnReturnWindow?.close()
-    }
-
     @objc private func removeSelectedRememberedLayouts(_ sender: NSButton) {
         guard let tableView = layoutMemoryTableView else { return }
         let selectedRows = tableView.selectedRowIndexes
@@ -1507,57 +1328,6 @@ final class SettingsWindowController: NSWindowController {
         layoutMemoryWindow?.close()
     }
 
-    @objc private func addCurrentDisabledApplication(_ sender: NSButton) {
-        guard let app = currentApplication(),
-              app.bundleID != Bundle.main.bundleIdentifier else {
-            NSSound.beep()
-            return
-        }
-
-        settingsManager.setApplicationDisabled(bundleID: app.bundleID, disabled: true)
-        reloadDisabledAppsEditor()
-        refreshDisabledAppCount()
-
-        if let row = disabledAppBundleIDs.firstIndex(of: app.bundleID) {
-            disabledAppsTableView?.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
-        }
-    }
-
-    @objc private func removeSelectedDisabledApplications(_ sender: NSButton) {
-        guard let tableView = disabledAppsTableView else { return }
-        let selectedRows = tableView.selectedRowIndexes
-        guard !selectedRows.isEmpty else { return }
-
-        for row in selectedRows.reversed() where row < disabledAppBundleIDs.count {
-            settingsManager.setApplicationDisabled(bundleID: disabledAppBundleIDs[row], disabled: false)
-        }
-
-        reloadDisabledAppsEditor()
-        refreshDisabledAppCount()
-    }
-
-    @objc private func closeDisabledAppsEditor(_ sender: NSButton) {
-        disabledAppsWindow?.close()
-    }
-
-    private func reloadDisabledAppsEditor() {
-        disabledAppBundleIDs = Array(settingsManager.disabledApplicationBundleIDs).sorted {
-            disabledAppDisplayName(for: $0).localizedCaseInsensitiveCompare(disabledAppDisplayName(for: $1)) == .orderedAscending
-        }
-        disabledAppsTableView?.reloadData()
-        disabledAppsStatusLabel?.stringValue = disabledAppBundleIDs.isEmpty
-            ? "Punto is active in every application."
-            : "\(disabledAppBundleIDs.count) disabled application\(disabledAppBundleIDs.count == 1 ? "" : "s")"
-    }
-
-    private func reloadResetOnReturnEditor() {
-        resetOnReturnBundleComponents = Array(settingsManager.resetOnReturnBundleComponents).sorted()
-        resetOnReturnTableView?.reloadData()
-        resetOnReturnStatusLabel?.stringValue = resetOnReturnBundleComponents.isEmpty
-            ? "Return-key text tracking reset is disabled for every app."
-            : "\(resetOnReturnBundleComponents.count) bundle component\(resetOnReturnBundleComponents.count == 1 ? "" : "s")"
-    }
-
     private func reloadLayoutMemoryEditor() {
         rememberedLayoutRows = settingsManager.rememberedApplicationLayouts
             .map { (bundleID: $0.key, layoutID: $0.value) }
@@ -1570,25 +1340,6 @@ final class SettingsWindowController: NSWindowController {
         layoutMemoryStatusLabel?.stringValue = rememberedLayoutRows.isEmpty
             ? "No application-specific layouts are remembered."
             : "\(rememberedLayoutRows.count) remembered application layout\(rememberedLayoutRows.count == 1 ? "" : "s")"
-    }
-
-    private func setResetOnReturnComponents(_ components: [String]) {
-        settingsManager.resetOnReturnBundleComponents = Set(components)
-        reloadResetOnReturnEditor()
-        refreshResetOnReturnCount()
-    }
-
-    private func uniqueDraftResetOnReturnComponent() -> String {
-        let existing = Set(resetOnReturnBundleComponents)
-        if !existing.contains("bundle") {
-            return "bundle"
-        }
-
-        var suffix = 2
-        while existing.contains("bundle\(suffix)") {
-            suffix += 1
-        }
-        return "bundle\(suffix)"
     }
 
     private func disabledAppDisplayName(for bundleID: String) -> String {
@@ -1668,18 +1419,6 @@ extension SettingsWindowController: NSWindowDelegate {
             rulesStatusLabel = nil
             filteredRuleIndexes = []
         }
-        if notification.object as? NSWindow === disabledAppsWindow {
-            disabledAppsWindow = nil
-            disabledAppsTableView = nil
-            disabledAppsStatusLabel = nil
-            disabledAppBundleIDs = []
-        }
-        if notification.object as? NSWindow === resetOnReturnWindow {
-            resetOnReturnWindow = nil
-            resetOnReturnTableView = nil
-            resetOnReturnStatusLabel = nil
-            resetOnReturnBundleComponents = []
-        }
         if notification.object as? NSWindow === layoutMemoryWindow {
             layoutMemoryWindow = nil
             layoutMemoryTableView = nil
@@ -1691,12 +1430,6 @@ extension SettingsWindowController: NSWindowDelegate {
 
 extension SettingsWindowController: NSTableViewDataSource, NSTableViewDelegate {
     func numberOfRows(in tableView: NSTableView) -> Int {
-        if tableView === disabledAppsTableView {
-            return disabledAppBundleIDs.count
-        }
-        if tableView === resetOnReturnTableView {
-            return resetOnReturnBundleComponents.count
-        }
         if tableView === layoutMemoryTableView {
             return rememberedLayoutRows.count
         }
@@ -1704,12 +1437,6 @@ extension SettingsWindowController: NSTableViewDataSource, NSTableViewDelegate {
     }
 
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
-        if tableView === disabledAppsTableView {
-            return disabledApplicationCell(tableColumn: tableColumn, row: row)
-        }
-        if tableView === resetOnReturnTableView {
-            return resetOnReturnComponentCell(row: row)
-        }
         if tableView === layoutMemoryTableView {
             return rememberedLayoutCell(tableColumn: tableColumn, row: row)
         }
@@ -1752,46 +1479,6 @@ extension SettingsWindowController: NSTableViewDataSource, NSTableViewDelegate {
         return textField
     }
 
-    private func disabledApplicationCell(tableColumn: NSTableColumn?, row: Int) -> NSView? {
-        guard row < disabledAppBundleIDs.count,
-              let identifier = tableColumn?.identifier.rawValue else {
-            return nil
-        }
-
-        let bundleID = disabledAppBundleIDs[row]
-        let textField = NSTextField()
-        textField.isBordered = false
-        textField.backgroundColor = .clear
-        textField.isEditable = false
-
-        switch identifier {
-        case "appName":
-            textField.stringValue = disabledAppDisplayName(for: bundleID)
-        case "bundleID":
-            textField.stringValue = bundleID
-            textField.textColor = .secondaryLabelColor
-        default:
-            return nil
-        }
-
-        return textField
-    }
-
-    private func resetOnReturnComponentCell(row: Int) -> NSView? {
-        guard row < resetOnReturnBundleComponents.count else { return nil }
-
-        let textField = NSTextField()
-        textField.isBordered = false
-        textField.backgroundColor = .clear
-        textField.isEditable = true
-        textField.delegate = self
-        textField.tag = row
-        textField.identifier = NSUserInterfaceItemIdentifier("resetOnReturnComponent")
-        textField.stringValue = resetOnReturnBundleComponents[row]
-        textField.placeholderString = "telegram"
-        return textField
-    }
-
     private func rememberedLayoutCell(tableColumn: NSTableColumn?, row: Int) -> NSView? {
         guard row < rememberedLayoutRows.count,
               let identifier = tableColumn?.identifier.rawValue else {
@@ -1826,14 +1513,6 @@ extension SettingsWindowController: NSTextFieldDelegate {
         guard let textField = obj.object as? NSTextField,
               let identifier = textField.identifier?.rawValue,
               textField.tag >= 0 else {
-            return
-        }
-
-        if identifier == "resetOnReturnComponent" {
-            guard textField.tag < resetOnReturnBundleComponents.count else { return }
-            var components = resetOnReturnBundleComponents
-            components[textField.tag] = textField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
-            setResetOnReturnComponents(components)
             return
         }
 
