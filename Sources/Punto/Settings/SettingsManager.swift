@@ -100,24 +100,17 @@ final class SettingsManager {
     // MARK: - Properties
 
     private let store = SettingsDefaultsStore()
+    private lazy var resolver = SettingsValueResolver(store: store)
 
     /// Whether the app functionality is enabled
     var isEnabled: Bool {
-        get { persistedBool(forKey: Keys.isEnabled) ?? SettingsPersistencePolicy.defaultIsEnabled }
+        get { resolver.bool(nativeKey: Keys.isEnabled, defaultValue: SettingsPersistencePolicy.defaultIsEnabled) }
         set { store.set(newValue, forKey: Keys.isEnabled) }
     }
 
     /// Whether this is the first launch
     var isFirstLaunch: Bool {
-        get {
-            SettingsPersistencePolicy.effectiveBoolWithLegacyAlias(
-                hasPersistedValue: hasStoredValue(forKey: Keys.isFirstLaunch),
-                persistedValue: persistedBool(forKey: Keys.isFirstLaunch),
-                hasLegacyValue: hasStoredValue(forKey: ImportKeys.isFirstInstallation),
-                legacyValue: persistedBool(forKey: ImportKeys.isFirstInstallation),
-                defaultValue: SettingsPersistencePolicy.defaultIsFirstLaunch
-            )
-        }
+        get { resolver.bool(nativeKey: Keys.isFirstLaunch, legacyKey: ImportKeys.isFirstInstallation, defaultValue: SettingsPersistencePolicy.defaultIsFirstLaunch) }
         set { store.set(newValue, forKey: Keys.isFirstLaunch) }
     }
 
@@ -136,39 +129,19 @@ final class SettingsManager {
 
     /// Whether to show the icon in the menu bar
     var showInMenuBar: Bool {
-        get {
-            SettingsPersistencePolicy.effectiveBool(
-                hasPersistedValue: store.object(forKey: Keys.showInMenuBar) != nil,
-                persistedValue: persistedBool(forKey: Keys.showInMenuBar),
-                defaultValue: SettingsPersistencePolicy.defaultShowInMenuBar
-            )
-        }
+        get { resolver.bool(nativeKey: Keys.showInMenuBar, defaultValue: SettingsPersistencePolicy.defaultShowInMenuBar) }
         set { store.set(newValue, forKey: Keys.showInMenuBar) }
     }
 
     /// Whether advanced settings are visible in the preferences window
     var showAdvancedSettings: Bool {
-        get {
-            SettingsPersistencePolicy.effectiveBool(
-                hasPersistedValue: hasStoredValue(forKey: Keys.showAdvancedSettings),
-                persistedValue: persistedBool(forKey: Keys.showAdvancedSettings),
-                defaultValue: SettingsPersistencePolicy.defaultShowAdvancedSettings
-            )
-        }
+        get { resolver.bool(nativeKey: Keys.showAdvancedSettings, defaultValue: SettingsPersistencePolicy.defaultShowAdvancedSettings) }
         set { store.set(newValue, forKey: Keys.showAdvancedSettings) }
     }
 
     /// Whether to launch at login
     var launchAtLogin: Bool {
-        get {
-            SettingsPersistencePolicy.effectiveBoolWithLegacyAlias(
-                hasPersistedValue: hasStoredValue(forKey: Keys.launchAtLogin),
-                persistedValue: persistedBool(forKey: Keys.launchAtLogin),
-                hasLegacyValue: hasStoredValue(forKey: ImportKeys.launchesOnStartup),
-                legacyValue: persistedBool(forKey: ImportKeys.launchesOnStartup),
-                defaultValue: SettingsPersistencePolicy.defaultLaunchAtLogin
-            )
-        }
+        get { resolver.bool(nativeKey: Keys.launchAtLogin, legacyKey: ImportKeys.launchesOnStartup, defaultValue: SettingsPersistencePolicy.defaultLaunchAtLogin) }
         set {
             store.set(newValue, forKey: Keys.launchAtLogin)
             updateLoginItem(enabled: newValue)
@@ -178,7 +151,7 @@ final class SettingsManager {
     /// Hotkey for converting layout
     var convertLayoutHotkey: Hotkey {
         get {
-            persistedHotkey(
+            resolver.hotkey(
                 nativeKey: Keys.convertLayoutHotkey,
                 legacyKey: ImportKeys.shortcutChangeLayout,
                 fallback: Hotkey.defaultConvertLayout
@@ -193,7 +166,7 @@ final class SettingsManager {
     /// Hotkey for toggling case
     var toggleCaseHotkey: Hotkey {
         get {
-            persistedHotkey(
+            resolver.hotkey(
                 nativeKey: Keys.toggleCaseHotkey,
                 legacyKey: ImportKeys.shortcutChangeCase,
                 fallback: Hotkey.defaultToggleCase
@@ -208,7 +181,7 @@ final class SettingsManager {
     /// Hotkey for toggling auto-correction
     var toggleAutoCorrectionHotkey: Hotkey {
         get {
-            persistedHotkey(
+            resolver.hotkey(
                 nativeKey: Keys.toggleAutoCorrectionHotkey,
                 legacyKey: ImportKeys.shortcutSwitchAutocorrection,
                 fallback: Hotkey.defaultToggleAutoCorrection
@@ -223,7 +196,7 @@ final class SettingsManager {
     /// Hotkey for cancelling the last layout change.
     var cancelLayoutChangeHotkey: Hotkey {
         get {
-            persistedHotkey(
+            resolver.hotkey(
                 nativeKey: Keys.cancelLayoutChangeHotkey,
                 legacyKey: ImportKeys.shortcutCancelLayoutChange,
                 fallback: Hotkey.defaultCancelLayoutChange
@@ -238,7 +211,7 @@ final class SettingsManager {
     /// Hotkey for opening selected text in Yandex search.
     var findInYandexHotkey: Hotkey {
         get {
-            persistedHotkey(
+            resolver.hotkey(
                 nativeKey: Keys.findInYandexHotkey,
                 legacyKey: ImportKeys.shortcutFindInYandex,
                 fallback: Hotkey.defaultFindInYandex
@@ -253,7 +226,7 @@ final class SettingsManager {
     /// Hotkey for opening selected text in Yandex Translate/Slovari flow.
     var findInSlovariHotkey: Hotkey {
         get {
-            persistedHotkey(
+            resolver.hotkey(
                 nativeKey: Keys.findInSlovariHotkey,
                 legacyKey: ImportKeys.shortcutFindInSlovari,
                 fallback: Hotkey.defaultFindInSlovari
@@ -268,8 +241,8 @@ final class SettingsManager {
     var searchSelectedTextByDoubleClick: Bool {
         get {
             SearchbarSettingsPolicy.effectiveShouldSearchByDoubleClick(
-                hasNativeValue: hasStoredValue(forKey: Keys.searchSelectedTextByDoubleClick),
-                nativeValue: persistedBool(forKey: Keys.searchSelectedTextByDoubleClick),
+                hasNativeValue: resolver.hasStoredValue(Keys.searchSelectedTextByDoubleClick),
+                nativeValue: store.bool(forKey: Keys.searchSelectedTextByDoubleClick),
                 legacySnapshot: SearchbarSettingsPolicy.snapshot(from: store.dictionary(forKey: ImportKeys.searchbarSettings))
             )
         }
@@ -280,49 +253,26 @@ final class SettingsManager {
 
     /// Переключать раскладку после конвертации
     var switchLayoutAfterConversion: Bool {
-        get { persistedBool(forKey: Keys.switchLayoutAfterConversion) ?? SettingsPersistencePolicy.defaultSwitchLayoutAfterConversion }
+        get { resolver.bool(nativeKey: Keys.switchLayoutAfterConversion, defaultValue: SettingsPersistencePolicy.defaultSwitchLayoutAfterConversion) }
         set { store.set(newValue, forKey: Keys.switchLayoutAfterConversion) }
     }
 
     var switchLayoutAfterSelectedTextConversion: Bool {
-        get {
-            SettingsPersistencePolicy.effectiveBoolWithLegacyAlias(
-                hasPersistedValue: hasStoredValue(forKey: Keys.switchLayoutAfterSelectedTextConversion),
-                persistedValue: persistedBool(forKey: Keys.switchLayoutAfterSelectedTextConversion),
-                hasLegacyValue: hasStoredValue(forKey: ImportKeys.switchLayoutOnSelectedTextSwitch),
-                legacyValue: persistedBool(forKey: ImportKeys.switchLayoutOnSelectedTextSwitch),
-                defaultValue: SettingsPersistencePolicy.defaultSwitchLayoutAfterSelectedTextConversion
-            )
-        }
+        get { resolver.bool(nativeKey: Keys.switchLayoutAfterSelectedTextConversion, legacyKey: ImportKeys.switchLayoutOnSelectedTextSwitch, defaultValue: SettingsPersistencePolicy.defaultSwitchLayoutAfterSelectedTextConversion) }
         set {
             store.set(newValue, forKey: Keys.switchLayoutAfterSelectedTextConversion)
         }
     }
 
     var manualConversionDisabled: Bool {
-        get {
-            SettingsPersistencePolicy.effectiveBoolWithLegacyAlias(
-                hasPersistedValue: hasStoredValue(forKey: Keys.manualConversionDisabled),
-                persistedValue: persistedBool(forKey: Keys.manualConversionDisabled),
-                hasLegacyValue: hasStoredValue(forKey: ImportKeys.isManualConversionDisabled),
-                legacyValue: persistedBool(forKey: ImportKeys.isManualConversionDisabled),
-                defaultValue: SettingsPersistencePolicy.defaultManualConversionDisabled
-            )
-        }
+        get { resolver.bool(nativeKey: Keys.manualConversionDisabled, legacyKey: ImportKeys.isManualConversionDisabled, defaultValue: SettingsPersistencePolicy.defaultManualConversionDisabled) }
         set {
             store.set(newValue, forKey: Keys.manualConversionDisabled)
         }
     }
 
     var russianKeyboardLayoutType: KeyboardLayoutType {
-        get {
-            SettingsPersistencePolicy.effectiveRussianKeyboardLayoutType(
-                hasPersistedValue: hasStoredValue(forKey: Keys.russianKeyboardLayoutType),
-                persistedValue: store.string(forKey: Keys.russianKeyboardLayoutType),
-                hasLegacyValue: hasStoredValue(forKey: ImportKeys.kbdLayoutType),
-                legacyValue: store.string(forKey: ImportKeys.kbdLayoutType)
-            )
-        }
+        get { resolver.russianKeyboardLayoutType(nativeKey: Keys.russianKeyboardLayoutType, legacyKey: ImportKeys.kbdLayoutType) }
         set {
             store.set(newValue.rawValue, forKey: Keys.russianKeyboardLayoutType)
             NotificationCenter.default.post(name: .puntoRussianKeyboardLayoutTypeChanged, object: self)
@@ -331,28 +281,14 @@ final class SettingsManager {
     }
 
     var preferredEnglishInputSourceID: String? {
-        get {
-            SettingsPersistencePolicy.effectiveInputSourceID(
-                hasPersistedValue: hasStoredValue(forKey: Keys.preferredEnglishInputSourceID),
-                persistedValue: store.string(forKey: Keys.preferredEnglishInputSourceID),
-                hasLegacyValue: hasStoredValue(forKey: ImportKeys.englishLayoutID),
-                legacyValue: store.string(forKey: ImportKeys.englishLayoutID)
-            )
-        }
+        get { resolver.inputSourceID(nativeKey: Keys.preferredEnglishInputSourceID, legacyKey: ImportKeys.englishLayoutID) }
         set {
             setPreferredInputSourceID(newValue, nativeKey: Keys.preferredEnglishInputSourceID)
         }
     }
 
     var preferredRussianInputSourceID: String? {
-        get {
-            SettingsPersistencePolicy.effectiveInputSourceID(
-                hasPersistedValue: hasStoredValue(forKey: Keys.preferredRussianInputSourceID),
-                persistedValue: store.string(forKey: Keys.preferredRussianInputSourceID),
-                hasLegacyValue: hasStoredValue(forKey: ImportKeys.russianLayoutID),
-                legacyValue: store.string(forKey: ImportKeys.russianLayoutID)
-            )
-        }
+        get { resolver.inputSourceID(nativeKey: Keys.preferredRussianInputSourceID, legacyKey: ImportKeys.russianLayoutID) }
         set {
             setPreferredInputSourceID(newValue, nativeKey: Keys.preferredRussianInputSourceID)
         }
@@ -360,15 +296,7 @@ final class SettingsManager {
 
     /// Punto Switcher-style per-application layout memory.
     var rememberInputSourceForEachApp: Bool {
-        get {
-            SettingsPersistencePolicy.effectiveBoolWithLegacyAlias(
-                hasPersistedValue: hasStoredValue(forKey: Keys.rememberInputSourceForEachApp),
-                persistedValue: persistedBool(forKey: Keys.rememberInputSourceForEachApp),
-                hasLegacyValue: hasStoredValue(forKey: ImportKeys.shouldRememberInputSourceForEachApp),
-                legacyValue: persistedBool(forKey: ImportKeys.shouldRememberInputSourceForEachApp),
-                defaultValue: SettingsPersistencePolicy.defaultRememberInputSourceForEachApp
-            )
-        }
+        get { resolver.bool(nativeKey: Keys.rememberInputSourceForEachApp, legacyKey: ImportKeys.shouldRememberInputSourceForEachApp, defaultValue: SettingsPersistencePolicy.defaultRememberInputSourceForEachApp) }
         set {
             store.set(newValue, forKey: Keys.rememberInputSourceForEachApp)
         }
@@ -389,14 +317,7 @@ final class SettingsManager {
     }
 
     var disabledApplicationBundleIDs: Set<String> {
-        get {
-            SettingsPersistencePolicy.effectiveDisabledApplicationBundleIDs(
-                hasPersistedValue: hasStoredValue(forKey: Keys.disabledApplicationBundleIDs),
-                persistedValue: Set(store.stringArray(forKey: Keys.disabledApplicationBundleIDs) ?? []),
-                hasLegacyValue: hasStoredValue(forKey: ImportKeys.disabledApps),
-                legacyValue: Set(store.stringArray(forKey: ImportKeys.disabledApps) ?? [])
-            )
-        }
+        get { resolver.disabledApplicationBundleIDs(nativeKey: Keys.disabledApplicationBundleIDs, legacyKey: ImportKeys.disabledApps) }
         set {
             let normalized = Array(SettingsPersistencePolicy.normalizedDisabledApplicationBundleIDs(newValue)).sorted()
             store.set(normalized, forKey: Keys.disabledApplicationBundleIDs)
@@ -411,15 +332,7 @@ final class SettingsManager {
     }
 
     var completelyDisableInExceptionApplications: Bool {
-        get {
-            SettingsPersistencePolicy.effectiveBoolWithLegacyAlias(
-                hasPersistedValue: hasStoredValue(forKey: Keys.completelyDisableInExceptionApplications),
-                persistedValue: persistedBool(forKey: Keys.completelyDisableInExceptionApplications),
-                hasLegacyValue: hasStoredValue(forKey: ImportKeys.completelyDisableInExceptionApps),
-                legacyValue: persistedBool(forKey: ImportKeys.completelyDisableInExceptionApps),
-                defaultValue: SettingsPersistencePolicy.defaultCompletelyDisableInExceptionApplications
-            )
-        }
+        get { resolver.bool(nativeKey: Keys.completelyDisableInExceptionApplications, legacyKey: ImportKeys.completelyDisableInExceptionApps, defaultValue: SettingsPersistencePolicy.defaultCompletelyDisableInExceptionApplications) }
         set {
             store.set(newValue, forKey: Keys.completelyDisableInExceptionApplications)
         }
@@ -442,14 +355,7 @@ final class SettingsManager {
     }
 
     var resetOnReturnBundleComponents: Set<String> {
-        get {
-            SettingsPersistencePolicy.effectiveResetOnReturnBundleComponents(
-                hasPersistedComponents: store.object(forKey: Keys.resetOnReturnBundleComponents) != nil,
-                persistedComponents: store.stringArray(forKey: Keys.resetOnReturnBundleComponents).map(Set.init),
-                hasLegacyComponents: store.object(forKey: ImportKeys.switcherResetOnReturn) != nil,
-                legacyComponents: store.stringArray(forKey: ImportKeys.switcherResetOnReturn).map(Set.init)
-            )
-        }
+        get { resolver.resetOnReturnBundleComponents(nativeKey: Keys.resetOnReturnBundleComponents, legacyKey: ImportKeys.switcherResetOnReturn) }
         set {
             let normalized = Array(SettingsPersistencePolicy.normalizedResetOnReturnBundleComponents(newValue)).sorted()
             store.set(
@@ -460,15 +366,7 @@ final class SettingsManager {
     }
 
     var autoCorrectionEnabled: Bool {
-        get {
-            SettingsPersistencePolicy.effectiveBoolWithLegacyAlias(
-                hasPersistedValue: hasStoredValue(forKey: Keys.autoCorrectionEnabled),
-                persistedValue: persistedBool(forKey: Keys.autoCorrectionEnabled),
-                hasLegacyValue: hasStoredValue(forKey: ImportKeys.isAutocorrectionActive),
-                legacyValue: persistedBool(forKey: ImportKeys.isAutocorrectionActive),
-                defaultValue: SettingsPersistencePolicy.defaultAutoCorrectionEnabled
-            )
-        }
+        get { resolver.bool(nativeKey: Keys.autoCorrectionEnabled, legacyKey: ImportKeys.isAutocorrectionActive, defaultValue: SettingsPersistencePolicy.defaultAutoCorrectionEnabled) }
         set {
             store.set(newValue, forKey: Keys.autoCorrectionEnabled)
         }
@@ -476,21 +374,12 @@ final class SettingsManager {
 
     var autoCorrectionStarterRulesEnabled: Bool {
         get {
-            if hasStoredValue(forKey: Keys.autoCorrectionStarterRulesEnabled) {
-                return persistedBool(forKey: Keys.autoCorrectionStarterRulesEnabled)
-                    ?? SettingsPersistencePolicy.defaultAutoCorrectionStarterRulesEnabled
-            }
-
-            if hasStoredValue(forKey: ImportKeys.switcherUseOldRulesDefaultConf) {
-                return persistedBool(forKey: ImportKeys.switcherUseOldRulesDefaultConf)
-                    ?? SettingsPersistencePolicy.defaultAutoCorrectionStarterRulesEnabled
-            }
-
-            return SettingsPersistencePolicy.effectiveBoolWithLegacyAlias(
-                hasPersistedValue: false,
-                persistedValue: nil,
-                hasLegacyValue: hasStoredValue(forKey: ImportKeys.switcherUseOldRulesAccessor),
-                legacyValue: persistedBool(forKey: ImportKeys.switcherUseOldRulesAccessor),
+            resolver.firstStoredBool(
+                keys: [
+                    Keys.autoCorrectionStarterRulesEnabled,
+                    ImportKeys.switcherUseOldRulesDefaultConf,
+                    ImportKeys.switcherUseOldRulesAccessor
+                ],
                 defaultValue: SettingsPersistencePolicy.defaultAutoCorrectionStarterRulesEnabled
             )
         }
@@ -500,63 +389,28 @@ final class SettingsManager {
     }
 
     var autoCorrectOnEnterAndTab: Bool {
-        get {
-            SettingsPersistencePolicy.effectiveBoolWithInvertedLegacyAlias(
-                hasPersistedValue: hasStoredValue(forKey: Keys.autoCorrectOnEnterAndTab),
-                persistedValue: persistedBool(forKey: Keys.autoCorrectOnEnterAndTab),
-                hasLegacyValue: hasStoredValue(forKey: ImportKeys.shouldNotAutoconvertWithTabOrEnter),
-                invertedLegacyValue: persistedBool(forKey: ImportKeys.shouldNotAutoconvertWithTabOrEnter),
-                defaultValue: SettingsPersistencePolicy.defaultAutoCorrectOnEnterAndTab
-            )
-        }
+        get { resolver.invertedLegacyBool(nativeKey: Keys.autoCorrectOnEnterAndTab, legacyKey: ImportKeys.shouldNotAutoconvertWithTabOrEnter, defaultValue: SettingsPersistencePolicy.defaultAutoCorrectOnEnterAndTab) }
         set {
             store.set(newValue, forKey: Keys.autoCorrectOnEnterAndTab)
         }
     }
 
     var autoCorrectionUndoLearningEnabled: Bool {
-        get {
-            SettingsPersistencePolicy.effectiveBoolWithLegacyAlias(
-                hasPersistedValue: hasStoredValue(forKey: Keys.autoCorrectionUndoLearningEnabled),
-                persistedValue: persistedBool(forKey: Keys.autoCorrectionUndoLearningEnabled),
-                hasLegacyValue: SettingsPersistencePolicy.legacyUndoCollectionEnabled(
-                    from: store.dictionary(forKey: ImportKeys.undoLearning)
-                ) != nil,
-                legacyValue: SettingsPersistencePolicy.legacyUndoCollectionEnabled(
-                    from: store.dictionary(forKey: ImportKeys.undoLearning)
-                ) ?? SettingsPersistencePolicy.defaultAutoCorrectionUndoLearningEnabled,
-                defaultValue: SettingsPersistencePolicy.defaultAutoCorrectionUndoLearningEnabled
-            )
-        }
+        get { resolver.undoLearningEnabled(nativeKey: Keys.autoCorrectionUndoLearningEnabled, legacyKey: ImportKeys.undoLearning, defaultValue: SettingsPersistencePolicy.defaultAutoCorrectionUndoLearningEnabled) }
         set {
             store.set(newValue, forKey: Keys.autoCorrectionUndoLearningEnabled)
         }
     }
 
     var suppressAutoCorrectionAfterManualConversion: Bool {
-        get {
-            SettingsPersistencePolicy.effectiveBoolWithInvertedLegacyAlias(
-                hasPersistedValue: hasStoredValue(forKey: Keys.suppressAutoCorrectionAfterManualConversion),
-                persistedValue: persistedBool(forKey: Keys.suppressAutoCorrectionAfterManualConversion),
-                hasLegacyValue: hasStoredValue(forKey: ImportKeys.shouldNotAutoconvertAfterConvertion),
-                invertedLegacyValue: persistedBool(forKey: ImportKeys.shouldNotAutoconvertAfterConvertion),
-                defaultValue: SettingsPersistencePolicy.defaultSuppressAutoCorrectionAfterManualConversion
-            )
-        }
+        get { resolver.invertedLegacyBool(nativeKey: Keys.suppressAutoCorrectionAfterManualConversion, legacyKey: ImportKeys.shouldNotAutoconvertAfterConvertion, defaultValue: SettingsPersistencePolicy.defaultSuppressAutoCorrectionAfterManualConversion) }
         set {
             store.set(newValue, forKey: Keys.suppressAutoCorrectionAfterManualConversion)
         }
     }
 
     var autoCorrectionCancellingKeyNames: Set<String> {
-        get {
-            SettingsPersistencePolicy.effectiveAutoCorrectionCancellingKeyNames(
-                hasPersistedValue: hasStoredValue(forKey: Keys.autoCorrectionCancellingKeyNames),
-                persistedValue: Set(store.stringArray(forKey: Keys.autoCorrectionCancellingKeyNames) ?? []),
-                hasLegacyValue: hasStoredValue(forKey: ImportKeys.cancellingKeys),
-                legacyBitmask: persistedInt(forKey: ImportKeys.cancellingKeys)
-            )
-        }
+        get { resolver.autoCorrectionCancellingKeyNames(nativeKey: Keys.autoCorrectionCancellingKeyNames, legacyKey: ImportKeys.cancellingKeys) }
         set {
             store.set(
                 Array(SettingsPersistencePolicy.normalizedAutoCorrectionCancellingKeyNames(newValue)).sorted(),
@@ -585,15 +439,7 @@ final class SettingsManager {
     }
 
     var soundEffectsEnabled: Bool {
-        get {
-            SettingsPersistencePolicy.effectiveBoolWithLegacyAlias(
-                hasPersistedValue: hasStoredValue(forKey: Keys.soundEffectsEnabled),
-                persistedValue: persistedBool(forKey: Keys.soundEffectsEnabled),
-                hasLegacyValue: hasStoredValue(forKey: ImportKeys.isSoundOn),
-                legacyValue: persistedBool(forKey: ImportKeys.isSoundOn),
-                defaultValue: SettingsPersistencePolicy.defaultSoundEffectsEnabled
-            )
-        }
+        get { resolver.bool(nativeKey: Keys.soundEffectsEnabled, legacyKey: ImportKeys.isSoundOn, defaultValue: SettingsPersistencePolicy.defaultSoundEffectsEnabled) }
         set {
             store.set(newValue, forKey: Keys.soundEffectsEnabled)
         }
@@ -640,15 +486,7 @@ final class SettingsManager {
     }
 
     var restorePasteboardAfterConversion: Bool {
-        get {
-            SettingsPersistencePolicy.effectiveBoolWithLegacyAlias(
-                hasPersistedValue: hasStoredValue(forKey: Keys.restorePasteboardAfterConversion),
-                persistedValue: persistedBool(forKey: Keys.restorePasteboardAfterConversion),
-                hasLegacyValue: hasStoredValue(forKey: ImportKeys.shouldRestorePasteboard),
-                legacyValue: persistedBool(forKey: ImportKeys.shouldRestorePasteboard),
-                defaultValue: SettingsPersistencePolicy.defaultRestorePasteboardAfterConversion
-            )
-        }
+        get { resolver.bool(nativeKey: Keys.restorePasteboardAfterConversion, legacyKey: ImportKeys.shouldRestorePasteboard, defaultValue: SettingsPersistencePolicy.defaultRestorePasteboardAfterConversion) }
         set {
             store.set(newValue, forKey: Keys.restorePasteboardAfterConversion)
         }
@@ -658,11 +496,11 @@ final class SettingsManager {
         get {
             let persistedSnapshot = store.decode(ProductStatisticsSnapshot.self, forKey: Keys.productStatistics)
             let legacyCountersSnapshot = ProductStatisticsPolicy.snapshotFromLegacySources(
-                typedWords: persistedInt(forKey: ImportKeys.typedWords),
-                typedSymbols: persistedInt(forKey: ImportKeys.typedSymbols),
-                automaticSwitches: persistedInt(forKey: ImportKeys.automaticSwitches),
-                manualSwitches: persistedInt(forKey: ImportKeys.manualSwitches),
-                reverts: persistedInt(forKey: ImportKeys.reverts),
+                typedWords: store.integer(forKey: ImportKeys.typedWords),
+                typedSymbols: store.integer(forKey: ImportKeys.typedSymbols),
+                automaticSwitches: store.integer(forKey: ImportKeys.automaticSwitches),
+                manualSwitches: store.integer(forKey: ImportKeys.manualSwitches),
+                reverts: store.integer(forKey: ImportKeys.reverts),
                 dayuseSettings: store.dictionary(forKey: ImportKeys.dayuseSettings)
             )
             return ProductStatisticsPolicy.effectiveSnapshot(
@@ -694,13 +532,7 @@ final class SettingsManager {
     }
 
     private func legacySoundResourceToggles() -> [String: Bool] {
-        var toggles: [String: Bool] = [:]
-        for key in SoundFeedbackPolicy.legacyPerResourceToggleKeys where hasStoredValue(forKey: key) {
-            if let value = persistedBool(forKey: key) {
-                toggles[key] = value
-            }
-        }
-        return toggles
+        resolver.soundResourceToggles(keys: SoundFeedbackPolicy.legacyPerResourceToggleKeys)
     }
 
     var autoCorrectionRules: [AutoCorrectionRule] {
@@ -818,27 +650,4 @@ final class SettingsManager {
         NotificationCenter.default.post(name: .puntoInputSourcePreferencesChanged, object: self)
     }
 
-    private func persistedInt(forKey key: String) -> Int? {
-        store.integer(forKey: key)
-    }
-
-    private func persistedBool(forKey key: String) -> Bool? {
-        store.bool(forKey: key)
-    }
-
-    private func hasStoredValue(forKey key: String) -> Bool {
-        store.hasStoredValue(forKey: key)
-    }
-
-    private func persistedHotkey(nativeKey: String, legacyKey: String, fallback: Hotkey) -> Hotkey {
-        if let hotkey = store.decode(Hotkey.self, forKey: nativeKey) {
-            return HotkeyValidationPolicy.normalized(hotkey, fallback: fallback)
-        }
-
-        if store.object(forKey: legacyKey) != nil {
-            return LegacyHotkeyPolicy.normalized(store.dictionary(forKey: legacyKey), fallback: fallback)
-        }
-
-        return fallback
-    }
 }

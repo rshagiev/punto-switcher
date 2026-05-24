@@ -183,6 +183,24 @@ for pattern in "${settings_manager_direct_storage_patterns[@]}"; do
     echo "PASS SettingsManager direct storage absent: $pattern"
 done
 
+settings_manager_direct_resolution_patterns=(
+    "SettingsPersistencePolicy.effectiveBool("
+    "SettingsPersistencePolicy.effectiveBoolWithLegacyAlias"
+    "SettingsPersistencePolicy.effectiveBoolWithInvertedLegacyAlias"
+    "private func persistedBool"
+    "private func persistedInt"
+    "private func persistedHotkey"
+    "private func hasStoredValue"
+)
+
+for pattern in "${settings_manager_direct_resolution_patterns[@]}"; do
+    if rg --fixed-strings --quiet "$pattern" Sources/Punto/Settings/SettingsManager.swift; then
+        echo "legacy boundary failed: SettingsManager reopened direct native/import resolution: $pattern" >&2
+        exit 1
+    fi
+    echo "PASS SettingsManager direct native/import resolution absent: $pattern"
+done
+
 app_delegate_runtime_state_patterns=(
     "private let conversionSession = ConversionSession()"
     "private var isConversionInProgress ="

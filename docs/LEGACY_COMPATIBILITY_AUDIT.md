@@ -104,9 +104,12 @@ read-only import evidence, with the only writer exceptions being one-shot
 consumption of imported first-run/update presentation flags. Low-level
 `UserDefaults` access sits behind `SettingsDefaultsStore`, so typed persistence,
 Codable payloads, and persistent-domain checks do not spread through the settings
-composition layer. The boundary script fails if imported aliases leak back into
-the routine key namespace or if routine code starts writing import-only keys
-again.
+composition layer. Native-vs-import resolution sits behind `SettingsValueResolver`,
+so the manager does not rebuild alias precedence, inverted legacy booleans, hotkey
+fallbacks, input-source fallbacks, or sound/import toggle scans inline. The boundary
+script fails if imported aliases leak back into the routine key namespace, if routine
+code starts writing import-only keys again, or if the manager reopens direct
+native/import resolution helpers.
 
 Legacy scalar parsing is centralized in `LegacyValuePolicy` instead of being
 reimplemented per feature. Searchbar settings, update/install settings, product
