@@ -14,6 +14,7 @@ public final class TextAccessor {
     private let accessibilityElements: AccessibilityElementClient
     private let accessibilitySelection: AccessibilityTextSelectionTransport
     private let clipboard: ClipboardTransport
+    private let keyboardReplacement: KeyboardTextReplacementRuntime
 
     public convenience init(shouldRestorePasteboard: @escaping () -> Bool = { true }) {
         self.init(
@@ -38,6 +39,11 @@ public final class TextAccessor {
         self.clipboard = clipboard ?? ClipboardTransport(
             shouldRestorePasteboard: shouldRestorePasteboard,
             keyboardEvents: keyboardEvents
+        )
+        self.keyboardReplacement = KeyboardTextReplacementRuntime(
+            keyboardEvents: self.keyboardEvents,
+            accessibilityElements: self.accessibilityElements,
+            clipboard: self.clipboard
         )
     }
 
@@ -196,82 +202,12 @@ public final class TextAccessor {
     /// Deletes the last word and pastes the replacement via clipboard
     @discardableResult
     public func replaceLastWord(wordLength: Int, with replacement: String) -> Bool {
-        let startTime = Date()
-
-        guard KeyboardReplacementPolicy.shouldAttemptKeyboardReplacement(deleteLength: wordLength) else {
-            PuntoLog.info("replaceLastWord: aborting keyboard replacement because delete length is \(wordLength)")
-            return false
-        }
-
-        // Log active app state before sending events
-        if let frontApp = NSWorkspace.shared.frontmostApplication {
-            let isActive = frontApp.isActive
-            let isHidden = frontApp.isHidden
-            PuntoLog.info("replaceLastWord: target app='\(frontApp.localizedName ?? "?")' isActive=\(isActive) isHidden=\(isHidden) pid=\(frontApp.processIdentifier)")
-        }
-
-        // Check keyboard focus via AX before sending events
-        let axFocusEvidence = checkKeyboardFocusEvidence()
-        PuntoLog.info("replaceLastWord: AX focus check: \(axFocusEvidence.logDescription)")
-        if !KeyboardFocusPolicy.shouldAttemptKeyboardReplacement(focusEvidence: axFocusEvidence) {
-            PuntoLog.info("replaceLastWord: aborting keyboard replacement because focused editable target is not verifiable")
-            return false
-        }
-
-        PuntoLog.info("replaceLastWord: deleting \(wordLength) chars, replacing with '\(replacement)'")
-
-        // Check current modifier state BEFORE delay
-        let modifiersBefore = keyboardEvents.currentModifierSnapshot()
-        let modDescBefore = KeyboardModifierCleanupPolicy.description(for: modifiersBefore)
-        PuntoLog.info("replaceLastWord: modifiers BEFORE delay: \(modDescBefore)")
-        keyboardEvents.releaseLatchedModifiers(modifiersBefore)
-
-        // Wait until the hotkey modifiers are fully released before sending destructive keys.
-        let modifiersAfter = keyboardEvents.waitForModifierRelease()
-        let modDescAfter = KeyboardModifierCleanupPolicy.description(for: modifiersAfter)
-        PuntoLog.info("replaceLastWord: modifiers AFTER release wait: \(modDescAfter)")
-        if !KeyboardReplacementPolicy.shouldStartKeyboardEventsAfterModifierWait(
-            modifiersArePressed: !modifiersAfter.noModifiersPressed
-        ) {
-            PuntoLog.info("replaceLastWord: aborting keyboard replacement because modifiers are still pressed after release wait")
-            return false
-        }
-
-        // Delete characters one by one using Backspace (keyCode 51)
-        // Using .cghidEventTap which works for most apps
-        // Do not use line-kill shortcuts here: this path must delete exactly the captured tail.
-        PuntoLog.info("replaceLastWord: sending \(wordLength) backspaces via cghidEventTap (after \(Int(KeyboardReplacementPolicy.modifierReleaseSettleDelay * 1000))ms delay)")
-        let backspacesSent = keyboardEvents.postBackspaces(count: wordLength)
-        let backspaceTime = Date().timeIntervalSince(startTime) * 1000
-        PuntoLog.info("replaceLastWord: \(backspacesSent)/\(wordLength) backspaces sent in \(String(format: "%.1f", backspaceTime))ms, waiting \(Int(KeyboardReplacementPolicy.prePasteDelay * 1000))ms")
-        guard KeyboardReplacementPolicy.shouldPasteReplacementAfterBackspaces(expectedCount: wordLength, sentCount: backspacesSent) else {
-            PuntoLog.info("replaceLastWord: aborting paste because not all backspaces were sent")
-            return false
-        }
-        Thread.sleep(forTimeInterval: KeyboardReplacementPolicy.prePasteDelay)
-
-        guard clipboard.pasteKeyboardReplacement(replacement) else {
-            return false
-        }
-
-        // Note: Active verification via select+copy is destructive - removed
-        // Instead rely on AX focus check and clipboard state for diagnostics
-
-        let totalTime = Date().timeIntervalSince(startTime) * 1000
-        PuntoLog.info("replaceLastWord: completed in \(String(format: "%.1f", totalTime))ms (sent \(backspacesSent) backspaces + Cmd+V with '\(replacement)')")
-        return true
+        keyboardReplacement.replaceLastWord(wordLength: wordLength, with: replacement)
     }
 
     @discardableResult
     public func replaceRecentText(length: Int, with replacement: String) -> Bool {
         replaceLastWord(wordLength: length, with: replacement)
-    }
-
-    // MARK: - Helpers
-
-    /// Checks keyboard focus state via AX API.
-    private func checkKeyboardFocusEvidence() -> KeyboardFocusEvidence {
-        accessibilityElements.keyboardFocusEvidence()
     }
 
 }

@@ -46,6 +46,7 @@ text_accessor_transport_patterns=(
     "CGEvent(keyboardEventSource:"
     "simulatePaste"
     "selectBackwardsFast"
+    "NSWorkspace.shared.frontmostApplication"
 )
 
 for pattern in "${text_accessor_transport_patterns[@]}"; do
