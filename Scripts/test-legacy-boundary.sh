@@ -146,6 +146,8 @@ for pattern in "${core_live_transport_patterns[@]}"; do
 done
 
 runtime_owned_key_policy_files=(
+    Sources/PuntoCore/ApplicationReturnKeyPolicy.swift
+    Sources/PuntoCore/ProductStatisticsPolicy.swift
     Sources/PuntoCore/SettingsPersistencePolicy.swift
     Sources/PuntoCore/SoundFeedbackPolicy.swift
     Sources/PuntoCore/ClipboardReplacementPolicy.swift
@@ -210,6 +212,30 @@ for pattern in "${settings_import_alias_patterns[@]}"; do
         exit 1
     fi
     echo "PASS SettingsManager import alias separated: $pattern"
+done
+
+settings_manager_inline_import_keys=(
+    '"isFirstInstallation"'
+    '"kbdLayoutType"'
+    '"englishLayoutID"'
+    '"russianLayoutID"'
+    '"switcher.reset_on_return"'
+    '"shouldNotAutoconvertWithTabOrEnter"'
+    '"cancellingKeys"'
+    '"typedWords"'
+    '"typedSymbols"'
+    '"automaticSwitches"'
+    '"manualSwitches"'
+    '"reverts"'
+)
+
+for pattern in "${settings_manager_inline_import_keys[@]}"; do
+    if rg --fixed-strings --quiet "static let " Sources/PuntoSettings/SettingsManager.swift &&
+        rg --fixed-strings --quiet "$pattern" Sources/PuntoSettings/SettingsManager.swift; then
+        echo "legacy boundary failed: SettingsManager.ImportKeys keeps owned import key inline: $pattern" >&2
+        exit 1
+    fi
+    echo "PASS SettingsManager imports owned key constant instead of inline string: $pattern"
 done
 
 settings_import_writes="$(rg "(defaults|store)\\.(set|removeObject)\\([^\\n]*forKey: ImportKeys\\." Sources/PuntoSettings/SettingsManager.swift || true)"

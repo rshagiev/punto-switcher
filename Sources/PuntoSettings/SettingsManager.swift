@@ -51,7 +51,7 @@ public final class SettingsManager {
     }
 
     private enum ImportKeys {
-        static let isFirstInstallation = "isFirstInstallation"
+        static let isFirstInstallation = ApplicationUpdateSettingsPolicy.isFirstInstallationKey
         static let launchesOnStartup = SettingsPersistencePolicy.legacyLaunchesOnStartupKey
         static let shortcutChangeLayout = LegacyHotkeyPolicy.legacyShortcutChangeLayoutKey
         static let shortcutChangeCase = LegacyHotkeyPolicy.legacyShortcutChangeCaseKey
@@ -62,29 +62,29 @@ public final class SettingsManager {
         static let searchbarSettings = SearchbarSettingsPolicy.settingsKey
         static let switchLayoutOnSelectedTextSwitch = SettingsPersistencePolicy.legacySwitchLayoutOnSelectedTextSwitchKey
         static let isManualConversionDisabled = SettingsPersistencePolicy.legacyIsManualConversionDisabledKey
-        static let kbdLayoutType = "kbdLayoutType"
-        static let englishLayoutID = "englishLayoutID"
-        static let russianLayoutID = "russianLayoutID"
+        static let kbdLayoutType = SettingsPersistencePolicy.legacyRussianKeyboardLayoutTypeKey
+        static let englishLayoutID = SettingsPersistencePolicy.legacyEnglishInputSourceIDKey
+        static let russianLayoutID = SettingsPersistencePolicy.legacyRussianInputSourceIDKey
         static let shouldRememberInputSourceForEachApp = SettingsPersistencePolicy.legacyShouldRememberInputSourceForEachAppKey
         static let disabledApps = SettingsPersistencePolicy.legacyDisabledAppsKey
         static let completelyDisableInExceptionApps = SettingsPersistencePolicy.legacyCompletelyDisableInExceptionApplicationsKey
-        static let switcherResetOnReturn = "switcher.reset_on_return"
+        static let switcherResetOnReturn = ApplicationReturnKeyPolicy.legacyResetOnReturnKey
         static let isAutocorrectionActive = SettingsPersistencePolicy.legacyIsAutocorrectionActiveKey
         static let switcherUseOldRulesDefaultConf = AutoCorrectionRuleSourcePolicy.useOldRulesDefaultConfPath
         static let switcherUseOldRulesAccessor = AutoCorrectionRuleSourcePolicy.useOldRulesAccessor
-        static let shouldNotAutoconvertWithTabOrEnter = "shouldNotAutoconvertWithTabOrEnter"
+        static let shouldNotAutoconvertWithTabOrEnter = SettingsPersistencePolicy.legacyShouldNotAutoconvertWithTabOrEnterKey
         static let undoLearning = UndoLearningSettingsPolicy.settingsKey
         static let shouldNotAutoconvertAfterConvertion = SettingsPersistencePolicy.legacyShouldNotAutoconvertAfterConvertionKey
-        static let cancellingKeys = "cancellingKeys"
+        static let cancellingKeys = SettingsPersistencePolicy.legacyAutoCorrectionCancellingKeysBitmaskKey
         static let userRulesDictionary = LegacyUserRulePolicy.userRulesDictionaryKey
         static let isSoundOn = SoundFeedbackPolicy.legacyIsSoundOnKey
         static let enabledSounds = SoundFeedbackPolicy.legacyEnabledSoundsKey
         static let shouldRestorePasteboard = ClipboardReplacementPolicy.legacyShouldRestorePasteboardKey
-        static let typedWords = "typedWords"
-        static let typedSymbols = "typedSymbols"
-        static let automaticSwitches = "automaticSwitches"
-        static let manualSwitches = "manualSwitches"
-        static let reverts = "reverts"
+        static let typedWords = ProductStatisticsPolicy.legacyTypedWordsKey
+        static let typedSymbols = ProductStatisticsPolicy.legacyTypedSymbolsKey
+        static let automaticSwitches = ProductStatisticsPolicy.legacyAutomaticSwitchesKey
+        static let manualSwitches = ProductStatisticsPolicy.legacyManualSwitchesKey
+        static let reverts = ProductStatisticsPolicy.legacyRevertsKey
         static let dayuseSettings = ProductStatisticsPolicy.dayuseSettingsKey
         static let configVersion = ApplicationUpdateSettingsPolicy.configVersionKey
         static let isJustInstalled = ApplicationUpdateSettingsPolicy.isJustInstalledKey

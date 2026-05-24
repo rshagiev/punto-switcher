@@ -3691,6 +3691,11 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings persistence preserves observed post-conversion suppression key"
     )
     try expect(
+        SettingsPersistencePolicy.legacyShouldNotAutoconvertWithTabOrEnterKey,
+        "shouldNotAutoconvertWithTabOrEnter",
+        "settings persistence owns observed Enter/Tab suppression key"
+    )
+    try expect(
         PuntoSwitcherObservedSurface.Settings.dontAutoconvertWordAfterConvertionSelector,
         "dontAutoconvertWordAfterConvertion:",
         "settings persistence preserves observed post-conversion suppression selector"
@@ -3716,6 +3721,11 @@ private func runSettingsPersistencePolicyTests() throws {
         ),
         false,
         "settings persistence reads observed shouldNotAutoconvertAfterConvertion=true as suppression disabled"
+    )
+    try expect(
+        SettingsPersistencePolicy.legacyAutoCorrectionCancellingKeysBitmaskKey,
+        "cancellingKeys",
+        "settings persistence owns observed cancelling-keys bitmask key"
     )
     try expect(
         SettingsPersistencePolicy.legacyAutoCorrectionCancellingKeyNames(from: 0),
@@ -4048,6 +4058,21 @@ private func runSettingsPersistencePolicyTests() throws {
         ),
         .windows,
         "settings persistence reads Punto Switcher-style kbdLayoutType alias"
+    )
+    try expect(
+        SettingsPersistencePolicy.legacyRussianKeyboardLayoutTypeKey,
+        "kbdLayoutType",
+        "settings persistence owns observed Russian keyboard layout type key"
+    )
+    try expect(
+        SettingsPersistencePolicy.legacyEnglishInputSourceIDKey,
+        "englishLayoutID",
+        "settings persistence owns observed English input-source id key"
+    )
+    try expect(
+        SettingsPersistencePolicy.legacyRussianInputSourceIDKey,
+        "russianLayoutID",
+        "settings persistence owns observed Russian input-source id key"
     )
     try expect(
         SettingsPersistencePolicy.effectiveRussianKeyboardLayoutType(
@@ -4606,6 +4631,31 @@ private func runProductStatisticsPolicyTests() throws {
         ProductStatisticsPolicy.dayuseSettingsKey,
         "PSDayuseSettings",
         "product statistics policy preserves observed dayuse settings key"
+    )
+    try expect(
+        ProductStatisticsPolicy.legacyTypedWordsKey,
+        "typedWords",
+        "product statistics policy owns legacy typed-words counter key"
+    )
+    try expect(
+        ProductStatisticsPolicy.legacyTypedSymbolsKey,
+        "typedSymbols",
+        "product statistics policy owns legacy typed-symbols counter key"
+    )
+    try expect(
+        ProductStatisticsPolicy.legacyAutomaticSwitchesKey,
+        "automaticSwitches",
+        "product statistics policy owns legacy automatic-switch counter key"
+    )
+    try expect(
+        ProductStatisticsPolicy.legacyManualSwitchesKey,
+        "manualSwitches",
+        "product statistics policy owns legacy manual-switch counter key"
+    )
+    try expect(
+        ProductStatisticsPolicy.legacyRevertsKey,
+        "reverts",
+        "product statistics policy owns legacy revert counter key"
     )
     try expect(
         PuntoSwitcherObservedSurface.ProductStatistics.dayuseStatClassName,
@@ -10780,6 +10830,11 @@ private func runAutoCorrectionStarterCatalogTests() throws {
 }
 
 private func runApplicationReturnKeyPolicyTests() throws {
+    try expect(
+        ApplicationReturnKeyPolicy.legacyResetOnReturnKey,
+        "switcher.reset_on_return",
+        "return policy owns observed reset-on-return import key"
+    )
     try expect(
         ApplicationReturnKeyPolicy.shouldResetTextStateOnReturn(
             bundleID: "org.telegram.desktop",

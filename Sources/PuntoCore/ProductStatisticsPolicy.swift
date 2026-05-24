@@ -72,6 +72,11 @@ public enum ProductStatisticsPolicy {
     public static let automaticSwitchMetricName = "product.switch.auto"
     public static let manualSwitchMetricName = "product.switch.manual"
     public static let revertMetricName = "product.switch.reverse"
+    public static let legacyTypedWordsKey = "typedWords"
+    public static let legacyTypedSymbolsKey = "typedSymbols"
+    public static let legacyAutomaticSwitchesKey = "automaticSwitches"
+    public static let legacyManualSwitchesKey = "manualSwitches"
+    public static let legacyRevertsKey = "reverts"
 
     public static func normalized(_ snapshot: ProductStatisticsSnapshot) -> ProductStatisticsSnapshot {
         ProductStatisticsSnapshot(

@@ -29,10 +29,14 @@ public enum SettingsPersistencePolicy {
     public static let defaultSuppressAutoCorrectionAfterManualConversion = true
     public static let legacyShouldNotAutoconvertAfterConvertionKey = "shouldNotAutoconvertAfterConvertion"
     public static let defaultAutoCorrectionCancellingKeyNames = Array(AutoCorrectionCancellingKeyPolicy.defaultEnabledKeyNames).sorted()
+    public static let legacyAutoCorrectionCancellingKeysBitmaskKey = "cancellingKeys"
     public static let defaultSoundEffectsEnabled = false
     public static let defaultRestorePasteboardAfterConversion = true
     public static let defaultIsFirstLaunch = true
     public static let defaultRussianKeyboardLayoutType = KeyboardLayoutTypePolicy.defaultRussianLayoutType.rawValue
+    public static let legacyRussianKeyboardLayoutTypeKey = "kbdLayoutType"
+    public static let legacyEnglishInputSourceIDKey = "englishLayoutID"
+    public static let legacyRussianInputSourceIDKey = "russianLayoutID"
     public static let defaultProductStatistics = ProductStatisticsPolicy.emptySnapshot
 
     public static func normalizedDisabledApplicationBundleIDs(_ bundleIDs: Set<String>) -> Set<String> {

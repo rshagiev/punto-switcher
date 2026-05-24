@@ -80,8 +80,8 @@ func runSoundImportTests() throws {
 
 func runStatisticsImportTests() throws {
     let fixture = try DefaultsFixture("statistics")
-    fixture.defaults.set(7, forKey: "typedWords")
-    fixture.defaults.set(11, forKey: "typedSymbols")
+    fixture.defaults.set(7, forKey: ProductStatisticsPolicy.legacyTypedWordsKey)
+    fixture.defaults.set(11, forKey: ProductStatisticsPolicy.legacyTypedSymbolsKey)
     fixture.defaults.set([
         ProductStatisticsPolicy.dayuseManualSwitchesKey: 3
     ], forKey: ProductStatisticsPolicy.dayuseSettingsKey)
@@ -94,7 +94,10 @@ func runStatisticsImportTests() throws {
     settings.productStatistics = ProductStatisticsSnapshot(typedWords: 2, typedSymbols: 4)
     settings = fixture.manager()
     try expect(settings.productStatistics.typedWords == 2, "settings manager prefers native statistics snapshot")
-    try expect(fixture.defaults.integer(forKey: "typedWords") == 7, "settings manager keeps legacy statistics read-only")
+    try expect(
+        fixture.defaults.integer(forKey: ProductStatisticsPolicy.legacyTypedWordsKey) == 7,
+        "settings manager keeps legacy statistics read-only"
+    )
 }
 
 func runUpdateImportTests() throws {

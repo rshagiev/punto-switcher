@@ -4,6 +4,7 @@ public enum ApplicationReturnKeyPolicy {
     public static let returnKeyCode: UInt16 = 36
     public static let enterKeyCode: UInt16 = 76
     public static let defaultResetBundleComponents: Set<String> = ["telegram"]
+    public static let legacyResetOnReturnKey = "switcher.reset_on_return"
 
     public static func shouldResetTextStateOnReturn(
         bundleID: String?,
