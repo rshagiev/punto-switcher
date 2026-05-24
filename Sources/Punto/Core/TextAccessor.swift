@@ -12,14 +12,17 @@ final class TextAccessor {
 
     private let shouldRestorePasteboard: () -> Bool
     private let keyboardEvents: KeyboardEventTransport
+    private let accessibilityElements: AccessibilityElementClient
     private var lastEditableSelectionElement: AXUIElement?
 
     init(
         shouldRestorePasteboard: @escaping () -> Bool = { true },
-        keyboardEvents: KeyboardEventTransport = KeyboardEventTransport()
+        keyboardEvents: KeyboardEventTransport = KeyboardEventTransport(),
+        accessibilityElements: AccessibilityElementClient = AccessibilityElementClient()
     ) {
         self.shouldRestorePasteboard = shouldRestorePasteboard
         self.keyboardEvents = keyboardEvents
+        self.accessibilityElements = accessibilityElements
     }
 
     // MARK: - Security Detection
@@ -33,60 +36,11 @@ final class TextAccessor {
     /// Checks if focused element is a secure/password text field
     /// Used to skip conversion in browser password fields
     func isPasswordField() -> Bool {
-        if let focusedElement = getFocusedElement(),
-           elementOrDescendantIsPasswordField(focusedElement, depth: 0) {
-            PuntoLog.info("isPasswordField: secure field detected from focused element tree")
-            return true
-        }
-
-        if let appFocusedElement = getAppFocusedElement(),
-           elementOrDescendantIsPasswordField(appFocusedElement, depth: 0) {
-            PuntoLog.info("isPasswordField: secure field detected from app focusedUIElement tree")
-            return true
-        }
-
-        return false
+        accessibilityElements.isPasswordField()
     }
 
     func canDoSearchClick(bundleID: String?) -> Bool {
-        guard let focusedElement = getFocusedElement() else {
-            PuntoLog.info("canDoSearchClick: no focused element")
-            return false
-        }
-
-        let role = accessibilityRole(of: focusedElement)
-        let canSearch = SearchClickPolicy.canDoSearchClick(role: role, bundleID: bundleID)
-        PuntoLog.info("canDoSearchClick: role='\(role ?? "?")' bundle='\(bundleID ?? "?")' result=\(canSearch)")
-        return canSearch
-    }
-
-    private func elementOrDescendantIsPasswordField(_ element: AXUIElement, depth: Int) -> Bool {
-        guard AccessibilityTraversalPolicy.shouldInspectDescendant(depth: depth) else {
-            return false
-        }
-
-        if elementIsPasswordField(element) {
-            return true
-        }
-
-        guard let childArray = AccessibilityValueBridge.elementArrayAttribute(kAXChildrenAttribute as CFString, from: element) else {
-            return false
-        }
-
-        for child in childArray {
-            if elementOrDescendantIsPasswordField(child, depth: depth + 1) {
-                return true
-            }
-        }
-
-        return false
-    }
-
-    private func elementIsPasswordField(_ element: AXUIElement) -> Bool {
-        return TextTrackingSecurityPolicy.isPasswordLikeAccessibilityElement(
-            role: AccessibilityValueBridge.stringAttribute(kAXRoleAttribute as CFString, from: element),
-            subrole: AccessibilityValueBridge.stringAttribute(kAXSubroleAttribute as CFString, from: element)
-        )
+        accessibilityElements.canDoSearchClick(bundleID: bundleID)
     }
 
     // MARK: - Get Selected Text
@@ -147,8 +101,8 @@ final class TextAccessor {
                     overrideCapturedText = TextCapturePolicy.activeClipboardFallbackForNonSettableContentSelection(
                         selectedText: text,
                         activeClipboardText: activeClipboardText,
-                        accessibilityRoles: accessibilityRoles(
-                            from: element,
+                        accessibilityRoles: accessibilityElements.rolesFromElementToAncestors(
+                            element,
                             maxDepth: AccessibilityTraversalPolicy.maxAncestorRoleDepth
                         )
                     )
@@ -192,7 +146,7 @@ final class TextAccessor {
     }
 
     private func getSelectedTextViaAccessibility() -> AXGetResult {
-        guard let focusedElement = getFocusedElement() else {
+        guard let focusedElement = accessibilityElements.focusedElement() else {
             PuntoLog.info("getSelectedTextViaAccessibility: no focused element")
             return .noFocus
         }
@@ -218,7 +172,7 @@ final class TextAccessor {
         }
 
         // For Safari/Electron: try via app's focusedUIElement
-        if let appFocusedElement = getAppFocusedElement() {
+        if let appFocusedElement = accessibilityElements.appFocusedElement() {
             let appFocusedResult = tryGetSelectedText(appFocusedElement)
             switch appFocusedResult {
             case .text(let text, let element):
@@ -285,43 +239,6 @@ final class TextAccessor {
 
         // AX succeeded but returned empty string = nothing selected
         return .empty
-    }
-
-    /// Gets focusedUIElement directly from application (bypass for Electron/Safari)
-    private func getAppFocusedElement() -> AXUIElement? {
-        let systemWide = AXUIElementCreateSystemWide()
-
-        let (appResult, appElement) = AccessibilityValueBridge.elementAttributeResult(
-            kAXFocusedApplicationAttribute as CFString,
-            from: systemWide,
-            context: "getAppFocusedElement: focused app"
-        )
-        guard appResult == .success else {
-            PuntoLog.info("getAppFocusedElement: failed to get app, error=\(appResult.rawValue)")
-            return nil
-        }
-
-        guard let appElement else {
-            return nil
-        }
-        enableEnhancedUserInterfaceIfNeeded(on: appElement)
-
-        let (elemResult, element) = AccessibilityValueBridge.elementAttributeResult(
-            kAXFocusedUIElementAttribute as CFString,
-            from: appElement,
-            context: "getAppFocusedElement: focusedUIElement"
-        )
-        guard elemResult == .success else {
-            PuntoLog.info("getAppFocusedElement: failed to get focusedUIElement, error=\(elemResult.rawValue)")
-            return nil
-        }
-
-        guard let element else {
-            return nil
-        }
-
-        PuntoLog.info("getAppFocusedElement: got focusedUIElement")
-        return element
     }
 
     /// Recursive search for selectedText in child elements
@@ -397,52 +314,7 @@ final class TextAccessor {
     }
 
     private func selectedTextReplacementCapability(of element: AXUIElement) -> AccessibilityReplacementCapability {
-        let role = accessibilityRole(of: element)
-        let editable = AccessibilityValueBridge.boolAttribute("AXEditable" as CFString, from: element)
-
-        var isSettable: DarwinBoolean = false
-        let settableResult = AXUIElementIsAttributeSettable(
-            element,
-            kAXSelectedTextAttribute as CFString,
-            &isSettable
-        )
-        let selectedTextSettable = settableResult == .success && isSettable.boolValue
-        return AccessibilityReplacementCapability(
-            role: role,
-            axEditable: editable,
-            selectedTextSettable: selectedTextSettable,
-            selectedTextSettableErrorCode: Int(settableResult.rawValue)
-        )
-    }
-
-    private func accessibilityRole(of element: AXUIElement) -> String? {
-        AccessibilityValueBridge.stringAttribute(kAXRoleAttribute as CFString, from: element)
-    }
-
-    private func accessibilityRoles(from element: AXUIElement, maxDepth: Int) -> [String] {
-        var roles: [String] = []
-        var current = element
-
-        for depth in 0...maxDepth {
-            guard AccessibilityTraversalPolicy.shouldCollectAncestorRole(atDepth: depth) else {
-                break
-            }
-
-            if let role = accessibilityRole(of: current) {
-                roles.append(role)
-            }
-
-            guard let parentElement = AccessibilityValueBridge.elementAttribute(
-                kAXParentAttribute as CFString,
-                from: current,
-                context: "accessibilityRoles: parent"
-            ) else {
-                break
-            }
-            current = parentElement
-        }
-
-        return roles
+        accessibilityElements.selectedTextReplacementCapability(of: element)
     }
 
     // MARK: - Clipboard Fallback
@@ -542,7 +414,7 @@ final class TextAccessor {
     }
 
     private func setSelectedTextViaAccessibility(_ text: String, keepSelection: Bool = false) -> Bool {
-        guard let focusedElement = lastEditableSelectionElement ?? getFocusedElement() else {
+        guard let focusedElement = lastEditableSelectionElement ?? accessibilityElements.focusedElement() else {
             PuntoLog.info("setSelectedTextViaAccessibility: no focused element")
             return false
         }
@@ -775,89 +647,6 @@ final class TextAccessor {
 
     // MARK: - Helpers
 
-    private func getFocusedElement() -> AXUIElement? {
-        let systemWide = AXUIElementCreateSystemWide()
-
-        // Try to get focused application with retry
-        // Sometimes AX API returns -25212 temporarily
-        var focusedAppElement: AXUIElement?
-        var appResult: AXError = .failure
-
-        for attempt in 1...AccessibilityReplacementPolicy.focusedApplicationRetryAttempts {
-            (appResult, focusedAppElement) = AccessibilityValueBridge.elementAttributeResult(
-                kAXFocusedApplicationAttribute as CFString,
-                from: systemWide,
-                context: "getFocusedElement: focused app"
-            )
-            if appResult == .success {
-                break
-            }
-            if AccessibilityReplacementPolicy.shouldRetryFocusedApplicationLookup(attempt: attempt) {
-                Thread.sleep(forTimeInterval: AccessibilityReplacementPolicy.focusedApplicationRetryDelay)
-            }
-        }
-
-        guard appResult == .success, focusedAppElement != nil else {
-            // Log which app is frontmost via NSWorkspace (works even when AX fails)
-            if let frontApp = NSWorkspace.shared.frontmostApplication {
-                PuntoLog.info("getFocusedElement: AX failed (error=\(appResult.rawValue)) for app '\(frontApp.localizedName ?? "?")' bundle=\(frontApp.bundleIdentifier ?? "?")")
-            } else {
-                PuntoLog.info("getFocusedElement: AX failed (error=\(appResult.rawValue)), no frontmost app")
-            }
-            return nil
-        }
-
-        guard let appElement = focusedAppElement else {
-            return nil
-        }
-        enableEnhancedUserInterfaceIfNeeded(on: appElement)
-
-        // Log which app is focused
-        if let appTitle = AccessibilityValueBridge.stringAttribute(kAXTitleAttribute as CFString, from: appElement) {
-            PuntoLog.info("getFocusedElement: focused app is '\(appTitle)'")
-        }
-
-        let (elemResult, element) = AccessibilityValueBridge.elementAttributeResult(
-            kAXFocusedUIElementAttribute as CFString,
-            from: appElement,
-            context: "getFocusedElement: focusedUIElement"
-        )
-        guard elemResult == .success else {
-            PuntoLog.info("getFocusedElement: failed to get focused element, error=\(elemResult.rawValue)")
-            return nil
-        }
-
-        guard let element else {
-            return nil
-        }
-
-        // Log element role
-        if let role = accessibilityRole(of: element) {
-            PuntoLog.info("getFocusedElement: focused element role='\(role)'")
-        }
-
-        return element
-    }
-
-    private func enableEnhancedUserInterfaceIfNeeded(on appElement: AXUIElement) {
-        let bundleID = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
-        guard AccessibilityApplicationPolicy.shouldEnableEnhancedUserInterface(bundleID: bundleID) else {
-            return
-        }
-
-        let result = AXUIElementSetAttributeValue(
-            appElement,
-            AccessibilityApplicationPolicy.enhancedUserInterfaceAttribute as CFString,
-            kCFBooleanTrue
-        )
-
-        if result == .success {
-            PuntoLog.debug("AXEnhancedUserInterface enabled for bundle=\(bundleID ?? "?")")
-        } else {
-            PuntoLog.info("AXEnhancedUserInterface failed for bundle=\(bundleID ?? "?"), error=\(result.rawValue)")
-        }
-    }
-
     // MARK: - Debugging Helpers
 
     private func restorePasteboardIfEnabled(_ snapshot: PasteboardSnapshot, to pasteboard: NSPasteboard, reason: String) {
@@ -916,48 +705,7 @@ final class TextAccessor {
 
     /// Checks keyboard focus state via AX API.
     private func checkKeyboardFocusEvidence() -> KeyboardFocusEvidence {
-        let systemWide = AXUIElementCreateSystemWide()
-
-        // Get focused app
-        let (appResult, appElement) = AccessibilityValueBridge.elementAttributeResult(
-            kAXFocusedApplicationAttribute as CFString,
-            from: systemWide,
-            context: "checkKeyboardFocusEvidence: focused app"
-        )
-
-        guard appResult == .success, let appElement else {
-            return .noFocusedApplication(errorCode: appResult.rawValue)
-        }
-
-        // Get app title
-        let appName = AccessibilityValueBridge.stringAttribute(kAXTitleAttribute as CFString, from: appElement) ?? "?"
-
-        // Get focused UI element
-        let (elemResult, axElement) = AccessibilityValueBridge.elementAttributeResult(
-            kAXFocusedUIElementAttribute as CFString,
-            from: appElement,
-            context: "checkKeyboardFocusEvidence: focusedUIElement"
-        )
-
-        guard elemResult == .success, let axElement else {
-            return .noFocusedElement(appName: appName, errorCode: elemResult.rawValue)
-        }
-
-        // Get element role
-        let roleName = accessibilityRole(of: axElement) ?? "?"
-
-        // Check if element is enabled
-        let isEnabled = AccessibilityValueBridge.boolAttribute(kAXEnabledAttribute as CFString, from: axElement) ?? true
-
-        // Check if element has keyboard focus
-        let hasFocus = AccessibilityValueBridge.boolAttribute(kAXFocusedAttribute as CFString, from: axElement) ?? false
-
-        return .focusedElement(
-            appName: appName,
-            role: roleName,
-            isEnabled: isEnabled,
-            isFocused: hasFocus
-        )
+        accessibilityElements.keyboardFocusEvidence()
     }
 
 }

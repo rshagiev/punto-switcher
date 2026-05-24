@@ -55,6 +55,20 @@ for pattern in "${text_accessor_transport_patterns[@]}"; do
     echo "PASS TextAccessor low-level keyboard transport absent: $pattern"
 done
 
+text_accessor_ax_client_patterns=(
+    "kAXFocusedApplicationAttribute"
+    "AXEnhancedUserInterface"
+    "elementOrDescendantIsPasswordField"
+)
+
+for pattern in "${text_accessor_ax_client_patterns[@]}"; do
+    if rg --fixed-strings --quiet "$pattern" Sources/Punto/Core/TextAccessor.swift; then
+        echo "legacy boundary failed: TextAccessor reopened live AX focus/client plumbing: $pattern" >&2
+        exit 1
+    fi
+    echo "PASS TextAccessor live AX client plumbing absent: $pattern"
+done
+
 if rg --fixed-strings --quiet "Placeholder - actual tests" Tests 2>/dev/null; then
     echo "legacy boundary failed: placeholder SwiftPM test target returned" >&2
     exit 1
