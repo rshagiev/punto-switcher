@@ -87,6 +87,66 @@ private func runWordBoundaryPolicyTests() throws {
         "word boundary policy keeps Dvorak apostrophe-key output inside wrong-layout word"
     )
 
+    let qwertyWindowsMaps = KeyboardLayoutMappingPolicy.characterMaps(
+        for: .qwerty,
+        russianLayoutType: .windows
+    )
+    try expect(
+        qwertyWindowsMaps.enToRu[";"],
+        "ж",
+        "keyboard layout character maps expose QWERTY Windows forward punctuation"
+    )
+    try expect(
+        qwertyWindowsMaps.ruToEn["?"],
+        "&",
+        "keyboard layout character maps expose QWERTY Windows reverse ambiguity fix"
+    )
+
+    let qwertyMacMaps = KeyboardLayoutMappingPolicy.characterMaps(
+        for: .qwerty,
+        russianLayoutType: .mac
+    )
+    try expect(
+        qwertyMacMaps.enToRu["\\"],
+        "ё",
+        "keyboard layout character maps expose QWERTY Mac forward Apple punctuation"
+    )
+    try expect(
+        qwertyMacMaps.ruToEn["%"],
+        "$",
+        "keyboard layout character maps expose QWERTY Mac reverse ambiguity fix"
+    )
+
+    let dvorakWindowsMaps = KeyboardLayoutMappingPolicy.characterMaps(
+        for: .dvorak,
+        russianLayoutType: .windows
+    )
+    try expect(
+        dvorakWindowsMaps.enToRu["-"],
+        "э",
+        "keyboard layout character maps expose Dvorak Windows physical-key remap"
+    )
+    try expect(
+        dvorakWindowsMaps.ruToEn["э"],
+        "-",
+        "keyboard layout character maps expose Dvorak Windows reverse remap"
+    )
+
+    let dvorakMacMaps = KeyboardLayoutMappingPolicy.characterMaps(
+        for: .dvorak,
+        russianLayoutType: .mac
+    )
+    try expect(
+        dvorakMacMaps.enToRu["="],
+        "ъ",
+        "keyboard layout character maps expose Dvorak Mac shifted bracket remap"
+    )
+    try expect(
+        dvorakMacMaps.ruToEn["%"],
+        "$",
+        "keyboard layout character maps expose Dvorak Mac reverse ambiguity fix"
+    )
+
     for character in ["\\", "|", "@", "#", "$", "%", "^", "&", "*"] as [Character] {
         try expect(
             WordBoundaryPolicy.isLayoutMappedPunctuation(character, russianLayoutType: .mac),

@@ -43,8 +43,11 @@ public final class LayoutConverter {
         englishLayoutVariant: KeyboardLayoutVariant,
         russianLayoutType: KeyboardLayoutType
     ) -> String {
-        let mapping = enToRuMapping(for: englishLayoutVariant, russianLayoutType: russianLayoutType)
-        return String(text.map { mapping[$0] ?? $0 })
+        let maps = KeyboardLayoutMappingPolicy.characterMaps(
+            for: englishLayoutVariant,
+            russianLayoutType: russianLayoutType
+        )
+        return String(text.map { maps.enToRu[$0] ?? $0 })
     }
 
     /// Converts Russian text to English layout
@@ -61,8 +64,11 @@ public final class LayoutConverter {
         englishLayoutVariant: KeyboardLayoutVariant,
         russianLayoutType: KeyboardLayoutType
     ) -> String {
-        let mapping = ruToEnMapping(for: englishLayoutVariant, russianLayoutType: russianLayoutType)
-        return String(text.map { mapping[$0] ?? $0 })
+        let maps = KeyboardLayoutMappingPolicy.characterMaps(
+            for: englishLayoutVariant,
+            russianLayoutType: russianLayoutType
+        )
+        return String(text.map { maps.ruToEn[$0] ?? $0 })
     }
 
     // MARK: - Layout Detection
@@ -125,11 +131,11 @@ public final class LayoutConverter {
         case .mixed:
             return ConversionResult(text: text, targetLayout: .unknown)
         case .unknown:
-            let direction = majorityConversionDirection(
-                for: text,
-                englishLayoutVariant: englishLayoutVariant,
+            let maps = KeyboardLayoutMappingPolicy.characterMaps(
+                for: englishLayoutVariant,
                 russianLayoutType: russianLayoutType
             )
+            let direction = majorityConversionDirection(for: text, maps: maps)
             switch direction {
             case .toRussian:
                 return ConversionResult(
@@ -190,19 +196,16 @@ public final class LayoutConverter {
 
     private func majorityConversionDirection(
         for text: String,
-        englishLayoutVariant: KeyboardLayoutVariant,
-        russianLayoutType: KeyboardLayoutType
+        maps: KeyboardLayoutCharacterMaps
     ) -> ConversionDirection {
         var enToRuCount = 0
         var ruToEnCount = 0
-        let enToRu = enToRuMapping(for: englishLayoutVariant, russianLayoutType: russianLayoutType)
-        let ruToEn = ruToEnMapping(for: englishLayoutVariant, russianLayoutType: russianLayoutType)
 
         for char in text {
-            if let converted = enToRu[char], converted != char {
+            if let converted = maps.enToRu[char], converted != char {
                 enToRuCount += 1
             }
-            if let converted = ruToEn[char], converted != char {
+            if let converted = maps.ruToEn[char], converted != char {
                 ruToEnCount += 1
             }
         }
@@ -218,31 +221,4 @@ public final class LayoutConverter {
         }
     }
 
-    private func enToRuMapping(for layoutType: KeyboardLayoutType) -> [Character: Character] {
-        enToRuMapping(for: .qwerty, russianLayoutType: layoutType)
-    }
-
-    private func enToRuMapping(
-        for englishLayoutVariant: KeyboardLayoutVariant,
-        russianLayoutType: KeyboardLayoutType
-    ) -> [Character: Character] {
-        KeyboardLayoutMappingPolicy.enToRuMapping(
-            for: englishLayoutVariant,
-            russianLayoutType: russianLayoutType
-        )
-    }
-
-    private func ruToEnMapping(for layoutType: KeyboardLayoutType) -> [Character: Character] {
-        ruToEnMapping(for: .qwerty, russianLayoutType: layoutType)
-    }
-
-    private func ruToEnMapping(
-        for englishLayoutVariant: KeyboardLayoutVariant,
-        russianLayoutType: KeyboardLayoutType
-    ) -> [Character: Character] {
-        KeyboardLayoutMappingPolicy.ruToEnMapping(
-            for: englishLayoutVariant,
-            russianLayoutType: russianLayoutType
-        )
-    }
 }

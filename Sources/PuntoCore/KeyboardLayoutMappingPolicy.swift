@@ -1,5 +1,12 @@
 import Foundation
 
+public struct KeyboardLayoutCharacterMaps: Equatable {
+    public let englishLayoutVariant: KeyboardLayoutVariant
+    public let russianLayoutType: KeyboardLayoutType
+    public let enToRu: [Character: Character]
+    public let ruToEn: [Character: Character]
+}
+
 public enum KeyboardLayoutMappingPolicy {
     /// English to Russian mapping for Russian-PC/Windows ЙЦУКЕН layout.
     /// This preserves Punto's historical conversion table and remains the
@@ -69,67 +76,92 @@ public enum KeyboardLayoutMappingPolicy {
         "N": "B", "M": "M", "<": "W", ">": "V", "?": "Z"
     ]
 
+    private static let qwertyWindowsMaps = makeMaps(
+        englishLayoutVariant: .qwerty,
+        russianLayoutType: .windows,
+        qwertyEnToRu: windowsEnToRu,
+        reverseAmbiguityFixes: windowsReverseAmbiguityFixes
+    )
+
+    private static let qwertyMacMaps = makeMaps(
+        englishLayoutVariant: .qwerty,
+        russianLayoutType: .mac,
+        qwertyEnToRu: macEnToRu,
+        reverseAmbiguityFixes: macReverseAmbiguityFixes
+    )
+
+    private static let dvorakWindowsMaps = makeMaps(
+        englishLayoutVariant: .dvorak,
+        russianLayoutType: .windows,
+        qwertyEnToRu: windowsEnToRu,
+        reverseAmbiguityFixes: windowsReverseAmbiguityFixes
+    )
+
+    private static let dvorakMacMaps = makeMaps(
+        englishLayoutVariant: .dvorak,
+        russianLayoutType: .mac,
+        qwertyEnToRu: macEnToRu,
+        reverseAmbiguityFixes: macReverseAmbiguityFixes
+    )
+
+    private static let windowsReverseAmbiguityFixes: [Character: Character] = [
+        "\"": "@",
+        ";": "$",
+        ":": "^",
+        "?": "&",
+        "№": "#"
+    ]
+
+    private static let macReverseAmbiguityFixes: [Character: Character] = [
+        "\"": "@",
+        "№": "#",
+        "%": "$",
+        ":": "%",
+        ",": "^",
+        ".": "&",
+        ";": "*"
+    ]
+
+    public static func characterMaps(for layoutType: KeyboardLayoutType) -> KeyboardLayoutCharacterMaps {
+        characterMaps(for: .qwerty, russianLayoutType: layoutType)
+    }
+
+    public static func characterMaps(
+        for englishLayoutVariant: KeyboardLayoutVariant,
+        russianLayoutType layoutType: KeyboardLayoutType
+    ) -> KeyboardLayoutCharacterMaps {
+        switch (englishLayoutVariant, layoutType) {
+        case (.qwerty, .windows):
+            return qwertyWindowsMaps
+        case (.qwerty, .mac):
+            return qwertyMacMaps
+        case (.dvorak, .windows):
+            return dvorakWindowsMaps
+        case (.dvorak, .mac):
+            return dvorakMacMaps
+        }
+    }
+
     public static func enToRuMapping(for layoutType: KeyboardLayoutType) -> [Character: Character] {
-        enToRuMapping(for: .qwerty, russianLayoutType: layoutType)
+        characterMaps(for: layoutType).enToRu
     }
 
     public static func enToRuMapping(
         for englishLayoutVariant: KeyboardLayoutVariant,
         russianLayoutType layoutType: KeyboardLayoutType
     ) -> [Character: Character] {
-        switch layoutType {
-        case .mac:
-            return englishLayoutVariant == .dvorak
-                ? remappedEnglishOutputMapping(from: macEnToRu)
-                : macEnToRu
-        case .windows:
-            return englishLayoutVariant == .dvorak
-                ? remappedEnglishOutputMapping(from: windowsEnToRu)
-                : windowsEnToRu
-        }
+        characterMaps(for: englishLayoutVariant, russianLayoutType: layoutType).enToRu
     }
 
     public static func ruToEnMapping(for layoutType: KeyboardLayoutType) -> [Character: Character] {
-        ruToEnMapping(for: .qwerty, russianLayoutType: layoutType)
+        characterMaps(for: layoutType).ruToEn
     }
 
     public static func ruToEnMapping(
         for englishLayoutVariant: KeyboardLayoutVariant,
         russianLayoutType layoutType: KeyboardLayoutType
     ) -> [Character: Character] {
-        var mapping = reversedMapping(from: enToRuMapping(
-            for: englishLayoutVariant,
-            russianLayoutType: layoutType
-        ))
-        switch layoutType {
-        case .mac:
-            assignReverseAmbiguityFixes(
-                &mapping,
-                [
-                    "\"": "@",
-                    "№": "#",
-                    "%": "$",
-                    ":": "%",
-                    ",": "^",
-                    ".": "&",
-                    ";": "*"
-                ],
-                englishLayoutVariant: englishLayoutVariant
-            )
-        case .windows:
-            assignReverseAmbiguityFixes(
-                &mapping,
-                [
-                    "\"": "@",
-                    ";": "$",
-                    ":": "^",
-                    "?": "&",
-                    "№": "#"
-                ],
-                englishLayoutVariant: englishLayoutVariant
-            )
-        }
-        return mapping
+        characterMaps(for: englishLayoutVariant, russianLayoutType: layoutType).ruToEn
     }
 
     public static func isLayoutMappedPunctuation(
@@ -155,10 +187,33 @@ public enum KeyboardLayoutMappingPolicy {
               !LayoutDetectionPolicy.isRussianLetter(character) else {
             return false
         }
-        return enToRuMapping(
+        return characterMaps(
             for: englishLayoutVariant,
             russianLayoutType: russianLayoutType
-        )[character].map { $0 != character } ?? false
+        ).enToRu[character].map { $0 != character } ?? false
+    }
+
+    private static func makeMaps(
+        englishLayoutVariant: KeyboardLayoutVariant,
+        russianLayoutType: KeyboardLayoutType,
+        qwertyEnToRu: [Character: Character],
+        reverseAmbiguityFixes: [Character: Character]
+    ) -> KeyboardLayoutCharacterMaps {
+        let enToRu = englishLayoutVariant == .dvorak
+            ? remappedEnglishOutputMapping(from: qwertyEnToRu)
+            : qwertyEnToRu
+        var ruToEn = reversedMapping(from: enToRu)
+        assignReverseAmbiguityFixes(
+            &ruToEn,
+            reverseAmbiguityFixes,
+            englishLayoutVariant: englishLayoutVariant
+        )
+        return KeyboardLayoutCharacterMaps(
+            englishLayoutVariant: englishLayoutVariant,
+            russianLayoutType: russianLayoutType,
+            enToRu: enToRu,
+            ruToEn: ruToEn
+        )
     }
 
     private static func reversedMapping(from mapping: [Character: Character]) -> [Character: Character] {
