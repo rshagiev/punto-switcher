@@ -43,6 +43,7 @@ let suites = [
         try runProductStatisticsPolicyTests()
         try runApplicationUpdateSettingsPolicyTests()
         try runStartupPresentationPolicyTests()
+        try runSettingsTogglePolicyTests()
         try runLayoutSwitchPolicyTests()
         try runApplicationDisablePolicyTests()
         try runAutoCorrectionTogglePolicyTests()

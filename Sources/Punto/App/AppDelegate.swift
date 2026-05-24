@@ -363,8 +363,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 setLoginItemEnabled: { isEnabled in
                     LoginItemController.setEnabled(isEnabled, bundleIdentifier: Bundle.main.bundleIdentifier)
                 },
-                onToggleChanged: { [weak self] slot, wasEnabled, isEnabled in
-                    self?.handleSettingsToggleChanged(slot, wasEnabled: wasEnabled, isEnabled: isEnabled)
+                onToggleChanged: { [weak self] action in
+                    self?.handleSettingsToggleChanged(action)
                 }
             )
         }
@@ -372,33 +372,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.activate(ignoringOtherApps: true)
     }
 
-    private func handleSettingsToggleChanged(
-        _ slot: SettingsToggleSlot,
-        wasEnabled: Bool,
-        isEnabled: Bool
-    ) {
-        switch slot {
-        case .showInMenuBar:
-            statusBarController?.updateVisibility()
-
-        case .autoCorrectionEnabled:
-            commandRuntime?.handleAutoCorrectionSettingChanged(wasEnabled: wasEnabled, isEnabled: isEnabled)
-
-        case .completelyDisableInExceptionApplications:
-            statusBarController?.refreshCurrentApplicationState()
-
-        case .launchAtLogin,
-             .showAdvancedSettings,
-             .soundEffectsEnabled,
-             .switchLayoutAfterConversion,
-             .switchLayoutAfterSelectedTextConversion,
-             .searchSelectedTextByDoubleClick,
-             .manualConversionDisabled,
-             .rememberInputSourceForEachApp,
-             .autoCorrectOnEnterAndTab,
-             .autoCorrectionUndoLearningEnabled,
-             .suppressAutoCorrectionAfterManualConversion:
-            break
+    private func handleSettingsToggleChanged(_ action: SettingsToggleChangeAction) {
+        for effect in action.effects {
+            switch effect {
+            case .updateStatusBarVisibility:
+                statusBarController?.updateVisibility()
+            case .applyAutoCorrectionRuntimeChange:
+                commandRuntime?.handleAutoCorrectionSettingChanged(
+                    wasEnabled: action.wasEnabled,
+                    isEnabled: action.isEnabled
+                )
+            case .refreshCurrentApplicationState:
+                statusBarController?.refreshCurrentApplicationState()
+            case .setLoginItemEnabled,
+                 .updateAdvancedSettingsVisibility:
+                break
+            }
         }
     }
 

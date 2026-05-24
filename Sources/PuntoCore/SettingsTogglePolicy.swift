@@ -36,6 +36,33 @@ public struct SettingsToggleMetadata: Equatable {
     }
 }
 
+public enum SettingsToggleEffect: Equatable {
+    case setLoginItemEnabled(Bool)
+    case updateAdvancedSettingsVisibility(Bool)
+    case updateStatusBarVisibility
+    case applyAutoCorrectionRuntimeChange
+    case refreshCurrentApplicationState
+}
+
+public struct SettingsToggleChangeAction: Equatable {
+    public let slot: SettingsToggleSlot
+    public let wasEnabled: Bool
+    public let isEnabled: Bool
+    public let effects: [SettingsToggleEffect]
+
+    public init(
+        slot: SettingsToggleSlot,
+        wasEnabled: Bool,
+        isEnabled: Bool,
+        effects: [SettingsToggleEffect]
+    ) {
+        self.slot = slot
+        self.wasEnabled = wasEnabled
+        self.isEnabled = isEnabled
+        self.effects = effects
+    }
+}
+
 public enum SettingsTogglePolicy {
     public static let displayOrder: [SettingsToggleMetadata] = [
         SettingsToggleMetadata(
@@ -134,5 +161,50 @@ public enum SettingsTogglePolicy {
 
     public static func metadata(for slot: SettingsToggleSlot) -> SettingsToggleMetadata? {
         displayOrder.first { $0.slot == slot }
+    }
+
+    public static func changeAction(
+        slot: SettingsToggleSlot,
+        wasEnabled: Bool,
+        isEnabled: Bool
+    ) -> SettingsToggleChangeAction? {
+        guard wasEnabled != isEnabled else {
+            return nil
+        }
+
+        return SettingsToggleChangeAction(
+            slot: slot,
+            wasEnabled: wasEnabled,
+            isEnabled: isEnabled,
+            effects: effects(for: slot, isEnabled: isEnabled)
+        )
+    }
+
+    private static func effects(
+        for slot: SettingsToggleSlot,
+        isEnabled: Bool
+    ) -> [SettingsToggleEffect] {
+        switch slot {
+        case .launchAtLogin:
+            return [.setLoginItemEnabled(isEnabled)]
+        case .showAdvancedSettings:
+            return [.updateAdvancedSettingsVisibility(isEnabled)]
+        case .showInMenuBar:
+            return [.updateStatusBarVisibility]
+        case .autoCorrectionEnabled:
+            return [.applyAutoCorrectionRuntimeChange]
+        case .completelyDisableInExceptionApplications:
+            return [.refreshCurrentApplicationState]
+        case .switchLayoutAfterConversion,
+             .soundEffectsEnabled,
+             .switchLayoutAfterSelectedTextConversion,
+             .searchSelectedTextByDoubleClick,
+             .manualConversionDisabled,
+             .rememberInputSourceForEachApp,
+             .autoCorrectOnEnterAndTab,
+             .autoCorrectionUndoLearningEnabled,
+             .suppressAutoCorrectionAfterManualConversion:
+            return []
+        }
     }
 }

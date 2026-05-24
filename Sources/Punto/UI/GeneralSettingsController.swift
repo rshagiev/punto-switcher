@@ -10,7 +10,7 @@ final class GeneralSettingsController: NSObject {
     private let showDisabledAppsEditor: () -> Void
     private let showResetOnReturnEditor: () -> Void
     private let showLayoutMemoryEditor: () -> Void
-    private let onToggleChanged: (SettingsToggleSlot, Bool, Bool) -> Void
+    private let onToggleChanged: (SettingsToggleChangeAction) -> Void
 
     private weak var advancedSettingsStack: NSStackView?
     private weak var preferredEnglishInputSourceIDField: NSTextField?
@@ -28,7 +28,7 @@ final class GeneralSettingsController: NSObject {
         showDisabledAppsEditor: @escaping () -> Void,
         showResetOnReturnEditor: @escaping () -> Void,
         showLayoutMemoryEditor: @escaping () -> Void,
-        onToggleChanged: @escaping (SettingsToggleSlot, Bool, Bool) -> Void = { _, _, _ in }
+        onToggleChanged: @escaping (SettingsToggleChangeAction) -> Void = { _ in }
     ) {
         self.settingsManager = settingsManager
         self.setLoginItemEnabled = setLoginItemEnabled
@@ -407,30 +407,31 @@ final class GeneralSettingsController: NSObject {
 
         let wasEnabled = settingsManager.bool(for: slot)
         let isEnabled = sender.state == .on
-        settingsManager.setBool(isEnabled, for: slot)
-
-        switch slot {
-        case .launchAtLogin:
-            setLoginItemEnabled(isEnabled)
-        case .showAdvancedSettings:
-            advancedSettingsStack?.isHidden = !isEnabled
-            advancedSettingsStack?.window?.layoutIfNeeded()
-        case .showInMenuBar,
-             .switchLayoutAfterConversion,
-             .autoCorrectionEnabled,
-             .soundEffectsEnabled,
-             .switchLayoutAfterSelectedTextConversion,
-             .searchSelectedTextByDoubleClick,
-             .manualConversionDisabled,
-             .rememberInputSourceForEachApp,
-             .autoCorrectOnEnterAndTab,
-             .autoCorrectionUndoLearningEnabled,
-             .suppressAutoCorrectionAfterManualConversion,
-             .completelyDisableInExceptionApplications:
-            break
+        guard let action = SettingsTogglePolicy.changeAction(
+            slot: slot,
+            wasEnabled: wasEnabled,
+            isEnabled: isEnabled
+        ) else {
+            return
         }
 
-        onToggleChanged(slot, wasEnabled, isEnabled)
+        settingsManager.setBool(isEnabled, for: slot)
+
+        for effect in action.effects {
+            switch effect {
+            case let .setLoginItemEnabled(isEnabled):
+                setLoginItemEnabled(isEnabled)
+            case let .updateAdvancedSettingsVisibility(isEnabled):
+                advancedSettingsStack?.isHidden = !isEnabled
+                advancedSettingsStack?.window?.layoutIfNeeded()
+            case .updateStatusBarVisibility,
+                 .applyAutoCorrectionRuntimeChange,
+                 .refreshCurrentApplicationState:
+                break
+            }
+        }
+
+        onToggleChanged(action)
     }
 
     @objc private func changeRussianKeyboardLayoutType(_ sender: NSSegmentedControl) {

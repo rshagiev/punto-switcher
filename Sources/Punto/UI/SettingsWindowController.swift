@@ -8,7 +8,7 @@ final class SettingsWindowController: NSWindowController {
     private let settingsManager: SettingsManager
     private let currentApplication: () -> (bundleID: String, name: String?)?
     private let setLoginItemEnabled: (Bool) -> Void
-    private let onToggleChanged: (SettingsToggleSlot, Bool, Bool) -> Void
+    private let onToggleChanged: (SettingsToggleChangeAction) -> Void
     private let hotkeySettingsController: HotkeySettingsController
     private lazy var generalSettingsController = GeneralSettingsController(
         settingsManager: settingsManager,
@@ -39,7 +39,7 @@ final class SettingsWindowController: NSWindowController {
         settingsManager: SettingsManager,
         currentApplication: @escaping () -> (bundleID: String, name: String?)? = { nil },
         setLoginItemEnabled: @escaping (Bool) -> Void = { _ in },
-        onToggleChanged: @escaping (SettingsToggleSlot, Bool, Bool) -> Void = { _, _, _ in }
+        onToggleChanged: @escaping (SettingsToggleChangeAction) -> Void = { _ in }
     ) {
         self.settingsManager = settingsManager
         self.currentApplication = currentApplication
