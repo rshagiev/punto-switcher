@@ -18,6 +18,7 @@ final class ApplicationRuntimeContainer {
     let appRuntime: ApplicationRuntimeCoordinator
     let soundFeedbackController: SoundFeedbackController
     let layoutSwitchRuntime: LayoutSwitchRuntimeCoordinator
+    let textReplacementCommitRuntime: TextReplacementCommitRuntimeCoordinator
     let textActionRuntime: TextActionRuntimeCoordinator
     let autoCorrectionRuntime: AutoCorrectionRuntimeCoordinator
     let undoRuntime: UndoRuntimeCoordinator
@@ -75,14 +76,20 @@ final class ApplicationRuntimeContainer {
             soundFeedbackController: soundFeedbackController,
             appRuntime: appRuntime
         )
+        textReplacementCommitRuntime = TextReplacementCommitRuntimeCoordinator(
+            settingsManager: settingsManager,
+            textState: textState,
+            wordTracker: wordTracker,
+            soundFeedbackController: soundFeedbackController,
+            layoutSwitchRuntime: layoutSwitchRuntime,
+            flashStatusIcon: flashStatusIcon
+        )
         textActionRuntime = TextActionRuntimeCoordinator(
             settingsManager: settingsManager,
             textState: textState,
             textAccessor: textAccessor,
             inputSourceManager: inputSourceManager,
-            wordTracker: wordTracker,
-            soundFeedbackController: soundFeedbackController,
-            layoutSwitchRuntime: layoutSwitchRuntime,
+            commitRuntime: textReplacementCommitRuntime,
             currentApplicationBundleID: { [appRuntime] in
                 appRuntime.effectiveCurrentApplicationBundleID(
                     frontmostApplication: NSWorkspace.shared.frontmostApplication
@@ -97,8 +104,7 @@ final class ApplicationRuntimeContainer {
                         frontmostApplication: NSWorkspace.shared.frontmostApplication
                     )
                 )
-            },
-            flashStatusIcon: flashStatusIcon
+            }
         )
 
         var autoCorrectionRuntimeRef: AutoCorrectionRuntimeCoordinator?

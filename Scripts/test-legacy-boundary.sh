@@ -464,6 +464,22 @@ for pattern in "${text_action_layout_switch_patterns[@]}"; do
     echo "PASS TextActionRuntimeCoordinator layout-switch runtime coordination absent: $pattern"
 done
 
+text_action_commit_runtime_patterns=(
+    "replaceTrackedTail("
+    "recordProductStatisticsEvent("
+    "conversionSession.record("
+    "soundFeedbackController.play("
+    "settingsManager.autoCorrectionRules ="
+)
+
+for pattern in "${text_action_commit_runtime_patterns[@]}"; do
+    if rg --fixed-strings --quiet "$pattern" Sources/Punto/App/TextActionRuntimeCoordinator.swift; then
+        echo "legacy boundary failed: TextActionRuntimeCoordinator reopened text replacement commit coordination: $pattern" >&2
+        exit 1
+    fi
+    echo "PASS TextActionRuntimeCoordinator text replacement commit coordination absent: $pattern"
+done
+
 app_delegate_auto_correction_runtime_patterns=(
     "AutoCorrectionEngine("
     "AutoCorrectionRuntimePolicy."

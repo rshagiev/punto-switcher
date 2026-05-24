@@ -14,38 +14,29 @@ final class TextActionRuntimeCoordinator {
     private let textState: TextRuntimeStateCoordinator
     private let textAccessor: TextAccessor
     private let inputSourceManager: InputSourceManager
-    private let wordTracker: WordTracker
-    private let soundFeedbackController: SoundFeedbackController
-    private let layoutSwitchRuntime: LayoutSwitchRuntimeCoordinator
+    private let commitRuntime: TextReplacementCommitRuntimeCoordinator
     private let currentApplicationBundleID: () -> String?
     private let runningApplicationBundleIDs: () -> [String?]
     private let isCurrentApplicationCompletelyDisabled: () -> Bool
-    private let flashStatusIcon: () -> Void
 
     init(
         settingsManager: SettingsManager,
         textState: TextRuntimeStateCoordinator,
         textAccessor: TextAccessor,
         inputSourceManager: InputSourceManager,
-        wordTracker: WordTracker,
-        soundFeedbackController: SoundFeedbackController,
-        layoutSwitchRuntime: LayoutSwitchRuntimeCoordinator,
+        commitRuntime: TextReplacementCommitRuntimeCoordinator,
         currentApplicationBundleID: @escaping () -> String?,
         runningApplicationBundleIDs: @escaping () -> [String?],
-        isCurrentApplicationCompletelyDisabled: @escaping () -> Bool,
-        flashStatusIcon: @escaping () -> Void
+        isCurrentApplicationCompletelyDisabled: @escaping () -> Bool
     ) {
         self.settingsManager = settingsManager
         self.textState = textState
         self.textAccessor = textAccessor
         self.inputSourceManager = inputSourceManager
-        self.wordTracker = wordTracker
-        self.soundFeedbackController = soundFeedbackController
-        self.layoutSwitchRuntime = layoutSwitchRuntime
+        self.commitRuntime = commitRuntime
         self.currentApplicationBundleID = currentApplicationBundleID
         self.runningApplicationBundleIDs = runningApplicationBundleIDs
         self.isCurrentApplicationCompletelyDisabled = isCurrentApplicationCompletelyDisabled
-        self.flashStatusIcon = flashStatusIcon
     }
 
     func beginReplacementWindow() -> ReplacementWindowAction {
@@ -57,7 +48,7 @@ final class TextActionRuntimeCoordinator {
     }
 
     func currentEnglishLayoutVariant() -> KeyboardLayoutVariant {
-        layoutSwitchRuntime.currentEnglishLayoutVariant()
+        commitRuntime.currentEnglishLayoutVariant()
     }
 
     func preflightTextAction(_ kind: TextActionKind) -> Bool {
@@ -112,34 +103,7 @@ final class TextActionRuntimeCoordinator {
     }
 
     func commitSuccessfulTextReplacement(_ plan: TextReplacementCommitPlan, contextID: String?) {
-        if plan.clearTrackedTextBeforeTailCommit {
-            textState.clearTrackedText(reason: "conversion completed")
-        }
-
-        if let trackedTailCommit = plan.trackedTailCommit {
-            wordTracker.replaceTrackedTail(
-                with: trackedTailCommit.text,
-                reason: trackedTailCommit.reason,
-                suppressAutoCorrectionForCurrentToken: trackedTailCommit.suppressAutoCorrectionForCurrentToken,
-                englishLayoutVariant: currentEnglishLayoutVariant(),
-                russianLayoutType: settingsManager.russianKeyboardLayoutType
-            )
-        }
-
-        if let layoutSwitchCommit = plan.layoutSwitchCommit {
-            layoutSwitchRuntime.switchLayoutIfEnabled(
-                layoutSwitchCommit.targetLayout,
-                surface: layoutSwitchCommit.surface
-            )
-        }
-
-        flashStatusIcon()
-        soundFeedbackController.play(plan.soundFeedbackEvent)
-        if let productStatisticsEvent = plan.productStatisticsEvent {
-            settingsManager.recordProductStatisticsEvent(productStatisticsEvent)
-        }
-
-        textState.conversionSession.record(plan.conversionRecordCommit, contextID: contextID)
+        commitRuntime.commitSuccessfulTextReplacement(plan, contextID: contextID)
     }
 
     func clearTextStateForSecureInput(context: String = "secure input") {
@@ -177,34 +141,11 @@ final class TextActionRuntimeCoordinator {
         contextID: String?,
         reloadAutoCorrectionRules: () -> Void
     ) {
-        if let layoutSwitchTarget = plan.layoutSwitchTarget {
-            layoutSwitchRuntime.switchLayoutIfEnabled(layoutSwitchTarget, surface: .undo)
-        } else if let skippedLayoutSwitchLogMessage = plan.skippedLayoutSwitchLogMessage {
-            PuntoLog.info(skippedLayoutSwitchLogMessage)
-        }
-
-        flashStatusIcon()
-        soundFeedbackController.play(plan.soundFeedbackEvent)
-        settingsManager.recordProductStatisticsEvent(plan.productStatisticsEvent)
-        if let trackedTailCommit = plan.trackedTailCommit {
-            wordTracker.replaceTrackedTail(
-                with: trackedTailCommit.text,
-                reason: trackedTailCommit.reason,
-                suppressAutoCorrectionForCurrentToken: trackedTailCommit.suppressAutoCorrectionForCurrentToken,
-                englishLayoutVariant: currentEnglishLayoutVariant(),
-                russianLayoutType: settingsManager.russianKeyboardLayoutType
-            )
-        }
-
-        if let learnedRules = plan.learnedAutoCorrectionRules {
-            settingsManager.autoCorrectionRules = learnedRules
-            reloadAutoCorrectionRules()
-            if let learnedRuleLogMessage = plan.learnedRuleLogMessage {
-                PuntoLog.info(learnedRuleLogMessage)
-            }
-        }
-
-        textState.conversionSession.record(plan.conversionRecordCommit, contextID: contextID)
+        commitRuntime.commitSuccessfulUndo(
+            plan,
+            contextID: contextID,
+            reloadAutoCorrectionRules: reloadAutoCorrectionRules
+        )
     }
 
     private func writeSecureInputDiagnostics(context: String) {
