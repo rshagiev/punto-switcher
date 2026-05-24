@@ -96,6 +96,10 @@ text_accessor_ax_selection_transport_patterns=(
     "AccessibilitySelectionSearchPolicy"
     "lastEditableSelectionElement"
     "TextCapturePolicy."
+    "TextReplacementPolicy."
+    "replaceSelection(with:"
+    "pasteSelectedText("
+    "clearCachedEditableElement"
 )
 
 for pattern in "${text_accessor_ax_selection_transport_patterns[@]}"; do

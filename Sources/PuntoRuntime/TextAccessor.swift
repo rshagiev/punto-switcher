@@ -16,6 +16,7 @@ public final class TextAccessor {
     private let clipboard: ClipboardTransport
     private let textCapture: TextCaptureRuntime
     private let keyboardReplacement: KeyboardTextReplacementRuntime
+    private let textReplacement: TextReplacementRuntime
 
     public convenience init(shouldRestorePasteboard: @escaping () -> Bool = { true }) {
         self.init(
@@ -50,6 +51,11 @@ public final class TextAccessor {
             keyboardEvents: self.keyboardEvents,
             accessibilityElements: self.accessibilityElements,
             clipboard: self.clipboard
+        )
+        self.textReplacement = TextReplacementRuntime(
+            accessibilitySelection: self.accessibilitySelection,
+            clipboard: self.clipboard,
+            keyboardReplacement: self.keyboardReplacement
         )
     }
 
@@ -96,46 +102,16 @@ public final class TextAccessor {
     ///   - keepSelection: If true, the inserted text will be selected after insertion (for undo support)
     @discardableResult
     public func setSelectedText(_ text: String, keepSelection: Bool = false) -> Bool {
-        PuntoLog.info("setSelectedText called with \(text.count) chars, keepSelection=\(keepSelection)")
-
-        // Try Accessibility API first
-        if setSelectedTextViaAccessibility(text, keepSelection: keepSelection) {
-            PuntoLog.info("setSelectedText: Accessibility API succeeded")
-            return true
-        }
-
-        PuntoLog.info("setSelectedText: Accessibility API failed, using clipboard")
-        // Fall back to clipboard method
-        return setSelectedTextViaClipboard(text, selectAfterPaste: keepSelection)
+        textReplacement.setSelectedText(text, keepSelection: keepSelection)
     }
 
     @discardableResult
     public func replaceCapturedText(_ capturedText: CapturedText, with replacement: String, keepSelection: Bool = false) -> Bool {
-        PuntoLog.info("replaceCapturedText: method=\(capturedText.replacementMethod), source=\(capturedText.source)")
-        switch TextReplacementPolicy.plan(
-            for: capturedText,
-            replacement: replacement,
+        textReplacement.replaceCapturedText(
+            capturedText,
+            with: replacement,
             keepSelection: keepSelection
-        ) {
-        case .accessibilitySelection(let text, let keepSelection):
-            return setSelectedText(text, keepSelection: keepSelection)
-        case .clipboardSelection(let text, let selectAfterPaste):
-            return setSelectedTextViaClipboard(text, selectAfterPaste: selectAfterPaste)
-        case .keyboardBackspacePaste(let deleteLength, let text):
-            return replaceLastWord(wordLength: deleteLength, with: text)
-        case .blocked:
-            PuntoLog.info("replaceCapturedText: blocked capture or unrewritable tail, no replacement")
-            return false
-        }
-    }
-
-    private func setSelectedTextViaAccessibility(_ text: String, keepSelection: Bool = false) -> Bool {
-        accessibilitySelection.replaceSelection(with: text, keepSelection: keepSelection)
-    }
-
-    private func setSelectedTextViaClipboard(_ text: String, selectAfterPaste: Bool = false) -> Bool {
-        accessibilitySelection.clearCachedEditableElement()
-        return clipboard.pasteSelectedText(text, selectAfterPaste: selectAfterPaste)
+        )
     }
 
     // MARK: - Replace Last Word
@@ -143,7 +119,7 @@ public final class TextAccessor {
     /// Deletes the last word and pastes the replacement via clipboard
     @discardableResult
     public func replaceLastWord(wordLength: Int, with replacement: String) -> Bool {
-        keyboardReplacement.replaceLastWord(wordLength: wordLength, with: replacement)
+        textReplacement.replaceLastWord(wordLength: wordLength, with: replacement)
     }
 
     @discardableResult
