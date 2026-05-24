@@ -448,6 +448,22 @@ for pattern in "${app_delegate_text_action_runtime_patterns[@]}"; do
     echo "PASS AppDelegate text-action runtime coordination absent: $pattern"
 done
 
+text_action_layout_switch_patterns=(
+    "LayoutSwitchRuntimePolicy.plan"
+    "KeyboardLayoutVariantPolicy.effectiveEnglishLayoutVariant"
+    "SoundFeedbackPolicy.eventAfterInputSourceSwitch"
+    "inputSourceManager.switchTo("
+    "rememberProgrammaticLayoutSwitch("
+)
+
+for pattern in "${text_action_layout_switch_patterns[@]}"; do
+    if rg --fixed-strings --quiet "$pattern" Sources/Punto/App/TextActionRuntimeCoordinator.swift; then
+        echo "legacy boundary failed: TextActionRuntimeCoordinator reopened layout-switch runtime coordination: $pattern" >&2
+        exit 1
+    fi
+    echo "PASS TextActionRuntimeCoordinator layout-switch runtime coordination absent: $pattern"
+done
+
 app_delegate_auto_correction_runtime_patterns=(
     "AutoCorrectionEngine("
     "AutoCorrectionRuntimePolicy."

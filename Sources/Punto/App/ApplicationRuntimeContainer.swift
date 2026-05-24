@@ -17,6 +17,7 @@ final class ApplicationRuntimeContainer {
     let inputSourceManager: InputSourceManager
     let appRuntime: ApplicationRuntimeCoordinator
     let soundFeedbackController: SoundFeedbackController
+    let layoutSwitchRuntime: LayoutSwitchRuntimeCoordinator
     let textActionRuntime: TextActionRuntimeCoordinator
     let autoCorrectionRuntime: AutoCorrectionRuntimeCoordinator
     let undoRuntime: UndoRuntimeCoordinator
@@ -67,6 +68,13 @@ final class ApplicationRuntimeContainer {
             textState: textState
         )
         soundFeedbackController = SoundFeedbackController(settingsManager: settingsManager)
+        layoutSwitchRuntime = LayoutSwitchRuntimeCoordinator(
+            settingsManager: settingsManager,
+            textState: textState,
+            inputSourceManager: inputSourceManager,
+            soundFeedbackController: soundFeedbackController,
+            appRuntime: appRuntime
+        )
         textActionRuntime = TextActionRuntimeCoordinator(
             settingsManager: settingsManager,
             textState: textState,
@@ -74,7 +82,7 @@ final class ApplicationRuntimeContainer {
             inputSourceManager: inputSourceManager,
             wordTracker: wordTracker,
             soundFeedbackController: soundFeedbackController,
-            appRuntime: appRuntime,
+            layoutSwitchRuntime: layoutSwitchRuntime,
             currentApplicationBundleID: { [appRuntime] in
                 appRuntime.effectiveCurrentApplicationBundleID(
                     frontmostApplication: NSWorkspace.shared.frontmostApplication
@@ -163,8 +171,8 @@ final class ApplicationRuntimeContainer {
             textAccessor: textAccessor,
             layoutConverter: layoutConverter,
             soundFeedbackController: soundFeedbackController,
-            currentEnglishLayoutVariant: { [textActionRuntime] in
-                textActionRuntime.currentEnglishLayoutVariant()
+            currentEnglishLayoutVariant: { [layoutSwitchRuntime] in
+                layoutSwitchRuntime.currentEnglishLayoutVariant()
             },
             currentApplicationBundleID: { [appRuntime] in
                 appRuntime.effectiveCurrentApplicationBundleID(

@@ -16,7 +16,7 @@ final class TextActionRuntimeCoordinator {
     private let inputSourceManager: InputSourceManager
     private let wordTracker: WordTracker
     private let soundFeedbackController: SoundFeedbackController
-    private let appRuntime: ApplicationRuntimeCoordinator
+    private let layoutSwitchRuntime: LayoutSwitchRuntimeCoordinator
     private let currentApplicationBundleID: () -> String?
     private let runningApplicationBundleIDs: () -> [String?]
     private let isCurrentApplicationCompletelyDisabled: () -> Bool
@@ -29,7 +29,7 @@ final class TextActionRuntimeCoordinator {
         inputSourceManager: InputSourceManager,
         wordTracker: WordTracker,
         soundFeedbackController: SoundFeedbackController,
-        appRuntime: ApplicationRuntimeCoordinator,
+        layoutSwitchRuntime: LayoutSwitchRuntimeCoordinator,
         currentApplicationBundleID: @escaping () -> String?,
         runningApplicationBundleIDs: @escaping () -> [String?],
         isCurrentApplicationCompletelyDisabled: @escaping () -> Bool,
@@ -41,7 +41,7 @@ final class TextActionRuntimeCoordinator {
         self.inputSourceManager = inputSourceManager
         self.wordTracker = wordTracker
         self.soundFeedbackController = soundFeedbackController
-        self.appRuntime = appRuntime
+        self.layoutSwitchRuntime = layoutSwitchRuntime
         self.currentApplicationBundleID = currentApplicationBundleID
         self.runningApplicationBundleIDs = runningApplicationBundleIDs
         self.isCurrentApplicationCompletelyDisabled = isCurrentApplicationCompletelyDisabled
@@ -57,11 +57,7 @@ final class TextActionRuntimeCoordinator {
     }
 
     func currentEnglishLayoutVariant() -> KeyboardLayoutVariant {
-        KeyboardLayoutVariantPolicy.effectiveEnglishLayoutVariant(
-            currentSourceID: inputSourceManager.currentLayoutID(),
-            selectedEnglishSourceID: inputSourceManager.languageLayoutID(.english),
-            preferredEnglishSourceID: settingsManager.preferredEnglishInputSourceID
-        )
+        layoutSwitchRuntime.currentEnglishLayoutVariant()
     }
 
     func preflightTextAction(_ kind: TextActionKind) -> Bool {
@@ -131,7 +127,10 @@ final class TextActionRuntimeCoordinator {
         }
 
         if let layoutSwitchCommit = plan.layoutSwitchCommit {
-            switchLayoutIfEnabled(layoutSwitchCommit.targetLayout, surface: layoutSwitchCommit.surface)
+            layoutSwitchRuntime.switchLayoutIfEnabled(
+                layoutSwitchCommit.targetLayout,
+                surface: layoutSwitchCommit.surface
+            )
         }
 
         flashStatusIcon()
@@ -141,41 +140,6 @@ final class TextActionRuntimeCoordinator {
         }
 
         textState.conversionSession.record(plan.conversionRecordCommit, contextID: contextID)
-    }
-
-    func switchLayoutIfEnabled(
-        _ targetLayout: LayoutConverter.DetectedLayout,
-        surface: LayoutConversionSurface
-    ) {
-        let plan = LayoutSwitchRuntimePolicy.plan(
-            targetLayout: targetLayout,
-            surface: surface,
-            switchLayoutAfterConversion: settingsManager.switchLayoutAfterConversion,
-            switchLayoutAfterSelectedTextConversion: settingsManager.switchLayoutAfterSelectedTextConversion
-        )
-
-        switch plan {
-        case .skip:
-            return
-
-        case .unsupportedTarget(let clearInputSourceIgnoreDeadline):
-            if clearInputSourceIgnoreDeadline {
-                textState.ignoreInputSourceChangesUntil = nil
-            }
-
-        case .switchTo(let request):
-            textState.ignoreInputSourceChangesUntil = request.ignoreInputSourceChangesUntil
-            PuntoLog.debug("ignoreInputSourceChangesUntil set (switching to \(request.targetLayout))")
-            let language = keyboardLanguage(for: request.language)
-            let targetLayoutID = inputSourceManager.languageLayoutID(language)
-            let didSwitch = inputSourceManager.switchTo(language)
-            playInputSourceSwitchSound(
-                targetLayout: request.targetLayout,
-                didSwitch: didSwitch,
-                context: .textReplacement
-            )
-            appRuntime.rememberProgrammaticLayoutSwitch(targetLayoutID: targetLayoutID, didSwitch: didSwitch)
-        }
     }
 
     func clearTextStateForSecureInput(context: String = "secure input") {
@@ -214,7 +178,7 @@ final class TextActionRuntimeCoordinator {
         reloadAutoCorrectionRules: () -> Void
     ) {
         if let layoutSwitchTarget = plan.layoutSwitchTarget {
-            switchLayoutIfEnabled(layoutSwitchTarget, surface: .undo)
+            layoutSwitchRuntime.switchLayoutIfEnabled(layoutSwitchTarget, surface: .undo)
         } else if let skippedLayoutSwitchLogMessage = plan.skippedLayoutSwitchLogMessage {
             PuntoLog.info(skippedLayoutSwitchLogMessage)
         }
@@ -241,30 +205,6 @@ final class TextActionRuntimeCoordinator {
         }
 
         textState.conversionSession.record(plan.conversionRecordCommit, contextID: contextID)
-    }
-
-    private func keyboardLanguage(for language: LayoutSwitchTargetLanguage) -> KeyboardLanguage {
-        switch language {
-        case .english:
-            return .english
-        case .russian:
-            return .russian
-        }
-    }
-
-    private func playInputSourceSwitchSound(
-        targetLayout: LayoutConverter.DetectedLayout,
-        didSwitch: Bool,
-        context: InputSourceSwitchSoundContext
-    ) {
-        guard let event = SoundFeedbackPolicy.eventAfterInputSourceSwitch(
-            targetLayout: targetLayout,
-            didSwitch: didSwitch,
-            context: context
-        ) else {
-            return
-        }
-        soundFeedbackController.play(event)
     }
 
     private func writeSecureInputDiagnostics(context: String) {
