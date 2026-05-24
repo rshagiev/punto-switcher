@@ -12,24 +12,6 @@ public enum WordBoundaryPolicy {
         "+", "=", "-", "_"
     ]
 
-    private static let layoutMappedPunctuation: Set<Character> = [
-        ";", "'", ":", "\"",
-        ",", ".", "/", "?",
-        "[", "]", "{", "}",
-        "<", ">",
-        "`", "~"
-    ]
-
-    private static let macLayoutMappedPunctuation: Set<Character> = [
-        ";", "'", ":", "\"",
-        ",", ".",
-        "[", "]", "{", "}",
-        "<", ">",
-        "`", "~",
-        "\\", "|",
-        "@", "#", "$", "%", "^", "&", "*"
-    ]
-
     private static let commandSuffixBoundaries: Set<Character> = [
         "&", "|", ";",
         "(", ")",
@@ -71,7 +53,10 @@ public enum WordBoundaryPolicy {
         _ character: Character,
         russianLayoutType: KeyboardLayoutType
     ) -> Bool {
-        layoutMappedPunctuation(for: russianLayoutType).contains(character)
+        KeyboardLayoutMappingPolicy.isLayoutMappedPunctuation(
+            character,
+            russianLayoutType: russianLayoutType
+        )
     }
 
     public static func isCommandSuffixBoundary(_ character: Character) -> Bool {
@@ -94,14 +79,5 @@ public enum WordBoundaryPolicy {
 
     public static func isTerminalPromptMarker(_ character: Character) -> Bool {
         terminalPromptMarkers.contains(character)
-    }
-
-    private static func layoutMappedPunctuation(for layoutType: KeyboardLayoutType) -> Set<Character> {
-        switch layoutType {
-        case .mac:
-            return macLayoutMappedPunctuation
-        case .windows:
-            return layoutMappedPunctuation
-        }
     }
 }

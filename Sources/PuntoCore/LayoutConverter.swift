@@ -2,115 +2,7 @@ import Foundation
 
 /// Converts text between Russian and English keyboard layouts
 public final class LayoutConverter {
-
-    // MARK: - Character Mappings
-
-    /// English to Russian mapping for Russian-PC/Windows ЙЦУКЕН layout.
-    /// This preserves Punto's historical conversion table and remains the
-    /// default for source-compatible converter calls that do not pass settings.
-    private let windowsEnToRu: [Character: Character] = [
-        // Lowercase letters
-        "q": "й", "w": "ц", "e": "у", "r": "к", "t": "е", "y": "н", "u": "г",
-        "i": "ш", "o": "щ", "p": "з", "[": "х", "]": "ъ", "a": "ф", "s": "ы",
-        "d": "в", "f": "а", "g": "п", "h": "р", "j": "о", "k": "л", "l": "д",
-        ";": "ж", "'": "э", "z": "я", "x": "ч", "c": "с", "v": "м", "b": "и",
-        "n": "т", "m": "ь", ",": "б", ".": "ю", "/": ".",
-        "`": "ё",
-
-        // Uppercase letters (Shift + letter)
-        "Q": "Й", "W": "Ц", "E": "У", "R": "К", "T": "Е", "Y": "Н", "U": "Г",
-        "I": "Ш", "O": "Щ", "P": "З", "{": "Х", "}": "Ъ", "A": "Ф", "S": "Ы",
-        "D": "В", "F": "А", "G": "П", "H": "Р", "J": "О", "K": "Л", "L": "Д",
-        ":": "Ж", "\"": "Э", "Z": "Я", "X": "Ч", "C": "С", "V": "М", "B": "И",
-        "N": "Т", "M": "Ь", "<": "Б", ">": "Ю", "?": ",",
-        "~": "Ё",
-
-        // Shift + numbers: EN -> RU (Russian-PC/Windows layout)
-        // Shift+1: ! -> ! (same)
-        // Shift+2: @ -> "
-        "@": "\"",
-        // Shift+3: # -> №
-        "#": "№",
-        // Shift+4: $ -> ;
-        "$": ";",
-        // Shift+5: % -> % (same)
-        // Shift+6: ^ -> :
-        "^": ":",
-        // Shift+7: & -> ?
-        "&": "?",
-        // Shift+8: * -> * (same)
-        // Shift+9: ( -> ( (same)
-        // Shift+0: ) -> ) (same)
-
-        // Special characters
-        "\\": "\\", "|": "/"
-    ]
-
-    /// English to Russian mapping for macOS `com.apple.keylayout.Russian`.
-    /// The punctuation rows match the local TIS/UCKeyTranslate output for the
-    /// built-in Apple Russian layout.
-    private let macEnToRu: [Character: Character] = [
-        // Lowercase letters
-        "q": "й", "w": "ц", "e": "у", "r": "к", "t": "е", "y": "н", "u": "г",
-        "i": "ш", "o": "щ", "p": "з", "[": "х", "]": "ъ", "a": "ф", "s": "ы",
-        "d": "в", "f": "а", "g": "п", "h": "р", "j": "о", "k": "л", "l": "д",
-        ";": "ж", "'": "э", "z": "я", "x": "ч", "c": "с", "v": "м", "b": "и",
-        "n": "т", "m": "ь", ",": "б", ".": "ю", "/": "/",
-        "`": "]", "\\": "ё",
-
-        // Uppercase letters (Shift + letter)
-        "Q": "Й", "W": "Ц", "E": "У", "R": "К", "T": "Е", "Y": "Н", "U": "Г",
-        "I": "Ш", "O": "Щ", "P": "З", "{": "Х", "}": "Ъ", "A": "Ф", "S": "Ы",
-        "D": "В", "F": "А", "G": "П", "H": "Р", "J": "О", "K": "Л", "L": "Д",
-        ":": "Ж", "\"": "Э", "Z": "Я", "X": "Ч", "C": "С", "V": "М", "B": "И",
-        "N": "Т", "M": "Ь", "<": "Б", ">": "Ю", "?": "?",
-        "~": "[", "|": "Ё",
-
-        // Shift + numbers: EN -> RU (Apple Russian layout)
-        // Shift+1: ! -> ! (same)
-        // Shift+2: @ -> "
-        "@": "\"",
-        // Shift+3: # -> №
-        "#": "№",
-        // Shift+4: $ -> %
-        "$": "%",
-        // Shift+5: % -> :
-        "%": ":",
-        // Shift+6: ^ -> ,
-        "^": ",",
-        // Shift+7: & -> .
-        "&": ".",
-        // Shift+8: * -> ;
-        "*": ";"
-        // Shift+9/0, -/_, =/+ are unchanged.
-    ]
-
-    /// Russian to English mappings (reverse of layout-specific EN -> RU maps).
-    private var windowsRuToEn: [Character: Character] = [:]
-    private var macRuToEn: [Character: Character] = [:]
-
-    public init() {
-        windowsRuToEn = Self.reversedMapping(from: windowsEnToRu)
-        macRuToEn = Self.reversedMapping(from: macEnToRu)
-
-        // Fix ambiguous mappings for RU -> EN direction
-        // These are cases where multiple EN keys map to the same RU character
-        // We choose the mapping based on the selected Russian keyboard layout.
-        windowsRuToEn["\""] = "@"  // Shift+2 on RU keyboard produces ", maps to @ on EN
-        windowsRuToEn[";"] = "$"   // Shift+4 on RU keyboard produces ;, maps to $ on EN
-        windowsRuToEn[":"] = "^"   // Shift+6 on RU keyboard produces :, maps to ^ on EN
-        windowsRuToEn["?"] = "&"   // Shift+7 on RU keyboard produces ?, maps to & on EN
-        windowsRuToEn["№"] = "#"   // Shift+3 on RU keyboard produces №, maps to # on EN
-        macRuToEn["\""] = "@"
-        macRuToEn["№"] = "#"
-        macRuToEn["%"] = "$"
-        macRuToEn[":"] = "%"
-        macRuToEn[","] = "^"
-        macRuToEn["."] = "&"
-        macRuToEn[";"] = "*"
-        // Note: "," maps to both "б" (letter) and Shift+/ result. We keep "б" -> "," mapping
-        // as it's more common for text conversion. Shift symbols are edge cases.
-    }
+    public init() {}
 
     // MARK: - Conversion
 
@@ -270,28 +162,10 @@ public final class LayoutConverter {
     }
 
     private func enToRuMapping(for layoutType: KeyboardLayoutType) -> [Character: Character] {
-        switch layoutType {
-        case .mac:
-            return macEnToRu
-        case .windows:
-            return windowsEnToRu
-        }
+        KeyboardLayoutMappingPolicy.enToRuMapping(for: layoutType)
     }
 
     private func ruToEnMapping(for layoutType: KeyboardLayoutType) -> [Character: Character] {
-        switch layoutType {
-        case .mac:
-            return macRuToEn
-        case .windows:
-            return windowsRuToEn
-        }
-    }
-
-    private static func reversedMapping(from mapping: [Character: Character]) -> [Character: Character] {
-        var reversed = [Character: Character]()
-        for (en, ru) in mapping {
-            reversed[ru] = en
-        }
-        return reversed
+        KeyboardLayoutMappingPolicy.ruToEnMapping(for: layoutType)
     }
 }

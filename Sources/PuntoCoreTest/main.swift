@@ -31,7 +31,7 @@ private func type(_ text: String, into tracker: WordTracker) {
 }
 
 private func runWordBoundaryPolicyTests() throws {
-    for character in [";", "'", ":", "\"", ",", ".", "/", "?", "[", "]", "{", "}", "<", ">", "`", "~"] as [Character] {
+    for character in [";", "'", ":", "\"", ",", ".", "/", "?", "[", "]", "{", "}", "<", ">", "`", "~", "@", "#", "$", "^", "&"] as [Character] {
         try expect(
             WordBoundaryPolicy.isLayoutMappedPunctuation(character),
             true,
@@ -44,13 +44,29 @@ private func runWordBoundaryPolicyTests() throws {
         )
     }
 
-    for character in ["!", "(", ")", "\\", "|", "@", "#", "$", "%", "^", "&", "*", "+", "=", "-", "_"] as [Character] {
+    for character in ["!", "(", ")", "\\", "|", "%", "*", "+", "=", "-", "_"] as [Character] {
         try expect(
             WordBoundaryPolicy.isTypedWordBoundary(character, keyCode: 0),
             true,
             "word boundary policy treats \(character) as typed-word boundary"
         )
     }
+
+    try expect(
+        KeyboardLayoutMappingPolicy.isLayoutMappedPunctuation("@", russianLayoutType: .windows),
+        true,
+        "keyboard layout mapping policy exposes Windows shifted-number punctuation"
+    )
+    try expect(
+        KeyboardLayoutMappingPolicy.isLayoutMappedPunctuation("%", russianLayoutType: .windows),
+        false,
+        "keyboard layout mapping policy does not treat unchanged Windows percent as mapped punctuation"
+    )
+    try expect(
+        KeyboardLayoutMappingPolicy.isLayoutMappedPunctuation("/", russianLayoutType: .mac),
+        false,
+        "keyboard layout mapping policy keeps unchanged Mac slash out of mapped punctuation"
+    )
 
     for character in ["\\", "|", "@", "#", "$", "%", "^", "&", "*"] as [Character] {
         try expect(
@@ -747,6 +763,16 @@ private func runWordTrackerTests() throws {
         let tracker = WordTracker()
         tracker.trackKeyPress(keyCode: 0, characters: "\\", russianLayoutType: .windows)
         try expectNil(tracker.getLastWord(), "word tracker treats Windows backslash as word boundary")
+    }
+
+    do {
+        let tracker = WordTracker()
+        tracker.trackKeyPress(keyCode: 0, characters: "ghbdtn@#$^&", russianLayoutType: .windows)
+        try expect(
+            tracker.getLastWord(),
+            "ghbdtn@#$^&",
+            "word tracker keeps Windows shifted-number mapped punctuation in last word"
+        )
     }
 
     do {
