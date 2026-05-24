@@ -21,6 +21,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var textState: TextRuntimeStateCoordinator?
     private var appRuntime: ApplicationRuntimeCoordinator?
     private var keyPressRuntime: KeyPressRuntimeCoordinator?
+    private var textActionRuntime: TextActionRuntimeCoordinator?
 
     private var conversionSession: ConversionSession {
         guard let textState else {
@@ -93,6 +94,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             textState: textState!
         )
         soundFeedbackController = SoundFeedbackController(settingsManager: settingsManager!)
+        textActionRuntime = TextActionRuntimeCoordinator(
+            settingsManager: settingsManager!,
+            textState: textState!,
+            textAccessor: textAccessor!,
+            inputSourceManager: inputSourceManager!,
+            wordTracker: wordTracker!,
+            soundFeedbackController: soundFeedbackController!,
+            appRuntime: appRuntime!,
+            currentApplicationBundleID: { [weak self] in
+                self?.activeApplicationBundleID ?? NSWorkspace.shared.frontmostApplication?.bundleIdentifier
+            },
+            runningApplicationBundleIDs: {
+                NSWorkspace.shared.runningApplications.map(\.bundleIdentifier)
+            },
+            isCurrentApplicationCompletelyDisabled: { [weak self] in
+                self?.isCurrentApplicationCompletelyDisabled() ?? false
+            },
+            flashStatusIcon: { [weak self] in
+                self?.statusBarController?.flashIcon()
+            }
+        )
         keyPressRuntime = KeyPressRuntimeCoordinator(
             settingsManager: settingsManager!,
             wordTracker: wordTracker!,
@@ -107,7 +129,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.isCurrentApplicationDisabled() ?? false
             },
             clearTextStateForSecureInput: { [weak self] context in
-                self?.clearTextStateForSecureInput(context: context)
+                self?.textActionRuntime?.clearTextStateForSecureInput(context: context)
             },
             runAutoCorrectionIfNeeded: { [weak self] in
                 self?.handleAutoCorrectionIfNeeded()
@@ -420,7 +442,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func handleSelectedTextSearch(destination: SearchShortcutDestination) {
         PuntoLog.info(">>> Selected text search triggered <<< destination=\(destination)")
 
-        guard preflightTextAction(.selectedTextSearch) else {
+        guard textActionRuntime?.preflightTextAction(.selectedTextSearch) == true else {
             return
         }
 
@@ -432,7 +454,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         switch runtimePlan {
         case .blockedCapture(let capturedText, let logMessage):
             PuntoLog.info(logMessage)
-            clearStateAfterBlockedCapture(capturedText)
+            textActionRuntime?.clearStateAfterBlockedCapture(capturedText)
 
         case .open(let url, let logMessage, let shouldFlashIcon):
             PuntoLog.info(logMessage)
@@ -470,18 +492,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             PuntoLog.info(">>> Convert triggered <<< (no frontmost app) sinceLastKey=\(timeSinceLastKey)")
         }
 
-        guard preflightTextAction(.layoutConversion) else {
+        guard textActionRuntime?.preflightTextAction(.layoutConversion) == true else {
             return
         }
 
-        _ = beginReplacementWindow()
+        _ = textActionRuntime?.beginReplacementWindow()
         defer {
             let totalTime = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
             PuntoLog.info("⏱️ TOTAL conversion time: \(String(format: "%.1f", totalTime))ms")
         }
 
         defer {
-            finishReplacementWindow()
+            textActionRuntime?.finishReplacementWindow()
         }
 
         // Check for undo possibility
@@ -514,7 +536,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         switch runtimePlan {
         case .blockedCapture(let capturedText, let logMessage):
             PuntoLog.info(logMessage)
-            clearStateAfterBlockedCapture(capturedText)
+            textActionRuntime?.clearStateAfterBlockedCapture(capturedText)
             return
 
         case .replace(let replacementPlan):
@@ -532,11 +554,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             PuntoLog.info("⏱️ \(replacementPlan.replacementTimingLabel): \(String(format: "%.1f", replaceTime))ms")
             guard replacementApplied else {
                 PuntoLog.info(replacementPlan.failedReplacementLogMessage)
-                clearTrackedTextAfterFailedReplacement(method: replacementPlan.failedReplacementMethod)
+                textActionRuntime?.clearTrackedTextAfterFailedReplacement(method: replacementPlan.failedReplacementMethod)
                 return
             }
 
-            commitSuccessfulTextReplacement(
+            textActionRuntime?.commitSuccessfulTextReplacement(
                 replacementPlan.commitPlan,
                 contextID: conversionContextID
             )
@@ -560,13 +582,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let conversionContextID = activeApplicationBundleID ?? NSWorkspace.shared.frontmostApplication?.bundleIdentifier
         PuntoLog.info(">>> Cancel layout change triggered <<<")
 
-        guard preflightTextAction(.layoutConversion) else {
+        guard textActionRuntime?.preflightTextAction(.layoutConversion) == true else {
             return
         }
 
-        _ = beginReplacementWindow()
+        _ = textActionRuntime?.beginReplacementWindow()
         defer {
-            finishReplacementWindow()
+            textActionRuntime?.finishReplacementWindow()
         }
 
         guard performUndoIfAvailable(contextID: conversionContextID) else {
@@ -611,13 +633,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             ) ?? false
             guard undoApplied else {
                 PuntoLog.info("Undo aborted: replacement was not applied")
-                clearStateAfterFailedUndoReplacement(method: undoReplacement.capturedText.replacementMethod)
+                textActionRuntime?.clearStateAfterFailedUndoReplacement(method: undoReplacement.capturedText.replacementMethod)
                 return true
             }
 
             let commitPlan = UndoRuntimePolicy.appliedCommitPlan(for: plan, converter: layoutConverter!)
             if let layoutSwitchTarget = commitPlan.layoutSwitchTarget {
-                switchLayoutIfEnabled(layoutSwitchTarget, surface: .undo)
+                textActionRuntime?.switchLayoutIfEnabled(layoutSwitchTarget, surface: .undo)
             } else if let skippedLayoutSwitchLogMessage = commitPlan.skippedLayoutSwitchLogMessage {
                 PuntoLog.info(skippedLayoutSwitchLogMessage)
             }
@@ -647,62 +669,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
             return true
         }
-    }
-
-    private func switchLayoutIfEnabled(
-        _ targetLayout: LayoutConverter.DetectedLayout,
-        surface: LayoutConversionSurface
-    ) {
-        let plan = LayoutSwitchRuntimePolicy.plan(
-            targetLayout: targetLayout,
-            surface: surface,
-            switchLayoutAfterConversion: settingsManager?.switchLayoutAfterConversion == true,
-            switchLayoutAfterSelectedTextConversion: settingsManager?.switchLayoutAfterSelectedTextConversion
-                ?? SettingsPersistencePolicy.defaultSwitchLayoutAfterSelectedTextConversion
-        )
-
-        switch plan {
-        case .skip:
-            return
-
-        case .unsupportedTarget(let clearInputSourceIgnoreDeadline):
-            if clearInputSourceIgnoreDeadline {
-                ignoreInputSourceChangesUntil = nil
-            }
-
-        case .switchTo(let request):
-            ignoreInputSourceChangesUntil = request.ignoreInputSourceChangesUntil
-            PuntoLog.debug("ignoreInputSourceChangesUntil set (switching to \(request.targetLayout))")
-            let language = keyboardLanguage(for: request.language)
-            let targetLayoutID = inputSourceManager?.languageLayoutID(language)
-            let didSwitch = inputSourceManager?.switchTo(language) ?? false
-            playInputSourceSwitchSound(targetLayout: request.targetLayout, didSwitch: didSwitch, context: .textReplacement)
-            appRuntime?.rememberProgrammaticLayoutSwitch(targetLayoutID: targetLayoutID, didSwitch: didSwitch)
-        }
-    }
-
-    private func keyboardLanguage(for language: LayoutSwitchTargetLanguage) -> KeyboardLanguage {
-        switch language {
-        case .english:
-            return .english
-        case .russian:
-            return .russian
-        }
-    }
-
-    private func playInputSourceSwitchSound(
-        targetLayout: LayoutConverter.DetectedLayout,
-        didSwitch: Bool,
-        context: InputSourceSwitchSoundContext
-    ) {
-        guard let event = SoundFeedbackPolicy.eventAfterInputSourceSwitch(
-            targetLayout: targetLayout,
-            didSwitch: didSwitch,
-            context: context
-        ) else {
-            return
-        }
-        soundFeedbackController?.play(event)
     }
 
     private func reloadAutoCorrectionRules() {
@@ -740,7 +706,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         case .blockAndClear(let completedTokenStatisticsEvent, let reason, let logMessage):
             recordCompletedTokenStatistics(completedTokenStatisticsEvent)
-            clearTextStateForSecureInput(context: reason)
+            textActionRuntime?.clearTextStateForSecureInput(context: reason)
             if let logMessage {
                 PuntoLog.info(logMessage)
             }
@@ -772,9 +738,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             recordCompletedTokenStatistics(completedTokenStatisticsEvent)
             PuntoLog.info(logMessage)
 
-            _ = beginReplacementWindow()
+            _ = textActionRuntime?.beginReplacementWindow()
             defer {
-                finishReplacementWindow()
+                textActionRuntime?.finishReplacementWindow()
             }
 
             let applied = textAccessor?.replaceRecentText(
@@ -782,13 +748,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 with: replacement.replacementText
             ) ?? false
             if applied {
-                commitSuccessfulTextReplacement(
+                textActionRuntime?.commitSuccessfulTextReplacement(
                     commitPlan,
                     contextID: activeApplicationBundleID ?? NSWorkspace.shared.frontmostApplication?.bundleIdentifier
                 )
             } else {
                 PuntoLog.info("Auto-correction replacement aborted")
-                clearTrackedTextAfterFailedReplacement(method: replacement.undoMethod)
+                textActionRuntime?.clearTrackedTextAfterFailedReplacement(method: replacement.undoMethod)
             }
         }
     }
@@ -796,13 +762,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func handleToggleCase() {
         let conversionContextID = activeApplicationBundleID ?? NSWorkspace.shared.frontmostApplication?.bundleIdentifier
 
-        guard preflightTextAction(.toggleCase) else {
+        guard textActionRuntime?.preflightTextAction(.toggleCase) == true else {
             return
         }
 
-        _ = beginReplacementWindow()
+        _ = textActionRuntime?.beginReplacementWindow()
         defer {
-            finishReplacementWindow()
+            textActionRuntime?.finishReplacementWindow()
         }
 
         let lastTrackedWord = wordTracker?.getLastWord()
@@ -815,7 +781,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         switch runtimePlan {
         case .blockedCapture(let capturedText, let logMessage):
             PuntoLog.info(logMessage)
-            clearStateAfterBlockedCapture(capturedText)
+            textActionRuntime?.clearStateAfterBlockedCapture(capturedText)
 
         case .replace(let replacementPlan):
             PuntoLog.info(replacementPlan.logMessage)
@@ -824,13 +790,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 with: replacementPlan.replacement.toggledText,
                 keepSelection: replacementPlan.keepSelection
             ) == true {
-                commitSuccessfulTextReplacement(
+                textActionRuntime?.commitSuccessfulTextReplacement(
                     replacementPlan.commitPlan,
                     contextID: conversionContextID
                 )
             } else {
                 PuntoLog.info(replacementPlan.failedReplacementLogMessage)
-                clearTrackedTextAfterFailedReplacement(method: replacementPlan.failedReplacementMethod)
+                textActionRuntime?.clearTrackedTextAfterFailedReplacement(method: replacementPlan.failedReplacementMethod)
             }
 
         case .skipped(let logMessage):
@@ -854,91 +820,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if action.shouldFlashIcon {
             statusBarController?.flashIcon()
         }
-    }
-
-    private func commitSuccessfulTextReplacement(_ plan: TextReplacementCommitPlan, contextID: String?) {
-        if plan.clearTrackedTextBeforeTailCommit {
-            textState?.clearTrackedText(reason: "conversion completed")
-        }
-
-        if let trackedTailCommit = plan.trackedTailCommit {
-            wordTracker?.replaceTrackedTail(
-                with: trackedTailCommit.text,
-                reason: trackedTailCommit.reason,
-                suppressAutoCorrectionForCurrentToken: trackedTailCommit.suppressAutoCorrectionForCurrentToken,
-                russianLayoutType: settingsManager?.russianKeyboardLayoutType
-                    ?? KeyboardLayoutTypePolicy.defaultRussianLayoutType
-            )
-        }
-
-        if let layoutSwitchCommit = plan.layoutSwitchCommit {
-            switchLayoutIfEnabled(layoutSwitchCommit.targetLayout, surface: layoutSwitchCommit.surface)
-        }
-
-        statusBarController?.flashIcon()
-        soundFeedbackController?.play(plan.soundFeedbackEvent)
-        if let productStatisticsEvent = plan.productStatisticsEvent {
-            settingsManager?.recordProductStatisticsEvent(productStatisticsEvent)
-        }
-
-        conversionSession.record(plan.conversionRecordCommit, contextID: contextID)
-    }
-
-    private func beginReplacementWindow() -> ReplacementWindowAction {
-        textState?.beginReplacementWindow() ?? ConversionProtectionPolicy.replacementWindowAction(now: Date(), dispatchNow: .now())
-    }
-
-    private func finishReplacementWindow() {
-        textState?.finishReplacementWindow()
-    }
-
-    private func preflightTextAction(_ kind: TextActionKind) -> Bool {
-        func handle(_ action: TextActionPreflightAction) -> Bool {
-            switch action {
-            case .proceed:
-                return true
-            case .skip:
-                if let message = TextActionPreflightPolicy.logMessage(action: action, kind: kind) {
-                    PuntoLog.info(message)
-                }
-                return false
-            case .blockAndClear(let reason):
-                clearTextStateForSecureInput(context: reason)
-                if let message = TextActionPreflightPolicy.logMessage(action: action, kind: kind) {
-                    PuntoLog.info(message)
-                }
-                return false
-            }
-        }
-
-        let routeAction = TextActionRuntimePreflightPolicy.routeAction(
-            kind: kind,
-            isEnabled: settingsManager?.isEnabled == true,
-            isManualConversionDisabled: settingsManager?.manualConversionDisabled == true,
-            isConversionInProgress: isConversionInProgress,
-            isCurrentApplicationDisabled: isCurrentApplicationCompletelyDisabled()
-        )
-        guard handle(routeAction) else {
-            return false
-        }
-
-        if textAccessor?.isSecureInputEnabled() == true {
-            return handle(TextActionRuntimePreflightPolicy.securityAction(
-                kind: kind,
-                isSecureInputEnabled: true,
-                isPasswordField: false
-            ))
-        }
-
-        if textAccessor?.isPasswordField() == true {
-            return handle(TextActionRuntimePreflightPolicy.securityAction(
-                kind: kind,
-                isSecureInputEnabled: false,
-                isPasswordField: true
-            ))
-        }
-
-        return true
     }
 
     // MARK: - Settings
@@ -1008,58 +889,4 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    private func clearTextStateForSecureInput(context: String = "secure input") {
-        let action = TextTrackingSecurityPolicy.clearAction(
-            isSecureInputEnabled: context == "secure input",
-            isPasswordField: context == "password field"
-        )
-
-        textState?.apply(action)
-        if action.shouldWriteDiagnostics, let diagnosticContext = action.diagnosticContext {
-            writeSecureInputDiagnostics(context: diagnosticContext)
-        }
-        if let logMessage = action.logMessage {
-            PuntoLog.info(logMessage)
-        }
-    }
-
-    private func writeSecureInputDiagnostics(context: String) {
-        let snapshot = SecureInputDiagnosticsPolicy.snapshot(
-            secureInputState: textAccessor?.isSecureInputEnabled() == true,
-            context: context,
-            currentApp: activeApplicationBundleID ?? NSWorkspace.shared.frontmostApplication?.bundleIdentifier,
-            runningApps: NSWorkspace.shared.runningApplications.map(\.bundleIdentifier),
-            enabledLayouts: [
-                inputSourceManager?.languageLayoutID(.english),
-                inputSourceManager?.languageLayoutID(.russian),
-                inputSourceManager?.currentLayoutID()
-            ]
-        )
-        let dictionary = SecureInputDiagnosticsPolicy.plistDictionary(from: snapshot)
-        let url = URL(fileURLWithPath: NSTemporaryDirectory())
-            .appendingPathComponent(SecureInputDiagnosticsPolicy.observedPlistFilename)
-
-        do {
-            let data = try PropertyListSerialization.data(fromPropertyList: dictionary, format: .xml, options: 0)
-            try data.write(to: url, options: .atomic)
-            PuntoLog.info("Wrote secure input diagnostics to \(url.path)")
-        } catch {
-            PuntoLog.error("Failed to write secure input diagnostics: \(error)")
-        }
-    }
-
-    private func clearTrackedTextAfterFailedReplacement(method: TextReplacementMethod) {
-        let action = ReplacementFailurePolicy.actionAfterFailedReplacement(method: method)
-        textState?.apply(action)
-    }
-
-    private func clearStateAfterFailedUndoReplacement(method: TextReplacementMethod) {
-        let action = UndoReplacementPolicy.actionAfterFailedReplacement(method: method)
-        textState?.apply(action)
-    }
-
-    private func clearStateAfterBlockedCapture(_ capturedText: CapturedText?) {
-        let action = TextCapturePolicy.actionAfterBlockedCapture(capturedText)
-        textState?.apply(action)
-    }
 }

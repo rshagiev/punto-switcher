@@ -150,6 +150,25 @@ for pattern in "${app_delegate_key_press_runtime_patterns[@]}"; do
     echo "PASS AppDelegate key-press runtime coordination absent: $pattern"
 done
 
+app_delegate_text_action_runtime_patterns=(
+    "TextActionRuntimePreflightPolicy."
+    "TextActionPreflightPolicy.logMessage"
+    "LayoutSwitchRuntimePolicy.plan"
+    "SoundFeedbackPolicy.eventAfterInputSourceSwitch"
+    "SecureInputDiagnosticsPolicy.snapshot"
+    "ReplacementFailurePolicy.actionAfterFailedReplacement"
+    "UndoReplacementPolicy.actionAfterFailedReplacement"
+    "TextCapturePolicy.actionAfterBlockedCapture"
+)
+
+for pattern in "${app_delegate_text_action_runtime_patterns[@]}"; do
+    if rg --fixed-strings --quiet "$pattern" Sources/Punto/App/AppDelegate.swift; then
+        echo "legacy boundary failed: AppDelegate reopened text-action runtime coordination: $pattern" >&2
+        exit 1
+    fi
+    echo "PASS AppDelegate text-action runtime coordination absent: $pattern"
+done
+
 if rg --fixed-strings --quiet "Placeholder - actual tests" Tests 2>/dev/null; then
     echo "legacy boundary failed: placeholder SwiftPM test target returned" >&2
     exit 1
