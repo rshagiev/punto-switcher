@@ -29,3 +29,14 @@ func type(_ text: String, into tracker: WordTracker) {
         tracker.trackKeyPress(keyCode: keyCode, characters: String(char))
     }
 }
+
+struct TestSuite {
+    let name: String
+    let aliases: Set<String>
+    let run: () throws -> Void
+
+    func matches(_ requestedName: String) -> Bool {
+        let normalizedName = requestedName.lowercased()
+        return name == normalizedName || aliases.contains(normalizedName)
+    }
+}
