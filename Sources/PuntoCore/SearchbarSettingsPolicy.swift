@@ -40,13 +40,13 @@ public enum SearchbarSettingsPolicy {
     public static let sitesearchPromptCounterKey = "SitesearchPromptCounter"
 
     public static let defaultActivationShortcut = Hotkey.disabled
-    public static let observedLegacyInitialDate = Date(timeIntervalSince1970: 1_230_757_200)
+    public static let legacyInitialDate = Date(timeIntervalSince1970: 1_230_757_200)
 
     public static let defaultSnapshot = SearchbarSettingsSnapshot(
         activationShortcut: defaultActivationShortcut,
         shouldOfferSearchbarAutoactivation: true,
         autoactivationExceptions: [],
-        alertShownIn: observedLegacyInitialDate,
+        alertShownIn: legacyInitialDate,
         shouldSearchByDoubleClick: false,
         sitesearchPromptCounter: 3
     )

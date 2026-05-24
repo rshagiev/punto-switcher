@@ -604,6 +604,21 @@ if rg -n "observed[A-Za-z0-9]*(Selector|ClassName|ProtocolName|ResourceName|Form
     echo "legacy boundary failed: reverse-audit-only observed surface leaked back into behavior policy" >&2
     exit 1
 fi
+
+runtime_owned_policy_files=(
+    Sources/PuntoCore/AccessibilityPreferencesPolicy.swift \
+    Sources/PuntoCore/ApplicationUpdateSettingsPolicy.swift \
+    Sources/PuntoCore/InputSourceSelectionPolicy.swift \
+    Sources/PuntoCore/SearchbarSettingsPolicy.swift \
+    Sources/PuntoCore/StartupPresentationPolicy.swift
+)
+
+if rg -n "observed[A-Za-z0-9]*(Message|URLString|Anchor|PaneID|Legacy|SourceID)" \
+    "${runtime_owned_policy_files[@]}"; then
+    echo "legacy boundary failed: runtime-owned policy constants use reverse-audit observed naming" >&2
+    exit 1
+fi
+
 if rg -n "PuntoSwitcherObservedSurface" "${behavior_policy_observed_surface_files[@]}"; then
     echo "legacy boundary failed: behavior policy depends directly on reverse-audit-only observed surface" >&2
     exit 1

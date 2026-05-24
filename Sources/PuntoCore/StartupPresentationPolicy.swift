@@ -5,9 +5,9 @@ public enum StartupPresentationPolicy {
     public static let nativeInstalledTooltipMessage = "Punto installed. Automatic layout switching is ready."
     public static let nativeUpdatedTooltipMessage = "Punto updated. Automatic layout switching is ready."
 
-    public static let observedWelcomeLogMessage = "Displaying welcome screen..."
-    public static let observedAccessibilityEnabledLogMessage = "Accessibility API enabled. Initializing services."
-    public static let observedAccessibilityDisabledLogMessage = "Accessibility API disabled. Showing accessibility preference window."
+    public static let welcomeLogMessage = "Displaying welcome screen..."
+    public static let accessibilityEnabledLogMessage = "Accessibility API enabled. Initializing services."
+    public static let accessibilityDisabledLogMessage = "Accessibility API disabled. Showing accessibility preference window."
 
     public static func shouldHandleInstallArgument(_ arguments: [String]) -> Bool {
         arguments.contains(installArgument)

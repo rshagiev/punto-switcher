@@ -49,20 +49,20 @@ public enum ApplicationUpdateSettingsPolicy {
     public static let lastUpdateRequestDateKey = "lastUpdateRequestDate"
     public static let lastUpdateShownDateKey = "lastUpdateShownDate"
 
-    public static let observedLegacyConfigVersion = 8
-    public static let observedLegacyInitialDate = Date(timeIntervalSince1970: 1_230_757_200)
+    public static let legacyDefaultConfigVersion = 8
+    public static let legacyInitialDate = Date(timeIntervalSince1970: 1_230_757_200)
 
     public static let defaultSnapshot = ApplicationUpdateSettingsSnapshot(
-        configVersion: observedLegacyConfigVersion,
+        configVersion: legacyDefaultConfigVersion,
         isFirstInstallation: true,
         isJustInstalled: false,
         isJustUpdated: false,
         isUpdating: false,
         shouldCheckForUpdatesAutomatically: true,
         updateRequestRateInDays: 0,
-        lastStatisticsRequestDate: observedLegacyInitialDate,
+        lastStatisticsRequestDate: legacyInitialDate,
         lastUpdateRequestDate: nil,
-        lastUpdateShownDate: observedLegacyInitialDate
+        lastUpdateShownDate: legacyInitialDate
     )
 
     public static func snapshot(from dictionary: [String: Any]) -> ApplicationUpdateSettingsSnapshot {

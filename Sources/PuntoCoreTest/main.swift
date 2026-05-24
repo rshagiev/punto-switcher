@@ -4762,7 +4762,7 @@ private func runApplicationUpdateSettingsPolicyTests() throws {
     )
     try expect(
         ApplicationUpdateSettingsPolicy.defaultSnapshot.lastStatisticsRequestDate,
-        ApplicationUpdateSettingsPolicy.observedLegacyInitialDate,
+        ApplicationUpdateSettingsPolicy.legacyInitialDate,
         "update settings policy mirrors observed initial statistics date"
     )
     try expect(
@@ -4790,7 +4790,7 @@ private func runApplicationUpdateSettingsPolicyTests() throws {
         ApplicationUpdateSettingsPolicy.isUpdatingKey: "false",
         ApplicationUpdateSettingsPolicy.shouldCheckForUpdatesAutomaticallyKey: "no",
         ApplicationUpdateSettingsPolicy.updateRequestRateInDaysKey: " 14 ",
-        ApplicationUpdateSettingsPolicy.lastStatisticsRequestDateKey: ApplicationUpdateSettingsPolicy.observedLegacyInitialDate,
+        ApplicationUpdateSettingsPolicy.lastStatisticsRequestDateKey: ApplicationUpdateSettingsPolicy.legacyInitialDate,
         ApplicationUpdateSettingsPolicy.lastUpdateRequestDateKey: updateRequestDate.timeIntervalSince1970,
         ApplicationUpdateSettingsPolicy.lastUpdateShownDateKey: "2008-12-31 21:00:00 +0000"
     ])
@@ -4871,7 +4871,7 @@ private func runStartupPresentationPolicyTests() throws {
         "startup presentation policy keeps update-finished log aligned with reverse-audit anchor"
     )
     try expect(
-        StartupPresentationPolicy.observedWelcomeLogMessage,
+        StartupPresentationPolicy.welcomeLogMessage,
         "Displaying welcome screen...",
         "startup presentation policy preserves observed welcome log"
     )
@@ -5475,12 +5475,12 @@ private func runAccessibilityPreferencesPolicyTests() throws {
         "accessibility preferences policy pins observed Accessibility pane opener selector"
     )
     try expect(
-        AccessibilityPreferencesPolicy.observedSecurityPrivacyPaneID,
+        AccessibilityPreferencesPolicy.securityPrivacyPaneID,
         "com.apple.preference.security",
         "accessibility preferences policy preserves observed security pane id"
     )
     try expect(
-        AccessibilityPreferencesPolicy.observedAccessibilityAnchor,
+        AccessibilityPreferencesPolicy.accessibilityPrivacyAnchor,
         "Privacy_Accessibility",
         "accessibility preferences policy preserves observed accessibility anchor"
     )
@@ -9294,7 +9294,7 @@ private func runSearchbarSettingsPolicyTests() throws {
             activationShortcut: Hotkey.disabled,
             shouldOfferSearchbarAutoactivation: true,
             autoactivationExceptions: [],
-            alertShownIn: SearchbarSettingsPolicy.observedLegacyInitialDate,
+            alertShownIn: SearchbarSettingsPolicy.legacyInitialDate,
             shouldSearchByDoubleClick: false,
             sitesearchPromptCounter: 3
         ),
@@ -9361,7 +9361,7 @@ private func runSearchbarSettingsPolicyTests() throws {
                 control: false
             ),
             shouldOfferSearchbarAutoactivation: true,
-            alertShownIn: SearchbarSettingsPolicy.observedLegacyInitialDate,
+            alertShownIn: SearchbarSettingsPolicy.legacyInitialDate,
             shouldSearchByDoubleClick: false,
             sitesearchPromptCounter: 4
         ),
@@ -9376,7 +9376,7 @@ private func runSearchbarSettingsPolicyTests() throws {
             activationShortcut: Hotkey.disabled,
             shouldOfferSearchbarAutoactivation: true,
             autoactivationExceptions: [],
-            alertShownIn: SearchbarSettingsPolicy.observedLegacyInitialDate,
+            alertShownIn: SearchbarSettingsPolicy.legacyInitialDate,
             shouldSearchByDoubleClick: false,
             sitesearchPromptCounter: 0
         ),

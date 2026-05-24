@@ -29,7 +29,7 @@ public struct InputSourceSelection: Equatable {
 }
 
 public enum InputSourceSelectionPolicy {
-    public static let observedUndefinedSourceID = "UNDEFINED"
+    public static let undefinedSourceID = "UNDEFINED"
     public static let inputSourceEnabledLogPrefix = "inputSourceEnabled:"
     public static let handleInputSourcesEnabledLogPrefix = "handleInputSourcesEnabled"
     public static let promptUserToInstallLayoutsLogPrefix = "promptUserToInstallLayouts"
@@ -169,7 +169,7 @@ public enum InputSourceSelectionPolicy {
             return nil
         }
 
-        if trimmed.caseInsensitiveCompare(observedUndefinedSourceID) == .orderedSame {
+        if trimmed.caseInsensitiveCompare(undefinedSourceID) == .orderedSame {
             return nil
         }
 

@@ -37,7 +37,7 @@ final class StartupRuntimeCoordinator {
             isFirstLaunch: settingsManager.isFirstLaunch,
             updateSettings: updateSettings
         ) {
-            PuntoLog.info(StartupPresentationPolicy.observedWelcomeLogMessage)
+            PuntoLog.info(StartupPresentationPolicy.welcomeLogMessage)
             showOnboardingAlert()
             settingsManager.consumeFirstLaunchPresentationFlags()
             updateSettings = StartupPresentationPolicy.updateSettingsAfterWelcome(updateSettings)
@@ -55,8 +55,8 @@ final class StartupRuntimeCoordinator {
         let trusted = requestAccessibilityTrustIfNeeded()
         PuntoLog.info("Accessibility trusted: \(trusted)")
         PuntoLog.info(trusted
-            ? StartupPresentationPolicy.observedAccessibilityEnabledLogMessage
-            : StartupPresentationPolicy.observedAccessibilityDisabledLogMessage
+            ? StartupPresentationPolicy.accessibilityEnabledLogMessage
+            : StartupPresentationPolicy.accessibilityDisabledLogMessage
         )
 
         if !trusted {

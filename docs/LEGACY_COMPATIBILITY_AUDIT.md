@@ -137,7 +137,8 @@ keeping their native write targets separate.
 ## Next Candidates
 
 - Continue splitting only the remaining constants where the policy currently
-  uses the observed value as a real import key or runtime alias.
+  uses reverse-audit naming for a real import key, runtime alias, URL fragment,
+  default, or sentinel value.
 - Add an explicit export path if we ever need to generate Punto Switcher-shaped
   settings intentionally; keep routine runtime writes native-only.
 - Keep searchbar/click-search split this way: selected-text Yandex shortcuts and

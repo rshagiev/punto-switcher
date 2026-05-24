@@ -1,9 +1,9 @@
 import Foundation
 
 public enum AccessibilityPreferencesPolicy {
-    public static let observedSecurityPrivacyPaneID = "com.apple.preference.security"
-    public static let observedAccessibilityAnchor = "Privacy_Accessibility"
-    public static let observedURLString = "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+    public static let securityPrivacyPaneID = "com.apple.preference.security"
+    public static let accessibilityPrivacyAnchor = "Privacy_Accessibility"
+    public static let preferencesURLString = "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
 
     public static let permissionRequestTitle = "Punto needs Accessibility access"
     public static let permissionRequestMessage = """
@@ -21,14 +21,14 @@ public enum AccessibilityPreferencesPolicy {
     public static let quitButtonTitle = "Quit"
 
     public static var preferencesURL: URL {
-        URL(string: observedURLString)!
+        URL(string: preferencesURLString)!
     }
 
     public static var legacyAppleScriptSource: String {
         """
         tell application "System Preferences"
             activate
-            reveal anchor "\(observedAccessibilityAnchor)" of pane id "\(observedSecurityPrivacyPaneID)"
+            reveal anchor "\(accessibilityPrivacyAnchor)" of pane id "\(securityPrivacyPaneID)"
         end tell
         """
     }
