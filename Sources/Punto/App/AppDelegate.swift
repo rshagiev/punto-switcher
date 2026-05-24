@@ -24,6 +24,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var autoCorrectionRuntime: AutoCorrectionRuntimeCoordinator?
     private var undoRuntime: UndoRuntimeCoordinator?
     private var manualTextActionRuntime: ManualTextActionRuntimeCoordinator?
+    private var commandRuntime: ApplicationCommandRuntimeCoordinator?
 
     private var isConversionInProgress: Bool {
         textState?.isConversionInProgress == true
@@ -145,6 +146,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.activeApplicationBundleID ?? NSWorkspace.shared.frontmostApplication?.bundleIdentifier
             }
         )
+        commandRuntime = ApplicationCommandRuntimeCoordinator(
+            settingsManager: settingsManager!,
+            textState: textState!,
+            textAccessor: textAccessor!,
+            textActionRuntime: textActionRuntime!,
+            ownBundleID: Bundle.main.bundleIdentifier,
+            currentApplicationBundleID: { [weak self] in
+                self?.activeApplicationBundleID ?? NSWorkspace.shared.frontmostApplication?.bundleIdentifier
+            },
+            currentApplicationName: { [weak self] in
+                self?.activeApplicationName ?? NSWorkspace.shared.frontmostApplication?.localizedName
+            },
+            flashStatusIcon: { [weak self] in
+                self?.statusBarController?.flashIcon()
+            }
+        )
         keyPressRuntime = KeyPressRuntimeCoordinator(
             settingsManager: settingsManager!,
             wordTracker: wordTracker!,
@@ -180,13 +197,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 NSApplication.shared.terminate(nil)
             },
             onEnabledChanged: { [weak self] wasEnabled, isEnabled in
-                self?.handleGlobalEnabledChanged(wasEnabled: wasEnabled, isEnabled: isEnabled)
+                self?.commandRuntime?.handleGlobalEnabledChanged(wasEnabled: wasEnabled, isEnabled: isEnabled)
             },
             onToggleCurrentAppDisabled: { [weak self] in
-                self?.toggleCurrentApplicationDisabled()
+                self?.commandRuntime?.toggleCurrentApplicationDisabled()
             },
             isCurrentAppDisabled: { [weak self] in
-                self?.isCurrentApplicationDisabled() ?? false
+                self?.commandRuntime?.isCurrentApplicationDisabled() ?? false
             },
             currentAppBundleID: { [weak self] in
                 self?.appRuntime?.effectiveCurrentApplicationBundleID(
@@ -431,7 +448,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.manualTextActionRuntime?.handleToggleCase()
             },
             onToggleAutoCorrection: { [weak self] in
-                self?.handleToggleAutoCorrection()
+                self?.commandRuntime?.toggleAutoCorrection()
             },
             onCancelLayoutChange: { [weak self] in
                 let contextID = self?.activeApplicationBundleID
@@ -439,19 +456,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.undoRuntime?.handleCancelLayoutChange(contextID: contextID)
             },
             onFindInYandex: { [weak self] in
-                self?.handleSelectedTextSearch(destination: .yandexSearch)
+                self?.commandRuntime?.handleSelectedTextSearch(destination: .yandexSearch)
             },
             onFindInSlovari: { [weak self] in
-                self?.handleSelectedTextSearch(destination: .yandexTranslate)
+                self?.commandRuntime?.handleSelectedTextSearch(destination: .yandexTranslate)
             },
             onSearchClick: { [weak self] in
-                self?.handleSelectedTextSearch(destination: .yandexSearch)
+                self?.commandRuntime?.handleSelectedTextSearch(destination: .yandexSearch)
             },
             canDoSearchClick: { [weak self] in
-                self?.textAccessor?.canDoSearchClick(
-                    bundleID: self?.activeApplicationBundleID
-                        ?? NSWorkspace.shared.frontmostApplication?.bundleIdentifier
-                ) ?? false
+                self?.commandRuntime?.canDoSearchClick() ?? false
             },
             onClearTrackedText: { [weak self] reason in
                 self?.textState?.clearTextAndConversionState(
@@ -470,54 +484,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         hotkeyManager?.start()
     }
 
-    private func handleSelectedTextSearch(destination: SearchShortcutDestination) {
-        PuntoLog.info(">>> Selected text search triggered <<< destination=\(destination)")
-
-        guard textActionRuntime?.preflightTextAction(.selectedTextSearch) == true else {
-            return
-        }
-
-        let capturedText = textAccessor?.captureSelectedText(lastTrackedWord: nil, lastTrackedTail: nil)
-        let runtimePlan = SelectedTextSearchPolicy.runtimePlan(
-            from: SelectedTextSearchPolicy.plan(capturedText: capturedText, destination: destination)
-        )
-
-        switch runtimePlan {
-        case .blockedCapture(let capturedText, let logMessage):
-            PuntoLog.info(logMessage)
-            textActionRuntime?.clearStateAfterBlockedCapture(capturedText)
-
-        case .open(let url, let logMessage, let shouldFlashIcon):
-            PuntoLog.info(logMessage)
-            NSWorkspace.shared.open(url)
-            if shouldFlashIcon {
-                statusBarController?.flashIcon()
-            }
-
-        case .skipped(let logMessage):
-            PuntoLog.info(logMessage)
-
-        case .noText(let logMessage):
-            PuntoLog.info(logMessage)
-        }
-    }
-
     // MARK: - Actions
-
-    private func handleToggleAutoCorrection() {
-        let action = AutoCorrectionTogglePolicy.action(
-            wasEnabled: settingsManager?.autoCorrectionEnabled == true
-        )
-        settingsManager?.autoCorrectionEnabled = action.newEnabledValue
-        textState?.clearTextAndConversionState(
-            trackedTextReason: action.clearTrackedTextReason,
-            conversionSessionReason: action.clearConversionSessionReason
-        )
-        PuntoLog.info(action.logMessage)
-        if action.shouldFlashIcon {
-            statusBarController?.flashIcon()
-        }
-    }
 
     // MARK: - Settings
 
@@ -547,43 +514,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func isCurrentApplicationCompletelyDisabled() -> Bool {
         let bundleID = activeApplicationBundleID ?? NSWorkspace.shared.frontmostApplication?.bundleIdentifier
         return settingsManager?.isApplicationCompletelyDisabled(bundleID: bundleID) ?? false
-    }
-
-    private func toggleCurrentApplicationDisabled() {
-        let rawBundleID = activeApplicationBundleID ?? NSWorkspace.shared.frontmostApplication?.bundleIdentifier
-        guard let action = ApplicationDisablePolicy.toggleAction(
-            bundleID: rawBundleID,
-            ownBundleID: Bundle.main.bundleIdentifier,
-            isCurrentlyDisabled: settingsManager?.isApplicationDisabled(bundleID: rawBundleID) ?? false
-        ) else {
-            return
-        }
-
-        settingsManager?.setApplicationDisabled(bundleID: action.bundleID, disabled: action.disabled)
-        if action.shouldClearState,
-           let clearTrackedTextReason = action.clearTrackedTextReason,
-           let clearConversionSessionReason = action.clearConversionSessionReason {
-            textState?.clearTextAndConversionState(
-                trackedTextReason: clearTrackedTextReason,
-                conversionSessionReason: clearConversionSessionReason
-            )
-        }
-        PuntoLog.info(ApplicationDisablePolicy.toggleLogMessage(
-            action: action,
-            applicationName: activeApplicationName
-        ))
-    }
-
-    private func handleGlobalEnabledChanged(wasEnabled: Bool, isEnabled: Bool) {
-        let action = HotkeyRoutingPolicy.stateClearActionAfterEnabledChange(
-            wasEnabled: wasEnabled,
-            isEnabled: isEnabled
-        )
-
-        textState?.apply(action)
-        if let logMessage = action.logMessage {
-            PuntoLog.info(logMessage)
-        }
     }
 
 }

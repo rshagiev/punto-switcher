@@ -219,6 +219,25 @@ for pattern in "${app_delegate_manual_text_action_patterns[@]}"; do
     echo "PASS AppDelegate manual text-action runtime coordination absent: $pattern"
 done
 
+app_delegate_command_runtime_patterns=(
+    "SelectedTextSearchPolicy."
+    "AutoCorrectionTogglePolicy."
+    "ApplicationDisablePolicy."
+    "HotkeyRoutingPolicy.stateClearActionAfterEnabledChange"
+    "NSWorkspace.shared.open(url)"
+    "captureSelectedText(lastTrackedWord: nil"
+    "textAccessor?.canDoSearchClick("
+    "textAccessor.canDoSearchClick("
+)
+
+for pattern in "${app_delegate_command_runtime_patterns[@]}"; do
+    if rg --fixed-strings --quiet "$pattern" Sources/Punto/App/AppDelegate.swift; then
+        echo "legacy boundary failed: AppDelegate reopened command runtime coordination: $pattern" >&2
+        exit 1
+    fi
+    echo "PASS AppDelegate command runtime coordination absent: $pattern"
+done
+
 if rg --fixed-strings --quiet "Placeholder - actual tests" Tests 2>/dev/null; then
     echo "legacy boundary failed: placeholder SwiftPM test target returned" >&2
     exit 1
