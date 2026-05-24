@@ -269,6 +269,16 @@ func runBooleanToggleSlotAccessTests() throws {
     let fixture = try DefaultsFixture("toggle-slots")
     let settings = fixture.manager()
 
+    for slot in SettingsToggleSlot.allCases {
+        let previous = settings.bool(for: slot)
+        settings.setBool(!previous, for: slot)
+        try expect(
+            settings.bool(for: slot) == !previous,
+            "settings manager round-trips boolean slot \(slot.rawValue)"
+        )
+        settings.setBool(previous, for: slot)
+    }
+
     settings.setBool(true, for: .soundEffectsEnabled)
     settings.setBool(true, for: .showAdvancedSettings)
     settings.setBool(false, for: .switchLayoutAfterConversion)

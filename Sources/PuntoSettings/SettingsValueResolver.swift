@@ -122,6 +122,36 @@ final class SettingsValueResolver {
         )
     }
 
+    func boolSlot(_ descriptor: SettingsBoolSlotDescriptor) -> Bool {
+        switch descriptor.resolution {
+        case .nativeOnly:
+            return bool(nativeKey: descriptor.nativeKey, defaultValue: descriptor.defaultValue)
+        case .legacyAlias:
+            return bool(
+                nativeKey: descriptor.nativeKey,
+                legacyKey: requiredLegacyKey(for: descriptor),
+                defaultValue: descriptor.defaultValue
+            )
+        case .invertedLegacyAlias:
+            return invertedLegacyBool(
+                nativeKey: descriptor.nativeKey,
+                legacyKey: requiredLegacyKey(for: descriptor),
+                defaultValue: descriptor.defaultValue
+            )
+        case .undoLearningDictionary:
+            return undoLearningEnabled(
+                nativeKey: descriptor.nativeKey,
+                legacyKey: requiredLegacyKey(for: descriptor),
+                defaultValue: descriptor.defaultValue
+            )
+        case .searchbarDictionary:
+            return searchSelectedTextByDoubleClick(
+                nativeKey: descriptor.nativeKey,
+                legacyKey: requiredLegacyKey(for: descriptor)
+            )
+        }
+    }
+
     func enabledSoundResourceNames(
         nativeKey: String,
         legacyBitmaskKey: String,
@@ -211,5 +241,12 @@ final class SettingsValueResolver {
 
     private func storedBool(_ key: String) -> Bool? {
         store.bool(forKey: key)
+    }
+
+    private func requiredLegacyKey(for descriptor: SettingsBoolSlotDescriptor) -> String {
+        guard let legacyKey = descriptor.legacyKey else {
+            preconditionFailure("Missing legacy key for \(descriptor.slot.rawValue)")
+        }
+        return legacyKey
     }
 }

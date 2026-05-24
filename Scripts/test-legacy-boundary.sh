@@ -364,6 +364,31 @@ for pattern in "${settings_manager_direct_resolution_patterns[@]}"; do
     echo "PASS SettingsManager direct native/import resolution absent: $pattern"
 done
 
+settings_manager_boolean_slot_cases=(
+    "case .launchAtLogin:"
+    "case .showInMenuBar:"
+    "case .switchLayoutAfterConversion:"
+    "case .autoCorrectionEnabled:"
+    "case .soundEffectsEnabled:"
+    "case .showAdvancedSettings:"
+    "case .switchLayoutAfterSelectedTextConversion:"
+    "case .searchSelectedTextByDoubleClick:"
+    "case .manualConversionDisabled:"
+    "case .rememberInputSourceForEachApp:"
+    "case .autoCorrectOnEnterAndTab:"
+    "case .autoCorrectionUndoLearningEnabled:"
+    "case .suppressAutoCorrectionAfterManualConversion:"
+    "case .completelyDisableInExceptionApplications:"
+)
+
+for pattern in "${settings_manager_boolean_slot_cases[@]}"; do
+    if rg --fixed-strings --quiet "$pattern" Sources/PuntoSettings/SettingsManager.swift; then
+        echo "legacy boundary failed: SettingsManager reopened boolean toggle slot switch: $pattern" >&2
+        exit 1
+    fi
+    echo "PASS SettingsManager boolean toggle slot switch absent: $pattern"
+done
+
 if rg --fixed-strings --quiet "ServiceManagement" Sources/PuntoSettings; then
     echo "legacy boundary failed: settings module reopened live login-item side effects" >&2
     exit 1

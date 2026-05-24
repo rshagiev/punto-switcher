@@ -41,22 +41,20 @@ public final class SettingsManager {
 
     /// Whether to show the icon in the menu bar
     public var showInMenuBar: Bool {
-        get { resolver.bool(nativeKey: SettingsStorageKeys.showInMenuBar, defaultValue: SettingsPersistencePolicy.defaultShowInMenuBar) }
-        set { store.set(newValue, forKey: SettingsStorageKeys.showInMenuBar) }
+        get { bool(for: .showInMenuBar) }
+        set { setBool(newValue, for: .showInMenuBar) }
     }
 
     /// Whether advanced settings are visible in the preferences window
     public var showAdvancedSettings: Bool {
-        get { resolver.bool(nativeKey: SettingsStorageKeys.showAdvancedSettings, defaultValue: SettingsPersistencePolicy.defaultShowAdvancedSettings) }
-        set { store.set(newValue, forKey: SettingsStorageKeys.showAdvancedSettings) }
+        get { bool(for: .showAdvancedSettings) }
+        set { setBool(newValue, for: .showAdvancedSettings) }
     }
 
     /// Whether to launch at login
     public var launchAtLogin: Bool {
-        get { resolver.bool(nativeKey: SettingsStorageKeys.launchAtLogin, legacyKey: SettingsImportKeys.launchesOnStartup, defaultValue: LoginItemPolicy.defaultLaunchAtLogin) }
-        set {
-            store.set(newValue, forKey: SettingsStorageKeys.launchAtLogin)
-        }
+        get { bool(for: .launchAtLogin) }
+        set { setBool(newValue, for: .launchAtLogin) }
     }
 
     /// Hotkey for converting layout
@@ -194,101 +192,32 @@ public final class SettingsManager {
     }
 
     public func bool(for slot: SettingsToggleSlot) -> Bool {
-        switch slot {
-        case .launchAtLogin:
-            return launchAtLogin
-        case .showInMenuBar:
-            return showInMenuBar
-        case .switchLayoutAfterConversion:
-            return switchLayoutAfterConversion
-        case .autoCorrectionEnabled:
-            return autoCorrectionEnabled
-        case .soundEffectsEnabled:
-            return soundEffectsEnabled
-        case .showAdvancedSettings:
-            return showAdvancedSettings
-        case .switchLayoutAfterSelectedTextConversion:
-            return switchLayoutAfterSelectedTextConversion
-        case .searchSelectedTextByDoubleClick:
-            return searchSelectedTextByDoubleClick
-        case .manualConversionDisabled:
-            return manualConversionDisabled
-        case .rememberInputSourceForEachApp:
-            return rememberInputSourceForEachApp
-        case .autoCorrectOnEnterAndTab:
-            return autoCorrectOnEnterAndTab
-        case .autoCorrectionUndoLearningEnabled:
-            return autoCorrectionUndoLearningEnabled
-        case .suppressAutoCorrectionAfterManualConversion:
-            return suppressAutoCorrectionAfterManualConversion
-        case .completelyDisableInExceptionApplications:
-            return completelyDisableInExceptionApplications
-        }
+        resolver.boolSlot(SettingsBoolSlotRegistry.descriptor(for: slot))
     }
 
     public func setBool(_ isEnabled: Bool, for slot: SettingsToggleSlot) {
-        switch slot {
-        case .launchAtLogin:
-            launchAtLogin = isEnabled
-        case .showInMenuBar:
-            showInMenuBar = isEnabled
-        case .switchLayoutAfterConversion:
-            switchLayoutAfterConversion = isEnabled
-        case .autoCorrectionEnabled:
-            autoCorrectionEnabled = isEnabled
-        case .soundEffectsEnabled:
-            soundEffectsEnabled = isEnabled
-        case .showAdvancedSettings:
-            showAdvancedSettings = isEnabled
-        case .switchLayoutAfterSelectedTextConversion:
-            switchLayoutAfterSelectedTextConversion = isEnabled
-        case .searchSelectedTextByDoubleClick:
-            searchSelectedTextByDoubleClick = isEnabled
-        case .manualConversionDisabled:
-            manualConversionDisabled = isEnabled
-        case .rememberInputSourceForEachApp:
-            rememberInputSourceForEachApp = isEnabled
-        case .autoCorrectOnEnterAndTab:
-            autoCorrectOnEnterAndTab = isEnabled
-        case .autoCorrectionUndoLearningEnabled:
-            autoCorrectionUndoLearningEnabled = isEnabled
-        case .suppressAutoCorrectionAfterManualConversion:
-            suppressAutoCorrectionAfterManualConversion = isEnabled
-        case .completelyDisableInExceptionApplications:
-            completelyDisableInExceptionApplications = isEnabled
-        }
+        store.set(isEnabled, forKey: SettingsBoolSlotRegistry.descriptor(for: slot).nativeKey)
     }
 
     public var searchSelectedTextByDoubleClick: Bool {
-        get {
-            resolver.searchSelectedTextByDoubleClick(
-                nativeKey: SettingsStorageKeys.searchSelectedTextByDoubleClick,
-                legacyKey: SettingsImportKeys.searchbarSettings
-            )
-        }
-        set {
-            store.set(newValue, forKey: SettingsStorageKeys.searchSelectedTextByDoubleClick)
-        }
+        get { bool(for: .searchSelectedTextByDoubleClick) }
+        set { setBool(newValue, for: .searchSelectedTextByDoubleClick) }
     }
 
     /// Переключать раскладку после конвертации
     public var switchLayoutAfterConversion: Bool {
-        get { resolver.bool(nativeKey: SettingsStorageKeys.switchLayoutAfterConversion, defaultValue: LayoutSwitchPolicy.defaultSwitchLayoutAfterConversion) }
-        set { store.set(newValue, forKey: SettingsStorageKeys.switchLayoutAfterConversion) }
+        get { bool(for: .switchLayoutAfterConversion) }
+        set { setBool(newValue, for: .switchLayoutAfterConversion) }
     }
 
     public var switchLayoutAfterSelectedTextConversion: Bool {
-        get { resolver.bool(nativeKey: SettingsStorageKeys.switchLayoutAfterSelectedTextConversion, legacyKey: SettingsImportKeys.switchLayoutOnSelectedTextSwitch, defaultValue: LayoutSwitchPolicy.defaultSwitchLayoutAfterSelectedTextConversion) }
-        set {
-            store.set(newValue, forKey: SettingsStorageKeys.switchLayoutAfterSelectedTextConversion)
-        }
+        get { bool(for: .switchLayoutAfterSelectedTextConversion) }
+        set { setBool(newValue, for: .switchLayoutAfterSelectedTextConversion) }
     }
 
     public var manualConversionDisabled: Bool {
-        get { resolver.bool(nativeKey: SettingsStorageKeys.manualConversionDisabled, legacyKey: SettingsImportKeys.isManualConversionDisabled, defaultValue: TextActionPreflightPolicy.defaultManualConversionDisabled) }
-        set {
-            store.set(newValue, forKey: SettingsStorageKeys.manualConversionDisabled)
-        }
+        get { bool(for: .manualConversionDisabled) }
+        set { setBool(newValue, for: .manualConversionDisabled) }
     }
 
     public var russianKeyboardLayoutType: KeyboardLayoutType {
@@ -316,10 +245,8 @@ public final class SettingsManager {
 
     /// Punto Switcher-style per-application layout memory.
     public var rememberInputSourceForEachApp: Bool {
-        get { resolver.bool(nativeKey: SettingsStorageKeys.rememberInputSourceForEachApp, legacyKey: SettingsImportKeys.shouldRememberInputSourceForEachApp, defaultValue: ApplicationLayoutPolicy.defaultRememberInputSourceForEachApp) }
-        set {
-            store.set(newValue, forKey: SettingsStorageKeys.rememberInputSourceForEachApp)
-        }
+        get { bool(for: .rememberInputSourceForEachApp) }
+        set { setBool(newValue, for: .rememberInputSourceForEachApp) }
     }
 
     public var rememberedApplicationLayouts: [String: String] {
@@ -352,10 +279,8 @@ public final class SettingsManager {
     }
 
     public var completelyDisableInExceptionApplications: Bool {
-        get { resolver.bool(nativeKey: SettingsStorageKeys.completelyDisableInExceptionApplications, legacyKey: SettingsImportKeys.completelyDisableInExceptionApps, defaultValue: ApplicationDisablePolicy.defaultCompletelyDisableInExceptionApplications) }
-        set {
-            store.set(newValue, forKey: SettingsStorageKeys.completelyDisableInExceptionApplications)
-        }
+        get { bool(for: .completelyDisableInExceptionApplications) }
+        set { setBool(newValue, for: .completelyDisableInExceptionApplications) }
     }
 
     public func isApplicationCompletelyDisabled(bundleID: String?) -> Bool {
@@ -386,10 +311,8 @@ public final class SettingsManager {
     }
 
     public var autoCorrectionEnabled: Bool {
-        get { resolver.bool(nativeKey: SettingsStorageKeys.autoCorrectionEnabled, legacyKey: SettingsImportKeys.isAutocorrectionActive, defaultValue: AutoCorrectionPreflightPolicy.defaultAutoCorrectionEnabled) }
-        set {
-            store.set(newValue, forKey: SettingsStorageKeys.autoCorrectionEnabled)
-        }
+        get { bool(for: .autoCorrectionEnabled) }
+        set { setBool(newValue, for: .autoCorrectionEnabled) }
     }
 
     public var autoCorrectionStarterRulesEnabled: Bool {
@@ -409,24 +332,18 @@ public final class SettingsManager {
     }
 
     public var autoCorrectOnEnterAndTab: Bool {
-        get { resolver.invertedLegacyBool(nativeKey: SettingsStorageKeys.autoCorrectOnEnterAndTab, legacyKey: SettingsImportKeys.shouldNotAutoconvertWithTabOrEnter, defaultValue: AutoCorrectionPreflightPolicy.defaultAutoCorrectOnEnterAndTab) }
-        set {
-            store.set(newValue, forKey: SettingsStorageKeys.autoCorrectOnEnterAndTab)
-        }
+        get { bool(for: .autoCorrectOnEnterAndTab) }
+        set { setBool(newValue, for: .autoCorrectOnEnterAndTab) }
     }
 
     public var autoCorrectionUndoLearningEnabled: Bool {
-        get { resolver.undoLearningEnabled(nativeKey: SettingsStorageKeys.autoCorrectionUndoLearningEnabled, legacyKey: SettingsImportKeys.undoLearning, defaultValue: AutoCorrectionUndoLearningPolicy.defaultUndoLearningEnabled) }
-        set {
-            store.set(newValue, forKey: SettingsStorageKeys.autoCorrectionUndoLearningEnabled)
-        }
+        get { bool(for: .autoCorrectionUndoLearningEnabled) }
+        set { setBool(newValue, for: .autoCorrectionUndoLearningEnabled) }
     }
 
     public var suppressAutoCorrectionAfterManualConversion: Bool {
-        get { resolver.invertedLegacyBool(nativeKey: SettingsStorageKeys.suppressAutoCorrectionAfterManualConversion, legacyKey: SettingsImportKeys.shouldNotAutoconvertAfterConvertion, defaultValue: TextReplacementCommitPolicy.defaultSuppressAutoCorrectionAfterManualConversion) }
-        set {
-            store.set(newValue, forKey: SettingsStorageKeys.suppressAutoCorrectionAfterManualConversion)
-        }
+        get { bool(for: .suppressAutoCorrectionAfterManualConversion) }
+        set { setBool(newValue, for: .suppressAutoCorrectionAfterManualConversion) }
     }
 
     public var autoCorrectionCancellingKeyNames: Set<String> {
@@ -459,10 +376,8 @@ public final class SettingsManager {
     }
 
     public var soundEffectsEnabled: Bool {
-        get { resolver.bool(nativeKey: SettingsStorageKeys.soundEffectsEnabled, legacyKey: SettingsImportKeys.isSoundOn, defaultValue: SoundFeedbackPolicy.defaultSoundEffectsEnabled) }
-        set {
-            store.set(newValue, forKey: SettingsStorageKeys.soundEffectsEnabled)
-        }
+        get { bool(for: .soundEffectsEnabled) }
+        set { setBool(newValue, for: .soundEffectsEnabled) }
     }
 
     public var enabledSoundResourceNames: Set<String> {
