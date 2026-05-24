@@ -3422,7 +3422,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings defaults keep Punto enabled"
     )
     try expect(
-        SettingsPersistencePolicy.observedIsEnabledKey,
+        SettingsPersistencePolicy.nativeIsEnabledKey,
         "isEnabled",
         "settings persistence preserves observed global enable key"
     )
@@ -3447,7 +3447,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings defaults hide advanced settings like observed Punto Switcher plist"
     )
     try expect(
-        SettingsPersistencePolicy.observedShowAdvancedSettingsKey,
+        SettingsPersistencePolicy.nativeShowAdvancedSettingsKey,
         "showAdvancedSettings",
         "settings persistence preserves observed advanced-settings key"
     )
@@ -3462,7 +3462,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings defaults do not launch at login"
     )
     try expect(
-        SettingsPersistencePolicy.observedLaunchesOnStartupKey,
+        SettingsPersistencePolicy.legacyLaunchesOnStartupKey,
         "launchesOnStartup",
         "settings persistence preserves observed launch-at-login alias key"
     )
@@ -3482,7 +3482,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings defaults allow selected-text layout switching when global switching is enabled"
     )
     try expect(
-        SettingsPersistencePolicy.observedSwitchLayoutOnSelectedTextSwitchKey,
+        SettingsPersistencePolicy.legacySwitchLayoutOnSelectedTextSwitchKey,
         "switchLayoutOnSelectedTextSwitch",
         "settings persistence preserves observed selected-text switch key"
     )
@@ -3524,7 +3524,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings defaults keep manual conversion enabled"
     )
     try expect(
-        SettingsPersistencePolicy.observedIsManualConversionDisabledKey,
+        SettingsPersistencePolicy.legacyIsManualConversionDisabledKey,
         "isManualConversionDisabled",
         "settings persistence preserves observed manual-conversion-disable key"
     )
@@ -3561,7 +3561,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings defaults keep per-app layout memory off"
     )
     try expect(
-        SettingsPersistencePolicy.observedShouldRememberInputSourceForEachAppKey,
+        SettingsPersistencePolicy.legacyShouldRememberInputSourceForEachAppKey,
         "shouldRememberInputSourceForEachApp",
         "settings persistence preserves observed per-app layout memory key"
     )
@@ -3576,7 +3576,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings defaults start with no disabled applications"
     )
     try expect(
-        SettingsPersistencePolicy.observedDisabledAppsKey,
+        SettingsPersistencePolicy.legacyDisabledAppsKey,
         "disabledApps",
         "settings persistence preserves observed disabled-apps key"
     )
@@ -3601,7 +3601,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings defaults keep exception apps partially disabled"
     )
     try expect(
-        SettingsPersistencePolicy.observedCompletelyDisableInExceptionApplicationsKey,
+        SettingsPersistencePolicy.legacyCompletelyDisableInExceptionApplicationsKey,
         "CompletelyDisableInExceptionApps",
         "settings persistence preserves observed full-disable exception-apps key"
     )
@@ -3611,7 +3611,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings defaults keep auto-correction off"
     )
     try expect(
-        SettingsPersistencePolicy.observedIsAutocorrectionActiveKey,
+        SettingsPersistencePolicy.legacyIsAutocorrectionActiveKey,
         "isAutocorrectionActive",
         "settings persistence preserves observed auto-correction active key"
     )
@@ -3626,7 +3626,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings defaults suppress auto-correction after manual conversion"
     )
     try expect(
-        SettingsPersistencePolicy.observedShouldNotAutoconvertAfterConvertionKey,
+        SettingsPersistencePolicy.legacyShouldNotAutoconvertAfterConvertionKey,
         "shouldNotAutoconvertAfterConvertion",
         "settings persistence preserves observed post-conversion suppression key"
     )
@@ -3692,7 +3692,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings defaults keep sound effects off"
     )
     try expect(
-        SoundFeedbackPolicy.observedIsSoundOnKey,
+        SoundFeedbackPolicy.legacyIsSoundOnKey,
         "isSoundOn",
         "sound feedback preserves observed global sound key"
     )
@@ -3707,7 +3707,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings defaults restore pasteboard after clipboard fallbacks"
     )
     try expect(
-        ClipboardReplacementPolicy.observedShouldRestorePasteboardKey,
+        ClipboardReplacementPolicy.legacyShouldRestorePasteboardKey,
         "shouldRestorePasteboard",
         "clipboard replacement policy preserves observed pasteboard restore setting key"
     )
@@ -3928,7 +3928,7 @@ private func runSettingsPersistencePolicyTests() throws {
         "settings persistence defaults to auto-correction on Enter and Tab"
     )
     try expect(
-        SettingsPersistencePolicy.observedShouldNotAutoconvertWithTabOrEnterKey,
+        SettingsPersistencePolicy.legacyShouldNotAutoconvertWithTabOrEnterKey,
         "shouldNotAutoconvertWithTabOrEnter",
         "settings persistence preserves observed Enter/Tab suppression key"
     )
@@ -10903,7 +10903,7 @@ private func runSoundFeedbackPolicyTests() throws {
         "sound feedback pins observed Punto Switcher skip-next-language-change-sound selector"
     )
     try expect(
-        SoundFeedbackPolicy.observedIsSoundOnKey,
+        SoundFeedbackPolicy.legacyIsSoundOnKey,
         "isSoundOn",
         "sound feedback pins observed Punto Switcher global sound key"
     )

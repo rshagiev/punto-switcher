@@ -1,7 +1,7 @@
 import Foundation
 
 public enum ClipboardReplacementPolicy {
-    public static let observedShouldRestorePasteboardKey = "shouldRestorePasteboard"
+    public static let legacyShouldRestorePasteboardKey = "shouldRestorePasteboard"
 
     public static let clipboardRestoreDelay: TimeInterval = 0.3
 

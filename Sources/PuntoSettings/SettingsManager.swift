@@ -13,10 +13,10 @@ public final class SettingsManager {
     // MARK: - Keys
 
     private enum Keys {
-        static let isEnabled = SettingsPersistencePolicy.observedIsEnabledKey
+        static let isEnabled = SettingsPersistencePolicy.nativeIsEnabledKey
         static let isFirstLaunch = "isFirstLaunch"
         static let showInMenuBar = "showInMenuBar"
-        static let showAdvancedSettings = SettingsPersistencePolicy.observedShowAdvancedSettingsKey
+        static let showAdvancedSettings = SettingsPersistencePolicy.nativeShowAdvancedSettingsKey
         static let launchAtLogin = "launchAtLogin"
         static let convertLayoutHotkey = "convertLayoutHotkey"
         static let toggleCaseHotkey = "toggleCaseHotkey"
@@ -52,7 +52,7 @@ public final class SettingsManager {
 
     private enum ImportKeys {
         static let isFirstInstallation = "isFirstInstallation"
-        static let launchesOnStartup = SettingsPersistencePolicy.observedLaunchesOnStartupKey
+        static let launchesOnStartup = SettingsPersistencePolicy.legacyLaunchesOnStartupKey
         static let shortcutChangeLayout = "shortcutChangeLayout"
         static let shortcutChangeCase = "shortcutChangeCase"
         static let shortcutSwitchAutocorrection = "shortcutSwitchAutocorrection"
@@ -60,26 +60,26 @@ public final class SettingsManager {
         static let shortcutFindInYandex = "shortcutFindInYandex"
         static let shortcutFindInSlovari = "shortcutFindInSlovari"
         static let searchbarSettings = SearchbarSettingsPolicy.settingsKey
-        static let switchLayoutOnSelectedTextSwitch = SettingsPersistencePolicy.observedSwitchLayoutOnSelectedTextSwitchKey
-        static let isManualConversionDisabled = SettingsPersistencePolicy.observedIsManualConversionDisabledKey
+        static let switchLayoutOnSelectedTextSwitch = SettingsPersistencePolicy.legacySwitchLayoutOnSelectedTextSwitchKey
+        static let isManualConversionDisabled = SettingsPersistencePolicy.legacyIsManualConversionDisabledKey
         static let kbdLayoutType = "kbdLayoutType"
         static let englishLayoutID = "englishLayoutID"
         static let russianLayoutID = "russianLayoutID"
-        static let shouldRememberInputSourceForEachApp = SettingsPersistencePolicy.observedShouldRememberInputSourceForEachAppKey
-        static let disabledApps = SettingsPersistencePolicy.observedDisabledAppsKey
-        static let completelyDisableInExceptionApps = SettingsPersistencePolicy.observedCompletelyDisableInExceptionApplicationsKey
+        static let shouldRememberInputSourceForEachApp = SettingsPersistencePolicy.legacyShouldRememberInputSourceForEachAppKey
+        static let disabledApps = SettingsPersistencePolicy.legacyDisabledAppsKey
+        static let completelyDisableInExceptionApps = SettingsPersistencePolicy.legacyCompletelyDisableInExceptionApplicationsKey
         static let switcherResetOnReturn = "switcher.reset_on_return"
-        static let isAutocorrectionActive = SettingsPersistencePolicy.observedIsAutocorrectionActiveKey
+        static let isAutocorrectionActive = SettingsPersistencePolicy.legacyIsAutocorrectionActiveKey
         static let switcherUseOldRulesDefaultConf = AutoCorrectionRuleSourcePolicy.useOldRulesDefaultConfPath
         static let switcherUseOldRulesAccessor = AutoCorrectionRuleSourcePolicy.useOldRulesAccessor
         static let shouldNotAutoconvertWithTabOrEnter = "shouldNotAutoconvertWithTabOrEnter"
         static let undoLearning = UndoLearningSettingsPolicy.settingsKey
-        static let shouldNotAutoconvertAfterConvertion = SettingsPersistencePolicy.observedShouldNotAutoconvertAfterConvertionKey
+        static let shouldNotAutoconvertAfterConvertion = SettingsPersistencePolicy.legacyShouldNotAutoconvertAfterConvertionKey
         static let cancellingKeys = "cancellingKeys"
         static let userRulesDictionary = LegacyUserRulePolicy.userRulesDictionaryKey
-        static let isSoundOn = SoundFeedbackPolicy.observedIsSoundOnKey
+        static let isSoundOn = SoundFeedbackPolicy.legacyIsSoundOnKey
         static let enabledSounds = SoundFeedbackPolicy.legacyEnabledSoundsKey
-        static let shouldRestorePasteboard = ClipboardReplacementPolicy.observedShouldRestorePasteboardKey
+        static let shouldRestorePasteboard = ClipboardReplacementPolicy.legacyShouldRestorePasteboardKey
         static let typedWords = "typedWords"
         static let typedSymbols = "typedSymbols"
         static let automaticSwitches = "automaticSwitches"

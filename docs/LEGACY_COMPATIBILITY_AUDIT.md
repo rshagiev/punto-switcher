@@ -112,6 +112,12 @@ pasteboard snapshots, AX elements, CGEvent synthesis, and TIS switching belong
 to runtime adapters and diagnostics, while core modules stay as policy and
 domain code.
 
+Runtime-owned settings, sound, and clipboard key constants now use
+`native*Key` for active native write keys and `legacy*Key` for import-only
+aliases. `observed*Key` is reserved for reverse-audit anchors, so a
+Punto-compatible string value no longer makes a runtime setting look like it is
+owned by the binary audit layer.
+
 The repository also no longer carries a placeholder SwiftPM `Tests/` file that
 claims tests live elsewhere. This toolchain cannot import XCTest, so placeholder
 test targets create a false green surface; the boundary script now fails if that

@@ -145,6 +145,18 @@ for pattern in "${core_live_transport_patterns[@]}"; do
     echo "PASS PuntoCore live macOS transport absent: $pattern"
 done
 
+runtime_owned_key_policy_files=(
+    Sources/PuntoCore/SettingsPersistencePolicy.swift
+    Sources/PuntoCore/SoundFeedbackPolicy.swift
+    Sources/PuntoCore/ClipboardReplacementPolicy.swift
+)
+
+if rg -n "observed[A-Za-z0-9]*Key" "${runtime_owned_key_policy_files[@]}"; then
+    echo "legacy boundary failed: runtime-owned setting/import key constants use reverse-audit observed naming" >&2
+    exit 1
+fi
+echo "PASS runtime-owned setting/import key constants are named by native-vs-legacy role"
+
 settings_import_alias_patterns=(
     "\\bKeys\\.isFirstInstallation"
     "\\bKeys\\.launchesOnStartup"
