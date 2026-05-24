@@ -19,12 +19,27 @@ public enum SearchClickPolicy {
         shouldSearchByDoubleClick: Bool,
         canDoSearchClick: Bool
     ) -> Bool {
+        guard shouldScheduleSelectedTextSearchAfterClick(
+            eventTypeRawValue: eventTypeRawValue,
+            clickCount: clickCount,
+            shouldSearchByDoubleClick: shouldSearchByDoubleClick
+        ) else {
+            return false
+        }
+        return canDoSearchClick
+    }
+
+    public static func shouldScheduleSelectedTextSearchAfterClick(
+        eventTypeRawValue: UInt32,
+        clickCount: Int,
+        shouldSearchByDoubleClick: Bool
+    ) -> Bool {
         guard eventTypeRawValue == PointerEventPolicy.leftMouseDownRawValue else {
             return false
         }
         guard clickCount >= 2 else {
             return false
         }
-        return shouldSearchByDoubleClick && canDoSearchClick
+        return shouldSearchByDoubleClick
     }
 }

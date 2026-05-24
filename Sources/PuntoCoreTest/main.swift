@@ -9356,6 +9356,33 @@ private func runSearchClickPolicyTests() throws {
         "search click policy allows selected-text search after eligible double click"
     )
     try expect(
+        SearchClickPolicy.shouldScheduleSelectedTextSearchAfterClick(
+            eventTypeRawValue: PointerEventPolicy.leftMouseDownRawValue,
+            clickCount: 2,
+            shouldSearchByDoubleClick: true
+        ),
+        true,
+        "search click policy schedules live capability check after eligible left double click"
+    )
+    try expect(
+        SearchClickPolicy.shouldScheduleSelectedTextSearchAfterClick(
+            eventTypeRawValue: PointerEventPolicy.leftMouseDownRawValue,
+            clickCount: 2,
+            shouldSearchByDoubleClick: false
+        ),
+        false,
+        "search click policy does not schedule capability check when double-click search is disabled"
+    )
+    try expect(
+        SearchClickPolicy.shouldScheduleSelectedTextSearchAfterClick(
+            eventTypeRawValue: PointerEventPolicy.rightMouseDownRawValue,
+            clickCount: 2,
+            shouldSearchByDoubleClick: true
+        ),
+        false,
+        "search click policy keeps right double click out of delayed search handling"
+    )
+    try expect(
         SearchClickPolicy.shouldSearchSelectedTextAfterClick(
             eventTypeRawValue: PointerEventPolicy.leftMouseDownRawValue,
             clickCount: 1,

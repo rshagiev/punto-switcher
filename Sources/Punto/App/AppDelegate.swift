@@ -321,10 +321,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.commandRuntime?.handleSelectedTextSearch(destination: .yandexTranslate)
             },
             onSearchClick: { [weak self] in
-                self?.commandRuntime?.handleSelectedTextSearch(destination: .yandexSearch)
-            },
-            canDoSearchClick: { [weak self] in
-                self?.commandRuntime?.canDoSearchClick() ?? false
+                self?.commandRuntime?.handleSearchClickSelectedTextSearch()
             },
             onClearTrackedText: { [weak self] reason in
                 self?.textState?.clearTextAndConversionState(

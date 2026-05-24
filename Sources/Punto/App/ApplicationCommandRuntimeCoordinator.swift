@@ -71,6 +71,20 @@ final class ApplicationCommandRuntimeCoordinator {
         }
     }
 
+    func handleSearchClickSelectedTextSearch() {
+        guard SearchClickPolicy.shouldSearchSelectedTextAfterClick(
+            eventTypeRawValue: PointerEventPolicy.leftMouseDownRawValue,
+            clickCount: 2,
+            shouldSearchByDoubleClick: settingsManager.searchSelectedTextByDoubleClick,
+            canDoSearchClick: canDoSearchClick()
+        ) else {
+            PuntoLog.info("Search click skipped: setting disabled or focused role is not eligible")
+            return
+        }
+
+        handleSelectedTextSearch(destination: .yandexSearch)
+    }
+
     func toggleAutoCorrection() {
         let action = AutoCorrectionTogglePolicy.action(wasEnabled: settingsManager.autoCorrectionEnabled)
         settingsManager.autoCorrectionEnabled = action.newEnabledValue

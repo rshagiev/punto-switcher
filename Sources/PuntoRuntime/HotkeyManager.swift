@@ -17,7 +17,6 @@ public final class HotkeyManager {
     private let onFindInYandex: () -> Void
     private let onFindInSlovari: () -> Void
     private let onSearchClick: () -> Void
-    private let canDoSearchClick: () -> Bool
     private let onClearTrackedText: (String) -> Void
     private let onKeyPress: (UInt16, String?) -> Void
     private let isCurrentApplicationDisabled: () -> Bool
@@ -51,7 +50,6 @@ public final class HotkeyManager {
         onFindInYandex: @escaping () -> Void,
         onFindInSlovari: @escaping () -> Void,
         onSearchClick: @escaping () -> Void,
-        canDoSearchClick: @escaping () -> Bool,
         onClearTrackedText: @escaping (String) -> Void,
         onKeyPress: @escaping (UInt16, String?) -> Void,
         isCurrentApplicationDisabled: @escaping () -> Bool
@@ -64,7 +62,6 @@ public final class HotkeyManager {
         self.onFindInYandex = onFindInYandex
         self.onFindInSlovari = onFindInSlovari
         self.onSearchClick = onSearchClick
-        self.canDoSearchClick = canDoSearchClick
         self.onClearTrackedText = onClearTrackedText
         self.onKeyPress = onKeyPress
         self.isCurrentApplicationDisabled = isCurrentApplicationDisabled
@@ -188,15 +185,10 @@ public final class HotkeyManager {
         case .clearTrackedText(let reason):
             PuntoLog.info("Pointer event detected - will clear tracked text (\(reason))")
             let clickCount = Int(event.getIntegerValueField(.mouseEventClickState))
-            let shouldSearchByDoubleClick = settingsManager.searchSelectedTextByDoubleClick
-            let shouldCheckSearchCapability = type.rawValue == PointerEventPolicy.leftMouseDownRawValue
-                && clickCount >= 2
-                && shouldSearchByDoubleClick
-            let shouldSearchClick = SearchClickPolicy.shouldSearchSelectedTextAfterClick(
+            let shouldSearchClick = SearchClickPolicy.shouldScheduleSelectedTextSearchAfterClick(
                 eventTypeRawValue: type.rawValue,
                 clickCount: clickCount,
-                shouldSearchByDoubleClick: shouldSearchByDoubleClick,
-                canDoSearchClick: shouldCheckSearchCapability && canDoSearchClick()
+                shouldSearchByDoubleClick: settingsManager.searchSelectedTextByDoubleClick
             )
             DispatchQueue.main.async { [weak self] in
                 self?.onClearTrackedText(reason)
