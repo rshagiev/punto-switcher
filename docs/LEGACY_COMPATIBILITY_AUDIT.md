@@ -141,7 +141,9 @@ in separate namespaces inside the importable `PuntoSettings` target.
 read-only import evidence, with the only writer exceptions being one-shot
 consumption of imported first-run/update presentation flags. Boolean and hotkey
 slot metadata lives in `SettingsBoolSlotRegistry` and `SettingsHotkeySlotRegistry`,
-so the manager does not rebuild defaults, native keys, or import alias precedence
+registered default composition lives in `SettingsDefaultRegistry`, and slot access
+lives in `SettingsSlotStore`, so the manager does not rebuild defaults, native
+keys, import alias precedence, hotkey normalization, or slot reset behavior
 inline. Low-level `UserDefaults` access sits behind `SettingsDefaultsStore`, so
 typed persistence, Codable payloads, injected test domains, and persistent-domain
 checks do not spread through the settings composition layer. Native-vs-import
@@ -149,6 +151,10 @@ resolution sits behind `SettingsValueResolver`, so the manager does not rebuild
 alias precedence, inverted legacy booleans, hotkey fallbacks, input-source
 fallbacks, searchbar snapshots, sound/import toggle scans, legacy statistics
 snapshots, updater snapshots, or imported user-rule merges inline.
+App/input-source preference mutation sits behind `SettingsApplicationStore`, so
+preferred source normalization, layout-memory snapshots, disabled-app set
+normalization, reset-on-return token normalization, and settings-change
+notifications do not spread through the facade.
 `PuntoSettingsTest` now exercises the real manager against isolated `UserDefaults`
 suites, while the boundary script fails if imported aliases leak back into the
 routine key namespace, if routine code starts writing import-only keys again, or if

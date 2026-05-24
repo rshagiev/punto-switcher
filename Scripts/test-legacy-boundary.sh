@@ -372,6 +372,17 @@ settings_manager_direct_resolution_patterns=(
     "private func persistedInt"
     "private func persistedHotkey"
     "private func hasStoredValue"
+    "SettingsHotkeySlotRegistry.descriptor("
+    "SettingsBoolSlotRegistry.descriptor("
+    "HotkeyValidationPolicy.normalized("
+    "HotkeyCommandPolicy.defaultHotkey("
+    "SettingsBoolSlotRegistry.nativeDefaultValues"
+    "ApplicationLayoutMemory.normalizedSnapshot("
+    "ApplicationDisablePolicy.normalizedSet("
+    "ApplicationDisablePolicy.disabledBundleIDsAfterSet("
+    "ApplicationReturnKeyPolicy.normalizedResetBundleComponents("
+    "InputSourceSelectionPolicy.normalizedSourceID("
+    "NotificationCenter.default.post"
 )
 
 for pattern in "${settings_manager_direct_resolution_patterns[@]}"; do

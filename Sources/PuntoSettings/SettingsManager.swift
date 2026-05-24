@@ -13,6 +13,12 @@ public final class SettingsManager {
 
     private let store: SettingsDefaultsStore
     private lazy var resolver = SettingsValueResolver(store: store)
+    private lazy var slots = SettingsSlotStore(store: store, resolver: resolver)
+    private lazy var applications = SettingsApplicationStore(
+        store: store,
+        resolver: resolver,
+        notificationObject: self
+    )
 
     /// Whether the app functionality is enabled
     public var isEnabled: Bool {
@@ -94,31 +100,27 @@ public final class SettingsManager {
     }
 
     public var hotkeyAssignments: [HotkeyAssignment] {
-        HotkeyCommandPolicy.displayOrder.map {
-            HotkeyAssignment(slot: $0.slot, hotkey: hotkey(for: $0.slot))
-        }
+        slots.hotkeyAssignments
     }
 
     public func hotkey(for slot: HotkeySlot) -> Hotkey {
-        resolver.hotkeySlot(SettingsHotkeySlotRegistry.descriptor(for: slot))
+        slots.hotkey(for: slot)
     }
 
     public func setHotkey(_ hotkey: Hotkey, for slot: HotkeySlot) {
-        let descriptor = SettingsHotkeySlotRegistry.descriptor(for: slot)
-        let normalized = HotkeyValidationPolicy.normalized(hotkey, fallback: descriptor.fallback)
-        store.encodeAndSet(normalized, forKey: descriptor.nativeKey)
+        slots.setHotkey(hotkey, for: slot)
     }
 
     public func resetHotkey(for slot: HotkeySlot) {
-        setHotkey(HotkeyCommandPolicy.defaultHotkey(for: slot), for: slot)
+        slots.resetHotkey(for: slot)
     }
 
     public func bool(for slot: SettingsToggleSlot) -> Bool {
-        resolver.boolSlot(SettingsBoolSlotRegistry.descriptor(for: slot))
+        slots.bool(for: slot)
     }
 
     public func setBool(_ isEnabled: Bool, for slot: SettingsToggleSlot) {
-        store.set(isEnabled, forKey: SettingsBoolSlotRegistry.descriptor(for: slot).nativeKey)
+        slots.setBool(isEnabled, for: slot)
     }
 
     public var searchSelectedTextByDoubleClick: Bool {
@@ -143,26 +145,18 @@ public final class SettingsManager {
     }
 
     public var russianKeyboardLayoutType: KeyboardLayoutType {
-        get { resolver.russianKeyboardLayoutType(nativeKey: SettingsStorageKeys.russianKeyboardLayoutType, legacyKey: SettingsImportKeys.kbdLayoutType) }
-        set {
-            store.set(newValue.rawValue, forKey: SettingsStorageKeys.russianKeyboardLayoutType)
-            NotificationCenter.default.post(name: .puntoRussianKeyboardLayoutTypeChanged, object: self)
-            NotificationCenter.default.post(name: .puntoInputSourcePreferencesChanged, object: self)
-        }
+        get { applications.russianKeyboardLayoutType }
+        set { applications.russianKeyboardLayoutType = newValue }
     }
 
     public var preferredEnglishInputSourceID: String? {
-        get { resolver.inputSourceID(nativeKey: SettingsStorageKeys.preferredEnglishInputSourceID, legacyKey: SettingsImportKeys.englishLayoutID) }
-        set {
-            setPreferredInputSourceID(newValue, nativeKey: SettingsStorageKeys.preferredEnglishInputSourceID)
-        }
+        get { applications.preferredEnglishInputSourceID }
+        set { applications.preferredEnglishInputSourceID = newValue }
     }
 
     public var preferredRussianInputSourceID: String? {
-        get { resolver.inputSourceID(nativeKey: SettingsStorageKeys.preferredRussianInputSourceID, legacyKey: SettingsImportKeys.russianLayoutID) }
-        set {
-            setPreferredInputSourceID(newValue, nativeKey: SettingsStorageKeys.preferredRussianInputSourceID)
-        }
+        get { applications.preferredRussianInputSourceID }
+        set { applications.preferredRussianInputSourceID = newValue }
     }
 
     /// Punto Switcher-style per-application layout memory.
@@ -172,32 +166,17 @@ public final class SettingsManager {
     }
 
     public var rememberedApplicationLayouts: [String: String] {
-        get {
-            ApplicationLayoutMemory.normalizedSnapshot(
-                store.dictionary(forKey: SettingsStorageKeys.rememberedApplicationLayouts) as? [String: String] ?? [:]
-            )
-        }
-        set {
-            store.set(
-                ApplicationLayoutMemory.normalizedSnapshot(newValue),
-                forKey: SettingsStorageKeys.rememberedApplicationLayouts
-            )
-        }
+        get { applications.rememberedApplicationLayouts }
+        set { applications.rememberedApplicationLayouts = newValue }
     }
 
     public var disabledApplicationBundleIDs: Set<String> {
-        get { resolver.disabledApplicationBundleIDs(nativeKey: SettingsStorageKeys.disabledApplicationBundleIDs, legacyKey: SettingsImportKeys.disabledApps) }
-        set {
-            let normalized = Array(ApplicationDisablePolicy.normalizedSet(newValue)).sorted()
-            store.set(normalized, forKey: SettingsStorageKeys.disabledApplicationBundleIDs)
-        }
+        get { applications.disabledApplicationBundleIDs }
+        set { applications.disabledApplicationBundleIDs = newValue }
     }
 
     public func isApplicationDisabled(bundleID: String?) -> Bool {
-        ApplicationDisablePolicy.isApplicationDisabled(
-            bundleID: bundleID,
-            disabledBundleIDs: disabledApplicationBundleIDs
-        )
+        applications.isApplicationDisabled(bundleID: bundleID)
     }
 
     public var completelyDisableInExceptionApplications: Bool {
@@ -206,30 +185,19 @@ public final class SettingsManager {
     }
 
     public func isApplicationCompletelyDisabled(bundleID: String?) -> Bool {
-        ApplicationDisablePolicy.isApplicationCompletelyDisabled(
+        applications.isApplicationCompletelyDisabled(
             bundleID: bundleID,
-            disabledBundleIDs: disabledApplicationBundleIDs,
             completelyDisableInExceptionApplications: completelyDisableInExceptionApplications
         )
     }
 
     public func setApplicationDisabled(bundleID: String?, disabled: Bool) {
-        disabledApplicationBundleIDs = ApplicationDisablePolicy.disabledBundleIDsAfterSet(
-            bundleID: bundleID,
-            disabled: disabled,
-            disabledBundleIDs: disabledApplicationBundleIDs
-        )
+        applications.setApplicationDisabled(bundleID: bundleID, disabled: disabled)
     }
 
     public var resetOnReturnBundleComponents: Set<String> {
-        get { resolver.resetOnReturnBundleComponents(nativeKey: SettingsStorageKeys.resetOnReturnBundleComponents, legacyKey: SettingsImportKeys.switcherResetOnReturn) }
-        set {
-            let normalized = Array(ApplicationReturnKeyPolicy.normalizedResetBundleComponents(newValue)).sorted()
-            store.set(
-                normalized,
-                forKey: SettingsStorageKeys.resetOnReturnBundleComponents
-            )
-        }
+        get { applications.resetOnReturnBundleComponents }
+        set { applications.resetOnReturnBundleComponents = newValue }
     }
 
     public var autoCorrectionEnabled: Bool {
@@ -401,15 +369,7 @@ public final class SettingsManager {
         domainName: String? = Bundle.main.bundleIdentifier
     ) {
         self.store = SettingsDefaultsStore(defaults: defaults, domainName: domainName)
-        // Register defaults
-        store.register(defaults: [
-            SettingsStorageKeys.isEnabled: SettingsPersistencePolicy.defaultIsEnabled,
-            SettingsStorageKeys.isFirstLaunch: StartupPresentationPolicy.defaultIsFirstLaunch,
-            SettingsStorageKeys.russianKeyboardLayoutType: KeyboardLayoutTypePolicy.defaultRussianLayoutTypeRawValue,
-            SettingsStorageKeys.rememberedApplicationLayouts: ApplicationLayoutMemory.defaultSnapshot,
-            SettingsStorageKeys.disabledApplicationBundleIDs: ApplicationDisablePolicy.defaultDisabledBundleIDs,
-            SettingsStorageKeys.autoCorrectionCancellingKeyNames: AutoCorrectionCancellingKeyPolicy.defaultEnabledKeyNameList
-        ].merging(SettingsBoolSlotRegistry.nativeDefaultValues) { nativeValue, _ in nativeValue })
+        store.register(defaults: SettingsDefaultRegistry.registeredDefaults)
     }
 
     // MARK: - Reset to Defaults
@@ -436,15 +396,6 @@ public final class SettingsManager {
 
     public func resetFindInSlovariHotkey() {
         resetHotkey(for: .findInSlovari)
-    }
-
-    private func setPreferredInputSourceID(_ sourceID: String?, nativeKey: String) {
-        if let normalized = InputSourceSelectionPolicy.normalizedSourceID(sourceID) {
-            store.set(normalized, forKey: nativeKey)
-        } else {
-            store.removeObject(forKey: nativeKey)
-        }
-        NotificationCenter.default.post(name: .puntoInputSourcePreferencesChanged, object: self)
     }
 
 }
