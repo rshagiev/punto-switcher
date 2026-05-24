@@ -61,6 +61,7 @@ text_accessor_ax_client_patterns=(
     "kAXFocusedApplicationAttribute"
     "AXEnhancedUserInterface"
     "elementOrDescendantIsPasswordField"
+    "rolesFromElementToAncestors"
 )
 
 for pattern in "${text_accessor_ax_client_patterns[@]}"; do
@@ -94,6 +95,7 @@ text_accessor_ax_selection_transport_patterns=(
     "AXValueCreate"
     "AccessibilitySelectionSearchPolicy"
     "lastEditableSelectionElement"
+    "TextCapturePolicy."
 )
 
 for pattern in "${text_accessor_ax_selection_transport_patterns[@]}"; do

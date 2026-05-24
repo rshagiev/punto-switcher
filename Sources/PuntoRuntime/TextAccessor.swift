@@ -14,6 +14,7 @@ public final class TextAccessor {
     private let accessibilityElements: AccessibilityElementClient
     private let accessibilitySelection: AccessibilityTextSelectionTransport
     private let clipboard: ClipboardTransport
+    private let textCapture: TextCaptureRuntime
     private let keyboardReplacement: KeyboardTextReplacementRuntime
 
     public convenience init(shouldRestorePasteboard: @escaping () -> Bool = { true }) {
@@ -39,6 +40,11 @@ public final class TextAccessor {
         self.clipboard = clipboard ?? ClipboardTransport(
             shouldRestorePasteboard: shouldRestorePasteboard,
             keyboardEvents: keyboardEvents
+        )
+        self.textCapture = TextCaptureRuntime(
+            accessibilityElements: self.accessibilityElements,
+            accessibilitySelection: self.accessibilitySelection,
+            clipboard: self.clipboard
         )
         self.keyboardReplacement = KeyboardTextReplacementRuntime(
             keyboardEvents: self.keyboardEvents,
@@ -76,75 +82,10 @@ public final class TextAccessor {
     ///   passive clipboard selection when it ends with the tracked input tail.
     /// - Apps without useful AX selection still get the active Cmd+C fallback.
     public func captureSelectedText(lastTrackedWord: String?, lastTrackedTail: String?) -> CapturedText? {
-        let axResult = accessibilitySelection.captureSelection()
-        let observation = axResult.observation
-        var activeClipboardText: String?
-        var passiveClipboardText: String?
-        var overrideCapturedText: CapturedText?
-
-        switch axResult {
-        case .text(let text, let element, let replacementSupported):
-            if !replacementSupported {
-                let accessibilityRoles = accessibilityElements.rolesFromElementToAncestors(
-                    element,
-                    maxDepth: AccessibilityTraversalPolicy.maxAncestorRoleDepth
-                )
-                if TextCapturePolicy.shouldPreferActiveClipboardFallbackForNonSettableContentSelection(
-                    accessibilityRoles: accessibilityRoles
-                ) || TextCapturePolicy.shouldAttemptActiveClipboardFallbackForNonSettableSelection(
-                    selectedText: text,
-                    lastTrackedTail: lastTrackedTail
-                ) {
-                    PuntoLog.info("captureSelectedText: trying active clipboard copy for non-settable AX selection")
-                    activeClipboardText = getSelectedTextViaClipboard()
-                    passiveClipboardText = currentClipboardText()
-                    overrideCapturedText = TextCapturePolicy.activeClipboardFallbackForNonSettableContentSelection(
-                        selectedText: text,
-                        activeClipboardText: activeClipboardText,
-                        accessibilityRoles: accessibilityRoles
-                    )
-                }
-            }
-
-        case .empty:
-            break
-
-        case .noFocus:
-            PuntoLog.info("captureSelectedText: noFocus, trying active clipboard fallback")
-            activeClipboardText = getSelectedTextViaClipboard()
-
-        case .failed:
-            passiveClipboardText = currentClipboardText()
-            activeClipboardText = getSelectedTextViaClipboard()
-        }
-
-        let captured = overrideCapturedText ?? TextCapturePolicy.captureDecision(
-            observation: observation,
-            activeClipboardText: activeClipboardText,
-            passiveClipboardText: passiveClipboardText,
+        textCapture.captureSelectedText(
             lastTrackedWord: lastTrackedWord,
             lastTrackedTail: lastTrackedTail
         )
-
-        if captured?.replacementMethod == .blocked {
-            accessibilitySelection.clearCachedEditableElement()
-            PuntoLog.info("captureSelectedText: blocking fallback because non-settable selection is not current command tail")
-        }
-        if captured?.replacementMethod != .accessibilitySelection {
-            accessibilitySelection.clearCachedEditableElement()
-        }
-
-        return captured
-    }
-
-    // MARK: - Clipboard Fallback
-
-    private func getSelectedTextViaClipboard() -> String? {
-        clipboard.captureSelectedText()
-    }
-
-    private func currentClipboardText() -> String? {
-        clipboard.currentText()
     }
 
     // MARK: - Set Selected Text
