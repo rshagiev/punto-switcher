@@ -1,0 +1,9 @@
+.build/
+.build-*/
+Build/
+Release/
+.DS_Store
+.swiftpm/
+Evidence/
+*.dmg
+*.zip
