@@ -1,185 +1,104 @@
-# Punto
+# Punto Native
 
-Native macOS keyboard layout switcher for English and Russian text.
+Исправляет раскладку, пока вы пишете. Помогает привести текст в порядок, когда вы попросите.
 
-Punto fixes text typed in the wrong keyboard layout. Type `ghbdtn`, press
-`Cmd+Option+Shift`, and Punto replaces it with `привет`.
+Нативное приложение для macOS: Swift, AppKit и SwiftUI. Живёт в строке меню, работает с русской и английской раскладками. Без «Ищите везде» и сервисов Яндекса.
 
-## Download
+`ghbdtn` → **привет** · `руддщ` → **hello**
 
-The easiest way to install Punto is from GitHub Releases:
+## Установка
 
-1. Open the [latest release](https://github.com/rshagiev/punto-switcher/releases/latest).
-2. Download `Punto-v1.0.3.dmg`.
-3. Open the disk image.
-4. Drag `Punto.app` to `Applications`.
-5. Open `Punto.app` from `/Applications`.
+Скачайте сборку из [Releases](https://github.com/rshagiev/punto-switcher/releases), откройте DMG и перетащите **PuntoNative.app** в «Программы».
 
-macOS may warn that the app was downloaded from the internet. If needed, open it
-from Finder with right click -> Open.
+- macOS 14 или новее. Только Apple Silicon (M1 и новее).
+- Разрешите «Универсальный доступ» и «Мониторинг ввода» в системных настройках конфиденциальности.
+- Завершите другие переключатели раскладки, чтобы они не обрабатывали одни и те же клавиши одновременно.
+- Языковые таблицы и звуки уже внутри. Установка оригинального Punto Switcher не требуется.
 
-## Required Permission
+Версия 2.0 пока кандидат в релиз. Сборка не нотарифицирована Apple; на другом Mac Gatekeeper может потребовать разрешить запуск в «Конфиденциальность и безопасность». Сертификат для локальной разработки не заменяет Developer ID.
 
-Punto needs macOS Accessibility permission. Without it, global hotkeys and text
-replacement cannot work.
+## Как пользоваться
 
-After first launch:
+Наберите слово в неверной раскладке и нажмите **⌘⌥⇧**. Можно выделить целую фразу. Повторное исправление, смена регистра и другие команды доступны из меню и через настраиваемые сочетания.
 
-1. Open System Settings.
-2. Go to Privacy & Security -> Accessibility.
-3. Enable Punto.
-4. Restart Punto from `/Applications`.
+В «Шорткатах» можно записать собственное сочетание, включая сочетания только из модификаторов. Существующие настройки сохраняются при обновлении. Настройки оригинального Punto импортируются, если они есть; без них используются встроенные значения.
 
-If Punto is missing from the list, add `/Applications/Punto.app` manually with
-the plus button.
+Автопереключение включается отдельно. В профилях для каждого приложения можно выбрать общий режим, автоматический, только ручной или отключить обработку. Приложения добавляются через диалог или перетаскиванием из Finder.
 
-## Usage
+Также доступны:
 
-Punto runs in the menu bar.
+- пользовательские правила: слово, начало, фрагмент или регулярное выражение;
+- обучение на отменённых исправлениях;
+- запоминание раскладки по приложениям;
+- короткая индикация раскладки после конвертации;
+- звуки событий и запуск при входе;
+- значок в Dock, пока открыто окно настроек или проверки текста.
 
-| Hotkey | Action |
+## Luna: три глубины обработки
+
+Luna работает через установленный **Codex CLI** и ваш вход в Codex. Подключение показывается в настройках; это проверка локального входа, а доступность модели можно проверить кнопкой «Попробовать на примере». Установку CLI и вход описывает [документация Codex](https://developers.openai.com/codex/cli/).
+
+| Режим | Что делает |
 | --- | --- |
-| `Cmd+Option+Shift` | Convert selected text or the last typed word |
-| Repeat `Cmd+Option+Shift` within 3 seconds | Undo the last conversion |
-| `Cmd+Option+Z` | Toggle text case |
-| `Cmd+Option+A` | Toggle auto-correction |
-| `Cmd+Option+Delete` | Cancel the last conversion |
+| **Ошибки** | Исправляет опечатки и грамматику, сохраняя смысл и разговорную речь. |
+| **Собрать мысль** | Убирает случайные повторы, разрешает явные самопоправки, разбивает надиктованный текст на предложения и абзацы. |
+| **Промпт** | Собирает задачу, контекст, ограничения и ожидаемый результат в запрос для LLM. Не выполняет сам запрос и не должен придумывать требования. |
 
-Examples:
+Выделите текст или поставьте курсор в абзац. «Исправить сразу» заменяет текст без окна; «Проверить перед заменой» открывает сравнение. Сочетания обеих команд задаются в разделе Luna. Быстрое исправление всегда использует режим «Ошибки».
 
-| Wrong layout | Fixed text |
-| --- | --- |
-| `ghbdtn` | `привет` |
-| `руддщ` | `hello` |
-| `Vfrc` | `Макс` |
+В окне **«Было / Стало»** нажмите на выделенное изменение, чтобы отменить только его. Повторный клик вернёт исправленный вариант. «Скопировать» и «Применить» учитывают ваш выбор. Варианты обработки сохраняются в памяти на время работы с этим текстом: переключение на уже полученный вариант не запускает новый запрос.
 
-Punto can convert:
+Для сумбурного текста окно может сразу выбрать «Собрать мысль» по нескольким локальным признакам. Один только объём текста этого не определяет. Режим можно сменить; «Промпт» выбирается вручную. Режим можно сменить и во время генерации: предыдущий запрос отменится.
 
-- selected text;
-- the last typed word;
-- terminal command tails when direct Accessibility replacement is not safe.
+Если во время запроса вы продолжили ввод или сменили поле, быстрой замены не будет. Последнее сравнение и отмена доступны из меню. Модель может ошибаться: для важных формулировок используйте просмотр изменений.
 
-## Privacy
+## Текст и данные
 
-Punto is local-only software.
+Обычная конвертация раскладки работает локально. Постоянной отправки набираемого текста нет. Luna получает выделение или текущий абзац только по команде пользователя; запрос расходует лимиты аккаунта Codex. Используется `gpt-5.6-luna`, без отдельного API-ключа в Punto.
 
-- No telemetry.
-- No analytics.
-- No network requests for text processing.
-- No cloud sync.
-- Clipboard fallback is used only for local text capture/replacement when an app
-  does not expose a safe Accessibility text API.
+Для запроса создаётся временная папка с ограниченным доступом, которая удаляется после завершения. У процесса Codex отключены инструменты, приложения, плагины и загрузка инструкций проекта. Punto не ведёт историю набора и не добавляет телеметрию. Локально сохраняются настройки, дневные счётчики и слова для включённого обучения. Отдельные правила обработки данных аккаунта Codex продолжают действовать.
 
-The app still needs Accessibility permission because macOS requires it for
-global hotkeys, reading selected text, and replacing text in other apps.
+Папка настроек: `~/Library/Application Support/PuntoNative`. Не публикуйте её целиком при сообщении об ошибке.
 
-## Supported macOS Versions
+## Сборка
 
-Punto targets macOS 12 or newer. The release artifact is a universal macOS app
-bundle with `arm64` and `x86_64` slices.
+Нужны macOS 14+, Swift 6 и Command Line Tools. Скачивание словарей, установка оригинала и запуск Luna для сборки не нужны.
 
-## Terminal And Browser Behavior
-
-Punto does not rely on a hardcoded terminal app list for replacement safety.
-Instead, it checks what the active text surface can actually do:
-
-- direct Accessibility replacement for editable selected text;
-- clipboard-backed selected text replacement for browser/content surfaces;
-- backspace plus paste for tracked terminal command tails;
-- no-op when the target cannot be verified safely.
-
-This is intentional. A missed conversion is better than deleting or pasting into
-the wrong text field.
-
-## Build From Source
-
-Requirements:
-
-- macOS 12 or newer;
-- Xcode Command Line Tools.
-
-Build a release app:
-
-```bash
-./Scripts/build.sh
-open Release/Punto.app
+```sh
+swift run -c release PuntoChecks
+bash Scripts/build-app.sh
+open 'Build/Punto Native.app'
 ```
 
-For local development on Apple Silicon, build, sign, install, and restart:
+По умолчанию используется ad-hoc подпись. Для сохранения идентичности разрешений между локальными сборками укажите свой постоянный сертификат:
 
-```bash
-./Scripts/deploy.sh
+```sh
+CODE_SIGN_IDENTITY='Your signing identity' bash Scripts/deploy.sh
 ```
 
-`deploy.sh` updates `/Applications/Punto.app` and re-signs the bundle. This is
-important because macOS Accessibility permission is tied to the app identity.
+DMG для Apple Silicon:
 
-## Tests
-
-Run the main regression cycle:
-
-```bash
-./Scripts/test-cycle.sh 1
+```sh
+bash Scripts/package-release.sh
 ```
 
-Focused test entry points:
+Опциональные проверки Luna отправляют только синтетические тестовые примеры в ваш аккаунт:
 
-```bash
-swift run PuntoCoreTest
-swift run PuntoSettingsTest
-swift run PuntoParityTest
+```sh
+swiftc Sources/PuntoNative/LunaClient.swift Scripts/check-luna-prompt.swift -o /tmp/punto-prompt-check
+/tmp/punto-prompt-check
 ```
 
-Useful installed-app checks:
+## Что проверено
 
-```bash
-PUNTO_AUDIT_INSTALLED_BUNDLE=1 ./Scripts/test-native-bundle-audit.sh
-codesign --verify --deep --strict --verbose=2 /Applications/Punto.app
-tail -f /tmp/punto.log
-```
+Core-проверки покрывают конвертацию, приоритеты правил, сочетания, профили, Unicode, независимый выбор исправлений и выбор глубины обработки. Проверки индекса сравнивают результат с последовательным обходом правил, а не измеряют языковую точность.
 
-## Troubleshooting
+Во время разработки проверялись Safari (input, textarea, contenteditable), Codex, Terminal и Ghostty. Это список наблюдавшихся сценариев, а не гарантия для каждого текстового поля каждого приложения. Защищённые поля пропускаются; при невозможности подтвердить целевое поле приложение может отказаться от замены. Релиз предназначен для Apple Silicon.
 
-### The hotkey does nothing
+Подробности: [проверки релиза](docs/VERIFICATION.md), [архитектура](docs/ARCHITECTURE.md), [история и сравнение подходов](docs/HISTORY.md), [release notes](CHANGELOG.md).
 
-Check Accessibility permission first. Then quit Punto from the menu bar and open
-it again from `/Applications`.
+## История и материалы
 
-### Text is not replaced in a specific app
+Предыдущие версии сохранены в тегах v1.0.0-v1.0.3 и архивных ветках. История не переписана.
 
-Some apps do not expose selected text through Accessibility. Punto falls back to
-clipboard or keyboard-tail replacement only when it can verify the target safely.
-If the target is not verifiable, Punto skips the conversion.
-
-### The wrong word is converted
-
-Selected text has priority. If nothing is selected, Punto uses its tracked last
-typed word. Clicking somewhere else clears that tracking state.
-
-### Logs
-
-Punto writes a local diagnostic log:
-
-```bash
-tail -f /tmp/punto.log
-```
-
-Do not attach logs publicly without reviewing them first; they can contain app
-names and short snippets of text involved in a conversion.
-
-## Project Layout
-
-| Path | Purpose |
-| --- | --- |
-| `Sources/PuntoCore` | Pure conversion, policy, tracking, and testable domain logic |
-| `Sources/PuntoRuntime` | macOS Accessibility, clipboard, keyboard, and input-source adapters |
-| `Sources/PuntoSettings` | Native settings and Punto Switcher import fallbacks |
-| `Sources/Punto` | App lifecycle, menu bar UI, and runtime coordinators |
-| `Scripts` | Build, deploy, diagnostics, and regression scripts |
-| `docs` | Architecture notes and behavior documentation |
-
-## Notes
-
-Punto is an independent native Swift implementation. Reverse-engineering notes in
-this repository are used only to document behavior and compatibility boundaries;
-the implementation is native Swift code.
+Punto Native - независимый проект, не продукт Яндекса. Происхождение включённых таблиц и звуков описано в [RESOURCE-NOTICES.md](RESOURCE-NOTICES.md). Название модели, количество строк и число тестов сами по себе не доказывают качество приложения.

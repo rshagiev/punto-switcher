@@ -1,0 +1,13 @@
+name: macOS checks
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: swift --version
+      - run: swift run -c release PuntoChecks
+      - run: bash Scripts/build-app.sh
+      - run: bash Scripts/audit-bundle.sh

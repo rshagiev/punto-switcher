@@ -1,28 +1,9 @@
-# Build artifacts
 .build/
+.build-*/
+Build/
 Release/
-DerivedData/
-*.xcodeproj/xcuserdata/
-*.xcworkspace/xcuserdata/
-
-# Swift Package Manager
-.swiftpm/
-Package.resolved
-
-# macOS
 .DS_Store
-*.dSYM/
-
-# IDE
-.idea/
-*.swp
-*.swo
-*~
-
-# Temporary files
-*.tmp
-*.log
-/tmp/
-
-# Debug
-punto.log
+.swiftpm/
+Evidence/
+*.dmg
+*.zip
