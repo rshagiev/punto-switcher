@@ -33,6 +33,5 @@ if [[ "${LOCAL_UPDATE_CHANNEL:-0}" == 1 ]]; then
     /usr/libexec/PlistBuddy -c "Add :PuntoReleaseCandidate string $PWD/Build/Punto Native.app" "$app/Contents/Info.plist"
 fi
 if [[ -f LICENSE ]]; then cp LICENSE "$app/Contents/Resources/"; fi
-if [[ -f RESOURCE-NOTICES.md ]]; then cp RESOURCE-NOTICES.md "$app/Contents/Resources/"; fi
 codesign --force --sign "${CODE_SIGN_IDENTITY:--}" --identifier dev.rshagiev.PuntoNative "$app"
 printf '%s\n' "$app"

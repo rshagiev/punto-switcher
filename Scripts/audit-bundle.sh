@@ -13,10 +13,9 @@ assert 'PuntoReleaseCandidate' not in info, 'Private local update path in releas
 resources=app/'Contents/Resources'
 for source in [Path('Resources/ps.dat.txt'),Path('Resources/triggers.dat.txt'),*Path('Resources/Sounds').glob('*.wav')]:
  assert (resources/source.name).read_bytes()==source.read_bytes(), source
-assert (resources/'RESOURCE-NOTICES.md').is_file()
 assert not list(app.rglob('settings.json'))
 assert not list(app.rglob('auth.json'))
-print('PASS: complete offline resources, notices, bundle identity, no private update path or account settings')
+print('PASS: complete offline resources, bundle identity, no private update path or account settings')
 PY
 lipo -info "$app/Contents/MacOS/PuntoNative"
 

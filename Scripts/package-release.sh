@@ -9,7 +9,7 @@ stage=$(mktemp -d)
 trap 'rm -rf "$stage"' EXIT
 ditto 'Build/Punto Native.app' "$stage/PuntoNative.app"
 ln -s /Applications "$stage/Applications"
-cp README.md RESOURCE-NOTICES.md LICENSE CHANGELOG.md "$stage/"
+cp README.md LICENSE CHANGELOG.md "$stage/"
 cp -R docs "$stage/"
 output="Release/PuntoNative-v${version}-arm64.dmg"
 hdiutil create -volname 'Punto Native' -srcfolder "$stage" -ov -format UDZO "$output"
