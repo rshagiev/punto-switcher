@@ -1,0 +1,5 @@
+*.swift text eol=lf
+*.sh text eol=lf
+*.md text eol=lf
+Resources/*.dat.txt text eol=lf
+Resources/*.dat.txt linguist-generated=true

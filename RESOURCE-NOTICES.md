@@ -2,7 +2,7 @@
 
 This release retains compatibility resources from Punto Switcher for macOS 2.1.5 (build 1724), as requested by the project owner:
 
-- `Resources/ps.dat.txt`: language rules, decoded from `ps.dat` (CP1251; XOR 0xAA except CR/LF), then encoded as UTF-8.
+- `Resources/ps.dat.txt`: language rules, decoded from `ps.dat` (CP1251; XOR 0xAA except CR/LF), then encoded as UTF-8. Line endings and trailing rule whitespace are normalized to match the parser.
 - `Resources/triggers.dat.txt`: trigger list converted from CP1251 to UTF-8.
 - `Resources/oracle-resources.json`: SHA-256 fingerprints of the original input tables.
 - `Resources/Sounds/*.wav`: event sounds from that installation.

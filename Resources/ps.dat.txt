@@ -217,7 +217,7 @@ _A юозп
 _A юпша
 _A юпщм
 _A юсщь
-_A юучу 
+_A юучу
 _A юфко
 _A ючды
 _A ющкп
@@ -526,7 +526,7 @@ _B bwe
 _B by'
 _B bya
 _B byd
-_B by'n 
+_B by'n
 _B bynth
 _B bynthafrc
 _B bypt
@@ -633,7 +633,8 @@ _B dbe
 _B dbo
 _B dbr
 _B dby
-_B dc
+_B dc
+
 _B dca
 _B dceq
 _B dcetn
@@ -3046,7 +3047,7 @@ _B двл
 _B двы
 _B двя
 _B дга
-_B дгву 
+_B дгву
 _B дге
 _B дги
 _B дгль
@@ -4131,7 +4132,7 @@ _B купым
 _B купым
 _B купыщ
 _B кусут
-_B кусуте 
+_B кусуте
 _B кусуш
 _B кутв
 _B куткут
@@ -7043,7 +7044,7 @@ _BA реез
 _BC "cj
 _BC "df
 _BC "dg
-_BC "gk 
+_BC "gk
 _BC "gk
 _BC "h;
 _BC "l[
@@ -7963,7 +7964,7 @@ _C <.
 _C <C
 _C <U
 _C >U
-_C >W 
+_C >W
 _C 0;
 _C 0Ж
 _C 1Ж
@@ -8023,7 +8024,7 @@ _C M>
 _C mwf
 _C N"
 _C N<
-_C N< 
+_C N<
 _C N<
 _C N>
 _C ntv
@@ -8033,7 +8034,7 @@ _C Q<
 _C R"
 _C R{A
 _C R<
-_C R< 
+_C R<
 _C R>
 _C S<
 _C -sq
@@ -8213,7 +8214,7 @@ _C е"ь
 _C е"я
 _C еЭ
 _C ёЭ
-_C Ж0 
+_C Ж0
 _C Ж1
 _C Ж2
 _C Ж3
@@ -9118,7 +9119,7 @@ _CP "VP
 _CP "WG
 _CP "аштв
 _CP "ензу
-_CP (b 
+_CP (b
 _CP :/
 _CP {/
 _CP </
@@ -9696,7 +9697,7 @@ _E ic.kz
 _E iht
 _E j.kz
 _E keywo
-_E lkm 
+_E lkm
 _E loy
 _E lpd
 _E lynx
@@ -9733,13 +9734,13 @@ _E ysc
 _E yto
 _E z.kz
 _E zzl
-_E азп 
+_E азп
 _E азъ
 _E акэ
 _E аощ
 _E апг
 _E афба
-_E аюз 
+_E аюз
 _E безъ
 _E вмп
 _E вэк
@@ -9831,12 +9832,12 @@ _E шски
 _E шюр
 _E шют
 _E щеч
-_E ышс 
+_E ышс
 _E ьё
 _E эмт
 _E эшн
 _E эээ
-_E юик 
+_E юик
 _E юср
 _E яню
 _E япр
@@ -9864,7 +9865,7 @@ _EB netg
 _EB nls
 _EB nscien
 _EB nvi
-_EB prt 
+_EB prt
 _EB svo
 _EB xeniac
 _EB xneur
@@ -9916,7 +9917,7 @@ _EC .ly
 _EC .me
 _EC .old
 _EC .tif
-_EC .tk 
+_EC .tk
 _EC .ua
 _EC a.t
 _EC CCTV
@@ -9924,7 +9925,7 @@ _EC ctX
 _EC F0
 _EC FF
 _EC liy
-_EC N" 
+_EC N"
 _EC n.m
 _EC psl
 _EC tbu
@@ -9942,7 +9943,7 @@ _EC Зуфа
 _EC зьн
 _EC изт
 _EC ипб
-_EC ипб 
+_EC ипб
 _EC ицш
 _EC КЭ
 _EC мтрей
@@ -10421,7 +10422,7 @@ _ECP ГКСК
 _ECP ГМК
 _ECP ГММП
 _ECP ГМУ
-_ECP ГНТБ 
+_ECP ГНТБ
 _ECP ГНЦ
 _ECP ГОЭЛРО
 _ECP ГПЗ
@@ -10792,7 +10793,7 @@ _ECP РЦС
 _ECP РЭА
 _ECP РЭБ
 _ECP РЭЖ
-_ECP РЭФ 
+_ECP РЭФ
 _ECP САО
 _ECP САЭС
 _ECP СВЛ
@@ -11361,7 +11362,7 @@ _EPC DTA
 _EPC DWT
 _EPC DYVIG
 _EPC DZVM
-_EP e.d 
+_EP e.d
 _EPC EADB
 _EPC EBRD
 _EPC ECA
@@ -12650,7 +12651,7 @@ _P (z
 _P (зва)
 _P (кги)
 _P .ehue
-_P .адм 
+_P .адм
 _P .вум.
 _P .еуые
 _P ///
@@ -12810,7 +12811,7 @@ _P cys
 _P cyt
 _P cz[
 _P d
-_P d`p 
+_P d`p
 _P d'c
 _P dc.
 _P dc`
@@ -12848,7 +12849,7 @@ _P ece
 _P ecs
 _P eds
 _P eds?
-_P eds? 
+_P eds?
 _P egah
 _P egr
 _P eh-
@@ -13166,14 +13167,14 @@ _P vww/
 _P vxc
 _P vy/
 _P vyc
-_P vza 
+_P vza
 _P vze
 _P weu
 _P weym
 _P 'wg
 _P x.y
 _P x`
-_P x` 
+_P x`
 _P xb;
 _P xe.
 _P xenm
@@ -13187,7 +13188,7 @@ _P ye?
 _P yee
 _P yerf
 _P yf
-_P yf. 
+_P yf.
 _P ygj
 _P yj
 _P yj?
@@ -13289,7 +13290,7 @@ _P еру
 _P еруку
 _P ерун
 _P ерут
-_P ершкен 
+_P ершкен
 _P ершы
 _P еуд
 _P еуллу
@@ -13491,7 +13492,7 @@ _P юву
 _P юву
 _P юдм
 _P юзы
-_P юин 
+_P юин
 _P юмеч
 _P юпуе
 _P юрдз
@@ -21218,7 +21219,7 @@ _C гюв
 ддц
 ддч
 ддш
-ддщ 
+ддщ
 ддъ
 ддь
 ддю
