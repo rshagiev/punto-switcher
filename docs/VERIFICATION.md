@@ -1,26 +1,48 @@
-# Release verification
+# Проверки версии 2.0.0
 
-## 2.0.0-rc.1, 2026-09-13
+Проверки проведены на Apple Silicon при подготовке релиза 13 сентября 2026 года.
 
-- `swift run -c release PuntoChecks`: passed. Includes 1,023 comparisons of indexed language-rule decisions against sequential evaluation; 1,084 assertions through that stage, then profiles, text-diff choice/round-trip and processing-depth checks. These are regression assertions, not a measured natural-language accuracy percentage.
-- Archived main `9aeb92c`: `swift run -c release PuntoCoreTest` passed on the current Mac before replacing the checkout. Historical GUI behavior was not re-tested for this comparison.
-- New Prompt mode: two opt-in live requests through `gpt-5.6-luna` returned structured prompts. One resolved CSV -> JSON and preserved 42, no deletion, deferred UI work and plan-before-code. The other preserved the URL and path and kept the table/list choice unresolved. This is sample evidence; it does not establish perfect completeness of every rewrite.
-- Previous development checks exercised Safari input/textarea/contenteditable, Codex, Terminal and Ghostty; repeat conversion, clipboard restoration, secure-field exclusion, profile behavior and selective Luna application were investigated. Private raw logs and user settings are not published.
+## Автоматические проверки
 
-## Boundaries
+`swift run -c release PuntoChecks` проходит. Проверяются карты раскладок, приоритеты правил, сочетания клавиш, профили приложений, Unicode, независимое отключение правок и выбор глубины обработки.
 
-No universal app-compatibility claim. Native input paths differ across applications, secure input cannot be overridden, and model output can omit nuance. The release targets Apple Silicon only. This release is not Apple-notarized. Public updates are manual.
+Для языкового индекса 1 023 строки сравниваются с последовательным применением правил. К концу этого этапа выполнено 1 084 утверждения; затем идут проверки профилей и обработки текста. Этот тест проверяет правильность реализации поиска. Качество самих языковых правил он не измеряет.
 
-## Repeat locally
+GitHub Actions проверяет сборку и состав пакета. `Scripts/audit-bundle.sh` сверяет встроенные таблицы и звуки, подпись, архитектуру arm64 и отсутствие личных настроек и локального пути обновлений.
 
-Run core checks and the bundle audit. For live UI tests, use a disposable text fixture, never a user's unsent message or active command. Confirm initial and final text, focus, input source and clipboard, then repeat the action. For a Luna request, also test editing the source while the request runs; automatic replacement must be cancelled.
+## Проверки в приложениях
 
-## Final installed candidate
+Во время разработки проверялись Safari (input, textarea и contenteditable), Codex, Terminal и Ghostty. Проверки включали повторную конвертацию, отмену, смену фокуса, сохранение буфера обмена, защищённые поля и профили приложений.
 
-The arm64-only bundle was installed with the existing local signing identity; the settings file checksum stayed unchanged. Code-signature and resource audits passed. The DMG checksum was verified by hdiutil. Computer Use showed the connected Codex state, all three mode controls, and switching from a loading Structure request back to a cached Prompt result without waiting; loading cleared immediately.
+При установке подготовленной сборки контрольная сумма файла настроек не изменилась. В окне настроек отображалось подключение Codex и сохранились пользовательские сочетания.
 
-One additional UI Prompt sample omitted the number 42 even though the two scripted examples preserved their numbers. Prompt output remains review-only and is not a lossless transformation guarantee. The diff makes this omission visible; no automatic acceptance of Prompt output is implemented.
+## Luna
 
-## 2.0.0 publication
+Проверки с реальными запросами показали:
 
-The release candidate was promoted to 2.0.0 without changes to Swift code or language rules. The bundle version, documentation, signature and disk image were refreshed for the stable release. The same Apple Silicon and notarization boundaries apply.
+- «Промпт» учёл самопоправку CSV → JSON, сохранил число 42, запрет удаления и порядок «сначала план, затем код».
+- В другом примере сохранились ссылка, путь к файлу и нерешённый выбор между таблицей и списком.
+- После уточнения инструкции сохранилась фраза о неизвестном сроке.
+- Во время генерации «Собрать мысль» удалось вернуться к готовому «Промпту»: запрос отменился, кешированный результат появился сразу.
+
+Есть и известная ошибка: в дополнительном примере режим «Промпт» пропустил число 42. Этот режим применяется через окно проверки. Сохранение всех деталей моделью не гарантируется.
+
+## Релизный пакет
+
+DMG прошёл проверку `hdiutil verify`. SHA-256 загруженного файла совпал с локальной суммой. Исполняемый файл внутри образа совпал с установленным приложением.
+
+При переходе от кандидата к 2.0.0 Swift-код и языковые правила не менялись. Обновлены номер версии, документация, подпись и образ диска.
+
+## Как повторить
+
+```sh
+swift run -c release PuntoChecks
+bash Scripts/build-app.sh
+bash Scripts/audit-bundle.sh
+```
+
+Для проверки в интерфейсе используйте отдельное тестовое поле. Запишите исходный текст, фокус, раскладку и буфер обмена. Выполните конвертацию несколько раз, продолжите набор, смените поле и проверьте отмену.
+
+Для Luna измените исходный текст, пока выполняется запрос. Быстрая замена должна отмениться. Затем проверьте переключение режимов во время генерации и возврат к готовому варианту.
+
+Релиз рассчитан на macOS 14+ и Apple Silicon. Защищённые поля не обрабатываются. Сборка без нотарификации Apple; обновления устанавливаются вручную из GitHub Releases.

@@ -1,11 +1,43 @@
-# Architecture
+# Как устроен Punto Native
 
-`PuntoCore` contains physical layout maps, indexed compatibility rules, user rules, modifier chord state, application modes, text diff choices and local processing-depth heuristics. It does not control the desktop or call a model.
+Приложение состоит из чистого ядра `PuntoCore` и нативной части `PuntoNative`, которая работает с клавиатурой, окнами и текстовыми полями macOS.
 
-`KeyboardEngine` owns the event tap, tracked word, app/input-source context and conversion lifecycle. Generated events are tagged and replayed through a fence; focus changes invalidate tracked state. Secure input and password fields are excluded. `TextAccess` selects the usable Accessibility, clipboard or tracked-tail path and checks its target before replacing text. Clipboard fallback preserves the previous pasteboard contents when it still owns the transaction.
+## Набор и конвертация
 
-`Settings` persists preferences independently of the original app. `AppProfilesView` and `SettingsView` expose native controls. Optional import reads original settings on first use; it is not a runtime dependency. `ConversionFeedback` and `LunaHUD` are nonactivating feedback surfaces.
+`KeyboardEngine` получает события клавиатуры через event tap. Он отслеживает набранное слово, активное приложение и раскладку. Щелчок мышью, навигация или смена приложения сбрасывают устаревший контекст.
 
-`LunaClient` runs a bounded, ephemeral Codex CLI process with tools disabled and a strict JSON output schema. The source text is an untrusted JSON value, separate from the editor instructions. `LunaCorrection` owns cancellation, focus/source snapshots, cached mode variants, independent rejected edits, Apply and Undo. `LunaInteractiveText` renders clickable diff spans; display-only markers never enter copied or applied text.
+Перед заменой проверяется целевое поле. Если доступен текст перед курсором, он сверяется с отслеживаемым словом. Защищённый ввод пропускается.
 
-Public builds omit the local update-candidate path. The optional local updater accepts a candidate only after checking its signing requirement against the running app. Public releases currently use manual installation from GitHub.
+Для набранного слова движок удаляет старые символы и воспроизводит исправленные клавиши. Собственные события имеют метку. Настоящие события, пришедшие во время замены, складываются в очередь. Маркер в конце последовательности позволяет возобновить их обработку; при потере маркера срабатывает тайм-аут 800 мс.
+
+Маркер подтверждает порядок событий в перехватчике, но не результат их обработки редактором. Поэтому для проверки замены нужны тесты в самом приложении.
+
+## Выделение и буфер обмена
+
+`TextAccess` получает выделение через Accessibility или команду копирования. Исправленный текст вставляется через `Cmd+V`, чтобы редактор обработал обычное событие вставки.
+
+До временной записи в буфер сохраняется его содержимое. Восстановление выполняется только при совпадении `changeCount`: если буфер уже изменился, Punto не затирает новое содержимое. Вставка использует задержку перед восстановлением буфера.
+
+Для известных терминалов есть отдельные условия выбора между выделением и набранным хвостом. Новый терминал может потребовать проверки и доработки этого пути.
+
+## Правила и настройки
+
+`PuntoCore` содержит карты раскладок, индекс языковых правил, пользовательские правила, распознавание сочетаний, буфер набора и режимы приложений. Здесь же находятся расчёт различий текста и выбор глубины обработки Luna.
+
+`Settings` хранит настройки в отдельной папке PuntoNative. При первом запуске может импортировать настройки оригинального Punto. Счётчики обновляются в памяти; сохранение выполняется периодически и при изменении настроек.
+
+`SettingsView` и `AppProfilesView` отвечают за настройки. Плашки `ConversionFeedback` и `LunaHUD` показываются без перехвата фокуса.
+
+## Запрос к Luna
+
+`LunaClient` запускает Codex CLI с выбранной инструкцией и JSON-схемой ответа. Редактируемый текст передаётся отдельно как JSON-значение. Инструменты, плагины, приложения и инструкции проекта отключены. Запрос ограничен по времени; временная папка удаляется после завершения.
+
+`LunaCorrection` хранит исходный текст и целевое поле, готовые варианты трёх режимов и отключённые правки каждого варианта. Смена режима отменяет текущий запрос. Идентификатор запроса не позволяет позднему ответу перезаписать новый результат.
+
+Готовый вариант открывается из памяти. Для отменённого незавершённого варианта нужен новый запрос. Работа с новым исходным текстом сбрасывает кеш вариантов.
+
+`LunaInteractiveText` показывает кликабельные изменения. Служебные маркеры пустых фрагментов не попадают в копируемый или применяемый текст. Перед заменой проверяется актуальность исходного поля и текста.
+
+## Обновления
+
+Публичные версии устанавливаются из GitHub Releases. Для локальной разработки можно включить канал подписанных сборок: кандидат проверяется по требованию подписи текущего приложения. Путь к локальному кандидату в публичную сборку не включается.
