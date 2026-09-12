@@ -20,3 +20,7 @@ Run core checks and the bundle audit. For live UI tests, use a disposable text f
 The arm64-only bundle was installed with the existing local signing identity; the settings file checksum stayed unchanged. Code-signature and resource audits passed. The DMG checksum was verified by hdiutil. Computer Use showed the connected Codex state, all three mode controls, and switching from a loading Structure request back to a cached Prompt result without waiting; loading cleared immediately.
 
 One additional UI Prompt sample omitted the number 42 even though the two scripted examples preserved their numbers. Prompt output remains review-only and is not a lossless transformation guarantee. The diff makes this omission visible; no automatic acceptance of Prompt output is implemented.
+
+## 2.0.0 publication
+
+The release candidate was promoted to 2.0.0 without changes to Swift code or language rules. The bundle version, documentation, signature and disk image were refreshed for the stable release. The same Apple Silicon and notarization boundaries apply.
