@@ -50,7 +50,7 @@ final class LunaCorrection: NSObject, NSWindowDelegate {
         state.corrected = ""; state.rejected = []; state.diff = ProofreadingDiff(original:"",corrected:"")
         state.canApply = false; state.loading = true; state.message = ""
         let text = state.original
-        client.correct(text,mode:mode) { [weak self] result in
+        client.correct(text,mode:mode,model:settings.value.lunaModel) { [weak self] result in
             guard let self, self.requestID == id else { return }
             switch result {
             case .failure(let error): self.state.loading = false; self.state.message = error.localizedDescription
@@ -130,7 +130,7 @@ final class LunaCorrection: NSObject, NSWindowDelegate {
         } else { present() }
         let id = requestID
         let mode = state.mode
-        client.correct(text,mode:mode) { [weak self] result in
+        client.correct(text,mode:mode,model:settings.value.lunaModel) { [weak self] result in
             guard let self, self.requestID == id else { return }
             self.state.loading = false
             self.watcher?.invalidate()

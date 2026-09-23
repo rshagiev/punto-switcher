@@ -115,6 +115,13 @@ struct SettingsView: View {
                 Toggle("Корректура с Luna",isOn:$settings.value.lunaEnabled)
             }
             Section {
+                Picker("Модель",selection:$settings.value.lunaModel) {
+                    ForEach(LunaClient.Model.allCases,id:\.self) { model in Text(model.title).tag(model) }
+                }
+            } footer: {
+                Text("Доступность выбранной модели проверяется кнопкой «Попробовать на примере».")
+            }
+            Section {
                 lunaShortcut("Исправить сразу",index:4)
                 lunaShortcut("Проверить перед заменой",index:5)
             } header: { Text("Команды") } footer: {

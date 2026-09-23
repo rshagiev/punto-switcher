@@ -5,6 +5,7 @@ import PuntoCore
 
 struct Preferences: Codable {
     var lunaEnabled = true
+    var lunaModel:LunaClient.Model = .gpt6
     static let lunaReviewShortcut = Shortcut(key:15,modifiers:Shortcut.control | Shortcut.option | Shortcut.command | Shortcut.shift)
     static let lunaShortcut = Shortcut(key:15,modifiers:Shortcut.control | Shortcut.option | Shortcut.command)
     var checkUpdates = true
@@ -46,6 +47,7 @@ final class Settings: ObservableObject {
         let url = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/PuntoNative/settings.json")
         if let data = try? Data(contentsOf: url), var object = (try? JSONSerialization.jsonObject(with:data)) as? [String:Any] {
             if object["lunaEnabled"] == nil { object["lunaEnabled"] = true }
+            if object["lunaModel"] == nil { object["lunaModel"] = LunaClient.Model.gpt6.rawValue }
             if object["showConversionFeedback"] == nil { object["showConversionFeedback"] = true }
             if object["appProfiles"] == nil {
                 let mode = object["excludeManual"] as? Bool == true ? "disabled" : "manual"

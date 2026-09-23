@@ -29,7 +29,7 @@ Language tables and sounds are bundled. The original Punto Switcher is not requi
 
 ## Optional text editing with Luna
 
-Luna uses your installed [Codex CLI](https://developers.openai.com/codex/cli/) and signed-in account. It runs only when requested. Keyboard layout conversion works without Codex or a network connection.
+Luna uses your installed [Codex CLI](https://developers.openai.com/codex/cli/) and signed-in account. Select GPT-6 Luna (the default) or GPT-5.6 Luna in Luna settings. It runs only when requested. Keyboard layout conversion works without Codex or a network connection.
 
 Select text or place the cursor in a paragraph, then use one of two configurable commands:
 

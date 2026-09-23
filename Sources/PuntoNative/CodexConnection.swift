@@ -20,7 +20,7 @@ final class CodexConnection:ObservableObject {
     var detail:String {
         switch status {
         case .checking: return "Проверка установки и входа"
-        case .connected: return "\(account) · GPT-5.6 Luna"
+        case .connected: return account
         case .signedOut: return "Для корректуры нужен вход в ваш аккаунт."
         case .missing: return "Установите Codex CLI, затем войдите в аккаунт."
         case .unavailable: return "Повторите проверку или проверьте Codex в Терминале."
