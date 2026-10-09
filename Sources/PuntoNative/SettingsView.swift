@@ -80,13 +80,13 @@ struct SettingsView: View {
     private func lunaShortcut(_ title:String,index:Int) -> some View {
         LabeledContent(title) {
             HStack(spacing:8) {
-                Button { settings.recording = index; engine.recordingPeak = 0 } label: {
+                Button { settings.recording = index; engine.shortcutRecorder.reset() } label: {
                     Text(settings.recording == index ? "Нажмите сочетание…" : shortcutLabel(settings.value.shortcuts[index]))
                         .frame(minWidth:130)
                 }.disabled(!settings.running)
                 .help("Нажмите и введите своё сочетание. Escape отменяет запись.")
                 if settings.recording == index {
-                    Button("Отмена") { settings.recording = nil; engine.recordingPeak = 0 }
+                    Button("Отмена") { settings.recording = nil; engine.shortcutRecorder.reset() }
                 }
             }
         }
@@ -183,7 +183,7 @@ struct SettingsView: View {
                     VStack(alignment:.leading,spacing:12) {
                         Text(name)
                         HStack {
-                            Button { settings.recording = i; engine.recordingPeak = 0 } label: {
+                            Button { settings.recording = i; engine.shortcutRecorder.reset() } label: {
                                 Text(settings.recording == i ? "Нажмите сочетание…" : shortcutLabel(settings.value.shortcuts[i])).font(.system(size:settings.recording == i || !settings.value.shortcuts[i].enabled ? 13 : 20,weight:.medium)).frame(minWidth:170,minHeight:28)
                             }.disabled(!settings.running)
                             if settings.value.shortcuts[i].enabled { Button("Сбросить",systemImage:"xmark.circle") { settings.value.shortcuts[i] = Shortcut() }.labelStyle(.iconOnly).buttonStyle(.borderless) }

@@ -30,6 +30,40 @@ final class CoreTests {
         var c = ChordTracker(); _ = c.changed(Shortcut.command|Shortcut.option|Shortcut.shift); c.keyPressed()
         XCTAssertNil(c.changed(0))
     }
+    func testCommandPeriodRecording() {
+        // Left and right Command have different device bits, but the same mask.
+        for command in [Shortcut.command | 0x08, Shortcut.command | 0x10] {
+            for keyFlags in [UInt64(0), command] {
+                var recorder = ShortcutRecorder()
+                XCTAssertNil(recorder.changed(command))
+                let shortcut = recorder.keyPressed(47,flags:keyFlags)
+                XCTAssertEqual(shortcut,Shortcut(key:47,modifiers:Shortcut.command))
+                XCTAssertNil(recorder.changed(0))
+                let data = try! JSONEncoder().encode(shortcut)
+                let restored = try! JSONDecoder().decode(Shortcut.self,from:data)
+                XCTAssertEqual(restored,shortcut)
+                // Same predicate used by KeyboardEngine for a key shortcut.
+                XCTAssertTrue(restored.key == 47 && restored.modifiers == (command & Shortcut.mask) && restored.enabled)
+            }
+        }
+        // Command may already be held when the recording button is clicked.
+        var recorder = ShortcutRecorder()
+        XCTAssertEqual(recorder.keyPressed(47,flags:Shortcut.command),Shortcut(key:47,modifiers:Shortcut.command))
+        XCTAssertEqual(recorder.keyPressed(47,flags:0),Shortcut(key:47))
+    }
+    func testRecordingUsesHeldModifiersAndResets() {
+        var recorder = ShortcutRecorder()
+        XCTAssertNil(recorder.changed(Shortcut.command | Shortcut.shift))
+        XCTAssertNil(recorder.changed(Shortcut.command))
+        XCTAssertEqual(recorder.keyPressed(47,flags:0),Shortcut(key:47,modifiers:Shortcut.command))
+        XCTAssertNil(recorder.changed(0))
+        XCTAssertNil(recorder.changed(Shortcut.command))
+        XCTAssertEqual(recorder.changed(0),Shortcut(modifiers:Shortcut.command))
+        XCTAssertNil(recorder.changed(0))
+        XCTAssertNil(recorder.changed(Shortcut.option))
+        recorder.reset() // Escape, explicit cancellation, or a focus change.
+        XCTAssertEqual(recorder.keyPressed(47,flags:0),Shortcut(key:47))
+    }
     func testBackspaceResumesWordAfterSingleSpace() {
         var b = TypingBuffer(); b.append("ghbdtn"); b.boundary(" ")
         XCTAssertEqual(b.convertible,"ghbdtn"); XCTAssertEqual(b.suffix," ")
@@ -82,6 +116,8 @@ tests.testSelectionKeepsWhitespaceAndEmoji()
 tests.testCaseToggle()
 tests.testChordAfterOrdinaryTyping()
 tests.testChordDoesNotFireAfterModifiedKey()
+tests.testCommandPeriodRecording()
+tests.testRecordingUsesHeldModifiersAndResets()
 tests.testBackspaceResumesWordAfterSingleSpace()
 tests.testRuleConditionsAndRegexValidation()
 tests.testOriginalRuleFlags()
