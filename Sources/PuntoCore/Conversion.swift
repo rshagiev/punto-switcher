@@ -143,6 +143,27 @@ public struct Shortcut: Codable, Equatable {
     public static let mask = command | option | shift | control
 }
 
+/// Keeps held modifiers separate from the peak used for modifier-only chords.
+public struct ShortcutRecorder {
+    private var held: UInt64 = 0
+    private var peak: UInt64 = 0
+    public init() {}
+    public mutating func changed(_ flags: UInt64) -> Shortcut? {
+        held = flags & Shortcut.mask
+        peak |= held
+        guard held == 0, peak != 0 else { return nil }
+        let shortcut = Shortcut(modifiers: peak)
+        reset()
+        return shortcut
+    }
+    public mutating func keyPressed(_ key: UInt16, flags: UInt64) -> Shortcut {
+        let shortcut = Shortcut(key: key, modifiers: (flags & Shortcut.mask) | held)
+        reset()
+        return shortcut
+    }
+    public mutating func reset() { held = 0; peak = 0 }
+}
+
 /// Fires a modifier chord only after release, and never after a character was used with it.
 public struct ChordTracker {
     private var peak: UInt64 = 0

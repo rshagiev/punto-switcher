@@ -134,7 +134,7 @@ func shortcutLabel(_ s: Shortcut) -> String {
     var text = ""
     for (f,c) in [(Shortcut.control,"⌃"),(Shortcut.option,"⌥"),(Shortcut.shift,"⇧"),(Shortcut.command,"⌘")] where s.modifiers & f != 0 { text += c }
     if let k = s.key {
-        let names: [UInt16:String] = [36:"↩",48:"⇥",49:"Пробел",51:"⌫",53:"⎋",117:"⌦",123:"←",124:"→",125:"↓",126:"↑"]
+        let names: [UInt16:String] = [36:"↩",47:".",48:"⇥",49:"Пробел",51:"⌫",53:"⎋",117:"⌦",123:"←",124:"→",125:"↓",126:"↑"]
         text += names[k] ?? Layouts.keyName(k)
     }
     return text

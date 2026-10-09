@@ -26,7 +26,7 @@ final class KeyboardEngine {
     var pendingFence: Int64?
     var pendingLearningPrompt: String?
     var generation: UInt64 = 0
-    var recordingPeak: UInt64 = 0
+    var shortcutRecorder = ShortcutRecorder()
     var appLayouts: [String: String] = [:]
     var lastApp = ""
     var workspaceObserver: NSObjectProtocol?
@@ -101,7 +101,7 @@ final class KeyboardEngine {
     func reset() { generation &+= 1; justConverted = false; buffer.reset(); undo = nil; owner = nil; ownerPID = 0; ownerSource = "" }
     func appChanged() {
         feedback.hide(); pendingFeedback = nil
-        if NSWorkspace.shared.frontmostApplication?.bundleIdentifier != Bundle.main.bundleIdentifier { settings.recording = nil; recordingPeak = 0 }
+        if NSWorkspace.shared.frontmostApplication?.bundleIdentifier != Bundle.main.bundleIdentifier { settings.recording = nil; shortcutRecorder.reset() }
         if settings.value.rememberLayout, !excluded(manual:true) {
             if let app = NSWorkspace.shared.frontmostApplication?.bundleIdentifier {
                 lastApp = app
@@ -201,11 +201,12 @@ final class KeyboardEngine {
         if type == .keyUp { if suppressedKeys.remove(key) != nil { return nil }; return Unmanaged.passUnretained(event) }
         if settings.recording != nil {
             if type == .flagsChanged {
-                recordingPeak |= flags
-                if flags == 0, recordingPeak != 0 { saveShortcut(Shortcut(modifiers: recordingPeak)) }
+                if let shortcut = shortcutRecorder.changed(flags) { saveShortcut(shortcut) }
+                // Keep the session's modifier state in sync while recording.
+                return Unmanaged.passUnretained(event)
             } else if type == .keyDown {
-                if key == 53 { settings.recording = nil; recordingPeak = 0 }
-                else { saveShortcut(Shortcut(key:key,modifiers:flags)); suppressedKeys.insert(key) }
+                if key == 53 { settings.recording = nil; shortcutRecorder.reset() }
+                else { saveShortcut(shortcutRecorder.keyPressed(key,flags:flags)); suppressedKeys.insert(key) }
             }
             return nil
         }
@@ -311,7 +312,7 @@ final class KeyboardEngine {
         manual ? !currentMode.manualEnabled : !automaticEnabled
     }
     func saveShortcut(_ shortcut: Shortcut) {
-        defer { settings.recording = nil; recordingPeak = 0; chord.reset() }
+        defer { settings.recording = nil; shortcutRecorder.reset(); chord.reset() }
         guard let index = settings.recording else { return }
         if settings.value.shortcuts.enumerated().contains(where: { $0.offset != index && $0.element == shortcut }) { settings.message = "Это сочетание уже назначено другой команде"; return }
         settings.value.shortcuts[index] = shortcut
