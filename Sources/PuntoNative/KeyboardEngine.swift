@@ -261,7 +261,7 @@ final class KeyboardEngine {
         let text = Layouts.text(key, flags: event.flags)
         guard !text.isEmpty, !text.unicodeScalars.contains(where: { CharacterSet.controlCharacters.contains($0) }) else { reset(); return Unmanaged.passUnretained(event) }
         if var previous = undo, previous.suffix.isEmpty {
-            previous.before += LayoutConversion.convert(text,toRussian:previous.source == settings.value.russian,pc:settings.value.russian.contains("Win"))
+            previous.before += Layouts.convert(text,from:source,to:previous.source)
             previous.after += text; undo = previous
         } else { undo = nil }
         justConverted = false
@@ -299,7 +299,11 @@ final class KeyboardEngine {
         let pairs = Dictionary(uniqueKeysWithValues: zip(Array(LayoutConversion.russian),Array(LayoutConversion.russianPC)))
         return String(word.map { pairs[$0] ?? $0 })
     }
-    func convert(_ word: String) -> String { LayoutConversion.convert(word,toRussian:ownerSource == settings.value.english,pc:settings.value.russian.contains("Win")) }
+    func convert(_ word: String) -> String {
+        let source = ownerSource.isEmpty ? Layouts.currentID : ownerSource
+        let target = source == settings.value.english ? settings.value.russian : settings.value.english
+        return Layouts.convert(word,from:source,to:target)
+    }
     var currentMode: AppMode {
         let id = NSWorkspace.shared.frontmostApplication?.bundleIdentifier ?? ""
         if let mode = settings.value.appProfiles[id] { return mode }
@@ -373,7 +377,11 @@ final class KeyboardEngine {
         performTyped(before:word,after:convert(word),suffix:suffix,appendKey:nil,focus:focus,automatic:false)
     }
     private func replaceSelection(_ selection: String, focus: Focus, changeCase: Bool) {
-        let replacement = changeCase ? LayoutConversion.changeCase(selection) : LayoutConversion.selection(selection,pc:settings.value.russian.contains("Win"))
+        let replacement = changeCase ? LayoutConversion.changeCase(selection) : LayoutConversion.selection(selection) { word, toRussian in
+            Layouts.convert(word,
+                from:toRussian ? settings.value.english : settings.value.russian,
+                to:toRussian ? settings.value.russian : settings.value.english)
+        }
         guard replacement != selection, focus.stillFocused() else { return }
         busy = true; reset()
         let generation = self.generation

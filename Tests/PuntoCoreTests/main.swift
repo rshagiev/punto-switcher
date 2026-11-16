@@ -18,6 +18,17 @@ final class CoreTests {
         XCTAssertEqual(LayoutConversion.changeCase("Привет Hello"),"ПРИВЕТ HELLO")
         XCTAssertEqual(LayoutConversion.changeCase("ПРИВЕТ HELLO"),"привет hello")
     }
+    func testSelectionUsesSelectedLayoutConverter() {
+        var directions: [Bool] = []
+        let result = LayoutConversion.selection("  privet\tпривет\n🙂  ") { word, toRussian in
+            directions.append(toRussian)
+            if word == "privet" { return "привет" }
+            if word == "привет" { return "privet" }
+            return word
+        }
+        XCTAssertEqual(result,"  привет\tprivet\n🙂  ")
+        XCTAssertEqual(directions,[true,false,true])
+    }
     func testChordAfterOrdinaryTyping() {
         var c = ChordTracker(); c.keyPressed()
         XCTAssertNil(c.changed(Shortcut.command))
@@ -113,6 +124,7 @@ func XCTAssertNil<T>(_ value: T?, file: StaticString = #filePath, line: UInt = #
 let tests = CoreTests()
 tests.testRussianKeyboardAndPunctuation()
 tests.testSelectionKeepsWhitespaceAndEmoji()
+tests.testSelectionUsesSelectedLayoutConverter()
 tests.testCaseToggle()
 tests.testChordAfterOrdinaryTyping()
 tests.testChordDoesNotFireAfterModifiedKey()

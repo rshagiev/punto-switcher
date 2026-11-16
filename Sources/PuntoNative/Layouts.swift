@@ -27,7 +27,7 @@ final class Layouts {
     }
     struct Stroke { let key: UInt16; let flags: CGEventFlags; let text: String }
     private static var keyMaps: [String: [String: Stroke]] = [:]
-    static func strokes(_ text: String, sourceID: String) -> [Stroke] {
+    private static func keyMap(sourceID: String) -> [String: Stroke] {
         if keyMaps[sourceID] == nil, let source = all.first(where: { property($0,kTISPropertyInputSourceID) == sourceID }) {
             var map: [String: Stroke] = [:]
             // Prefer ordinary keys over Option dead-key combinations and keypad keys.
@@ -39,9 +39,31 @@ final class Layouts {
             }
             keyMaps[sourceID] = map
         }
+        return keyMaps[sourceID] ?? [:]
+    }
+    // Translate the same physical key in the selected destination layout.
+    // This also supports phonetic and custom layouts without a hard-coded alphabet.
+    private static var conversionMaps: [String: [String: String]] = [:]
+    static func convert(_ text: String, from sourceID: String, to targetID: String) -> String {
+        let pair = sourceID + "\n" + targetID
+        if conversionMaps[pair] == nil {
+            guard let target = all.first(where: { property($0,kTISPropertyInputSourceID) == targetID }) else { return text }
+            let sourceMap = keyMap(sourceID:sourceID)
+            guard !sourceMap.isEmpty else { return text }
+            var map: [String: String] = [:]
+            for (value,stroke) in sourceMap {
+                let translated = translate(stroke.key,flags:stroke.flags,source:target)
+                if !translated.isEmpty { map[value] = translated }
+            }
+            conversionMaps[pair] = map
+        }
+        return text.map { conversionMaps[pair]?[String($0)] ?? String($0) }.joined()
+    }
+    static func strokes(_ text: String, sourceID: String) -> [Stroke] {
+        let map = keyMap(sourceID:sourceID)
         return text.map { character in
             let value = String(character)
-            return keyMaps[sourceID]?[value] ?? Stroke(key:0,flags:[],text:value)
+            return map[value] ?? Stroke(key:0,flags:[],text:value)
         }
     }
     static func text(_ key: UInt16, flags: CGEventFlags) -> String {
