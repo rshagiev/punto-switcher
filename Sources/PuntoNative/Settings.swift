@@ -24,6 +24,7 @@ struct Preferences: Codable {
     var showLearningPrompt = true
     var english = "com.apple.keylayout.ABC"
     var russian = "com.apple.keylayout.Russian"
+    var usesPhoneticLayout: Bool { english == Layouts.russianPhonetic || russian == Layouts.russianPhonetic }
     var exceptions: [String] = []
     var rules: [UserRule] = []
     var shortcuts: [Shortcut] = [Shortcut(), Shortcut(modifiers: Shortcut.command | Shortcut.option | Shortcut.shift), Shortcut(key: 6, modifiers: Shortcut.command | Shortcut.shift), Shortcut(), Self.lunaShortcut, Self.lunaReviewShortcut]

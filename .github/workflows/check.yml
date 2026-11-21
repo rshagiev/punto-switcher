@@ -9,5 +9,8 @@ jobs:
       - uses: actions/checkout@v4
       - run: swift --version
       - run: swift run -c release PuntoChecks
+      - run: |
+          swiftc Sources/PuntoNative/Layouts.swift Sources/PuntoCore/Conversion.swift Scripts/check-layouts.swift -o "$RUNNER_TEMP/punto-layouts-check"
+          "$RUNNER_TEMP/punto-layouts-check"
       - run: bash Scripts/build-app.sh
       - run: bash Scripts/audit-bundle.sh

@@ -17,7 +17,7 @@ final class KeyboardEngine {
     var owner: Focus?
     var ownerPID: pid_t = 0
     var ownerSource = ""
-    var undo: (before: String, after: String, suffix: String, focus: Focus, source: String, automatic: Bool)?
+    var undo: (before: String, after: String, suffix: String, focus: Focus, source: String, target: String, automatic: Bool)?
     var justConverted = false
     var busy = false
     var deferredEvents: [CGEvent] = []
@@ -261,7 +261,11 @@ final class KeyboardEngine {
         let text = Layouts.text(key, flags: event.flags)
         guard !text.isEmpty, !text.unicodeScalars.contains(where: { CharacterSet.controlCharacters.contains($0) }) else { reset(); return Unmanaged.passUnretained(event) }
         if var previous = undo, previous.suffix.isEmpty {
-            previous.before += LayoutConversion.convert(text,toRussian:previous.source == settings.value.russian,pc:settings.value.russian.contains("Win"))
+            if [previous.source,previous.target].contains(Layouts.russianPhonetic) {
+                previous.before += Layouts.convertPhonetic(text,from:previous.target,to:previous.source)
+            } else {
+                previous.before += LayoutConversion.convert(text,toRussian:previous.source == settings.value.russian,pc:settings.value.russian.contains("Win"))
+            }
             previous.after += text; undo = previous
         } else { undo = nil }
         justConverted = false
@@ -307,7 +311,9 @@ final class KeyboardEngine {
         if settings.value.exceptions.contains(id) { return settings.value.excludeManual ? .disabled : .manual }
         return .global
     }
-    var automaticEnabled: Bool { currentMode.automaticEnabled(global:settings.value.automatic) }
+    var automaticEnabled: Bool {
+        !settings.value.usesPhoneticLayout && currentMode.automaticEnabled(global:settings.value.automatic)
+    }
     func excluded(manual: Bool) -> Bool {
         manual ? !currentMode.manualEnabled : !automaticEnabled
     }
@@ -370,10 +376,22 @@ final class KeyboardEngine {
         }
         guard let owner, owner.stillFocused(), !buffer.convertible.isEmpty else { settings.message = "Нет выделения или набранного слова для конвертации"; return }
         let word = buffer.convertible, suffix = buffer.suffix
-        performTyped(before:word,after:convert(word),suffix:suffix,appendKey:nil,focus:focus,automatic:false)
+        let source = ownerSource.isEmpty ? Layouts.currentID : ownerSource
+        let target = source == settings.value.english ? settings.value.russian : settings.value.english
+        let replacement = [source,target].contains(Layouts.russianPhonetic)
+            ? Layouts.convertPhonetic(word,from:source,to:target)
+            : convert(word)
+        performTyped(before:word,after:replacement,suffix:suffix,appendKey:nil,focus:focus,automatic:false)
     }
     private func replaceSelection(_ selection: String, focus: Focus, changeCase: Bool) {
-        let replacement = changeCase ? LayoutConversion.changeCase(selection) : LayoutConversion.selection(selection,pc:settings.value.russian.contains("Win"))
+        let replacement = changeCase ? LayoutConversion.changeCase(selection) : LayoutConversion.selection(selection) { word, toRussian in
+            let source = toRussian ? settings.value.english : settings.value.russian
+            let target = toRussian ? settings.value.russian : settings.value.english
+            if [source,target].contains(Layouts.russianPhonetic) {
+                return Layouts.convertPhonetic(word,from:source,to:target,preservingPunctuation:true)
+            }
+            return LayoutConversion.convert(word,toRussian:toRussian,pc:settings.value.russian.contains("Win"))
+        }
         guard replacement != selection, focus.stillFocused() else { return }
         busy = true; reset()
         let generation = self.generation
@@ -451,7 +469,7 @@ final class KeyboardEngine {
         else if appendKey == 49 || suffix == " " { buffer.append(after); buffer.boundary(ending) }
         if settings.value.noRepeatCorrection { buffer.cancelAuto() }
         justConverted = true
-        undo = (undoBefore ?? before,after,ending,focus,source,automatic)
+        undo = (undoBefore ?? before,after,ending,focus,source,target,automatic)
         if automatic { settings.count("switches"); sound("auto") } else { settings.count("manual"); sound("undo") }
         settings.message = "Готов к работе"
         access.fence(fence)
