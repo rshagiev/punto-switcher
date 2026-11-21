@@ -13,11 +13,14 @@ public enum LayoutConversion {
         return String(text.map { map[$0] ?? $0 })
     }
     public static func selection(_ text: String, pc: Bool = false) -> String {
+        selection(text) { word, toRussian in convert(word,toRussian:toRussian,pc:pc) }
+    }
+    public static func selection(_ text: String, converter: (String, Bool) -> String) -> String {
         var result = "", word = ""
         func flush() {
             guard !word.isEmpty else { return }
             let hasRussian = word.unicodeScalars.contains { (0x400...0x4ff).contains($0.value) }
-            result += convert(word, toRussian: !hasRussian, pc: pc)
+            result += converter(word, !hasRussian)
             word = ""
         }
         for c in text {

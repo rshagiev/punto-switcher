@@ -159,6 +159,10 @@ struct SettingsView: View {
             Section("Раскладки клавиатуры") {
                 Picker("Русская",selection:$settings.value.russian) { layoutOptions(russian:true) }
                 Picker("Английская",selection:$settings.value.english) { layoutOptions(russian:false) }
+                if settings.value.usesPhoneticLayout {
+                    Text("С фонетической раскладкой доступно ручное исправление. Автопереключение приостановлено.")
+                        .foregroundStyle(.secondary)
+                }
             }
             Section("Автопереключение") {
                 Toggle("Не переключать по Tab и Enter",isOn:$settings.value.noTabEnter)
