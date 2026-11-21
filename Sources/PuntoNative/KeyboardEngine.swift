@@ -341,7 +341,7 @@ final class KeyboardEngine {
         }
     }
     func manualConversion(changeCase: Bool) {
-        guard !busy, let focus = Focus.current(), !focus.secure, !IsSecureEventInputEnabled() else { return }
+        guard !busy, let focus = Focus.current(preferSpotlight:true), !focus.secure, !IsSecureEventInputEnabled() else { return }
         if let selection = focus.selected, !selection.isEmpty, changeCase || !focus.terminal || buffer.convertible.isEmpty {
             replaceSelection(selection, focus:focus, changeCase:changeCase)
             return
@@ -420,17 +420,32 @@ final class KeyboardEngine {
         }
         let source = ownerSource.isEmpty ? Layouts.currentID : ownerSource
         let target = targetSource ?? (source == settings.value.english ? settings.value.russian : settings.value.english)
+        let typedTail = before + suffix
+        var spotlightCaret: CFRange?
+        if !automatic, focus.spotlightSearch {
+            // Spotlight can consume the first Backspace to dismiss an inline suggestion.
+            // Select the verified range so typing replaces it without deleting by count.
+            guard let caret = focus.selectTypedTail(typedTail) else {
+                settings.message = "Не удалось выделить набранное слово в Spotlight"
+                return false
+            }
+            spotlightCaret = caret
+        }
         if automatic { silentSourceChange = target }
-        guard Layouts.select(target) else { silentSourceChange = nil; settings.message = "Выбранная раскладка недоступна"; return false }
+        guard Layouts.select(target) else {
+            if let spotlightCaret { _ = focus.setSelection(spotlightCaret) }
+            silentSourceChange = nil; settings.message = "Выбранная раскладка недоступна"; return false
+        }
         busy = true
         fenceCounter &+= 1
         let fence = TextAccess.fenceBase + fenceCounter
         pendingFence = fence
         pendingFeedback = (focus.pid,target)
-        access.erase((before+suffix).count)
+        if spotlightCaret == nil { access.erase(typedTail.count) }
         access.replay(after+suffix, layout:target)
         if let appendKey { access.key(appendKey) }
-        buffer.reset(); owner = focus; ownerPID = focus.pid; ownerSource = target
+        buffer.reset(); owner = focus; ownerSource = target
+        ownerPID = NSWorkspace.shared.frontmostApplication?.processIdentifier ?? focus.pid
         let ending = suffix + (appendKey == 49 ? " " : "")
         if appendKey == nil && suffix.isEmpty { buffer.append(after) }
         else if appendKey == 49 || suffix == " " { buffer.append(after); buffer.boundary(ending) }

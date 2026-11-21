@@ -9,10 +9,25 @@ struct Focus {
     let window: AXUIElement?
     let appID: String
     private static var enabledApps: Set<pid_t> = []
-    static func current() -> Focus? {
-        guard let app = NSWorkspace.shared.frontmostApplication else { return nil }
+    private static let spotlightAppIDs: Set<String> = ["com.apple.Spotlight", "com.apple.campo"]
+    private static func focusedSpotlight() -> NSRunningApplication? {
+        let system = AXUIElementCreateSystemWide()
+        var raw: CFTypeRef?
+        var pid: pid_t = 0
+        guard AXUIElementCopyAttributeValue(system, kAXFocusedApplicationAttribute as CFString, &raw) == .success,
+              let raw, CFGetTypeID(raw) == AXUIElementGetTypeID(),
+              AXUIElementGetPid(raw as! AXUIElement, &pid) == .success,
+              let app = NSRunningApplication(processIdentifier:pid),
+              spotlightAppIDs.contains(app.bundleIdentifier ?? "") else { return nil }
+        return app
+    }
+    static func current(preferSpotlight: Bool = false) -> Focus? {
+        // The Spotlight overlay can receive keys while the previous app stays frontmost.
+        let spotlight = preferSpotlight ? focusedSpotlight() : nil
+        guard let app = spotlight ?? NSWorkspace.shared.frontmostApplication else { return nil }
+        let timeout: Float = spotlight == nil ? 0.005 : 0.025
         let root = AXUIElementCreateApplication(app.processIdentifier)
-        AXUIElementSetMessagingTimeout(root, 0.005)
+        AXUIElementSetMessagingTimeout(root, timeout)
         if enabledApps.insert(app.processIdentifier).inserted {
             // Electron exposes its renderer's native accessibility tree on request.
             _ = AXUIElementSetAttributeValue(root, "AXManualAccessibility" as CFString, kCFBooleanTrue)
@@ -22,7 +37,7 @@ struct Focus {
             guard AXUIElementCopyAttributeValue(root, name as CFString, &raw) == .success,
                   let raw, CFGetTypeID(raw) == AXUIElementGetTypeID() else { return nil }
             let value = raw as! AXUIElement
-            AXUIElementSetMessagingTimeout(value, 0.005)
+            AXUIElementSetMessagingTimeout(value, timeout)
             return value
         }
         return Focus(pid: app.processIdentifier, element: elementAttribute(kAXFocusedUIElementAttribute),
@@ -43,12 +58,37 @@ struct Focus {
         guard AXValueGetValue(raw as! AXValue, .cfRange, &range), range.location >= 0, range.length >= 0 else { return nil }
         return range
     }
+    var spotlightSearch: Bool {
+        appID == "com.apple.Spotlight" ||
+            (appID == "com.apple.campo" && (attribute(kAXIdentifierAttribute) as? String) == "SpotlightSearchField")
+    }
+    func setSelection(_ selection: CFRange) -> Bool {
+        var selection = selection
+        guard let element, let value = AXValueCreate(.cfRange, &selection) else { return false }
+        return AXUIElementSetAttributeValue(element, kAXSelectedTextRangeAttribute as CFString, value) == .success
+    }
+    func selectTypedTail(_ text: String) -> CFRange? {
+        guard let value, let caret = range, caret.length == 0, !text.isEmpty else { return nil }
+        let query = value as NSString
+        let length = text.utf16.count
+        guard caret.location >= length, caret.location <= query.length else { return nil }
+        let start = caret.location - length
+        let tail = query.substring(with: NSRange(location: start, length: length))
+        guard tail.replacingOccurrences(of:"\u{00a0}",with:" ") == text.replacingOccurrences(of:"\u{00a0}",with:" "),
+              setSelection(CFRange(location: start, length: length)) else { return nil }
+        guard let selection = range, selection.location == start, selection.length == length else {
+            _ = setSelection(caret)
+            return nil
+        }
+        return caret
+    }
     var editable: Bool {
         let role = attribute(kAXRoleAttribute) as? String
         return role == kAXTextFieldRole || role == kAXTextAreaRole || role == kAXComboBoxRole
     }
     func stillFocused() -> Bool {
-        guard let f = Self.current(), pid == f.pid, !f.secure else { return false }
+        guard let f = Self.current(preferSpotlight:Self.spotlightAppIDs.contains(appID)), pid == f.pid, !f.secure else { return false }
+        if spotlightSearch, !f.spotlightSearch { return false }
         if let window, let other = f.window, !CFEqual(window, other) { return false }
         // A renderer may replace its AX object during an edit. For exposed text fields,
         // keep the stronger identity check; opaque editors rely on the physical session,
