@@ -250,18 +250,14 @@ struct SettingsView: View {
                 Button("Открыть папку настроек") { settings.flush(); NSWorkspace.shared.open(settings.folder) }
             }
             Section("Обновления") {
-                if Bundle.main.object(forInfoDictionaryKey:"PuntoReleaseCandidate") != nil {
-                Toggle("Проверять обновления автоматически",isOn:$settings.value.checkUpdates)
-                HStack {
-                    Button("Проверить обновления") { updates.check() }.disabled(updates.checking)
-                    if updates.available { Button("Установить и перезапустить") { updates.install() }.buttonStyle(.borderedProminent) }
+                if updates.isConfigured {
+                    Toggle("Проверять обновления автоматически", isOn: $settings.value.checkUpdates)
+                        .onChange(of: settings.value.checkUpdates) { _, enabled in
+                            updates.setAutomaticChecks(enabled)
+                        }
+                    Button("Проверить обновления") { updates.check() }.disabled(!updates.canCheck)
                 }
-                if let checked = updates.lastChecked { LabeledContent("Последняя проверка",value:checked.formatted(Date.FormatStyle(date:.abbreviated,time:.shortened).locale(Locale(identifier:"ru_RU")))) }
-                Text(updates.status.isEmpty ? "Локальный канал сборок" : updates.status).font(.caption).foregroundStyle(.secondary)
-                } else {
-                    Link("Версии на GitHub",destination:URL(string:"https://github.com/rshagiev/punto-switcher/releases")!)
-                    Text("Новые версии устанавливаются из раздела Releases.").font(.caption).foregroundStyle(.secondary)
-                }
+                Link("Версии на GitHub", destination: URL(string: "https://github.com/rshagiev/punto-switcher/releases")!)
             }
         }.formStyle(.grouped)
     }

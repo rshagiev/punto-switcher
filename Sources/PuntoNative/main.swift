@@ -6,7 +6,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     let settings = Settings()
     lazy var engine = KeyboardEngine(settings:settings)
     lazy var correction = LunaCorrection(settings:settings,engine:engine)
-    lazy var updates = Updates(settings:settings)
+    let updates = Updates()
     var status: NSStatusItem!
     var window: NSWindow?
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -42,6 +42,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
         if CommandLine.arguments.contains("--enable-login") { settings.setLogin(true) }
         updateMenu()
+        updates.start(automaticallyCheck: settings.value.checkUpdates)
         // The original keeps handling input until the user explicitly switches to this app.
         if NSRunningApplication.runningApplications(withBundleIdentifier:"ru.yandex.desktop.PuntoSwitcher").isEmpty { engine.start() }
         else { settings.permission = AXIsProcessTrusted(); settings.message = "Punto Яндекса запущен. Завершите его, затем нажмите «Начать работу»." }
