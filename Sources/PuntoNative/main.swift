@@ -10,11 +10,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
     lazy var support = SupportPrompt(analytics: analytics)
     lazy var updates = Updates(analytics: analytics)
     private let statusMenu = NSMenu()
-    private var supportImpression: UUID?
+    private struct AppCardItems {
+        let application: NSRunningApplication
+        let tile: NSMenuItem
+        let automatic: NSMenuItem
+        let pause: NSMenuItem
+    }
+
+    private var supportMenuItem: NSMenuItem?
     private var isStatusMenuOpen = false
     private var appCardExpanded = false
-    private var appCardTarget: NSRunningApplication?
-    private var pendingAppMenuReopen: UUID?
+    private var appCard: AppCardItems?
+    private var lunaMenuItems: [NSMenuItem] = []
     private weak var highlightedAppCardRow: AppMenuCardRow?
     private var supportSetupComplete: Bool {
         settings.running && (analytics.existingInstall || !analytics.isConfigured || analytics.choice != nil)
@@ -80,54 +87,41 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
     }
 
     func menuNeedsUpdate(_ menu: NSMenu) {
-        guard menu === statusMenu else { return }
+        guard menu === statusMenu, !isStatusMenuOpen else { return }
         menu.removeAllItems()
-        let application = pendingAppMenuReopen != nil ? appCardTarget : NSWorkspace.shared.frontmostApplication
-        let bundleID = application?.bundleIdentifier
-        let mode = bundleID.map { settings.appMode(for: $0) } ?? .global
-        if let application, let id = bundleID, !application.isTerminated, application.activationPolicy != .prohibited,
+        appCardExpanded = false
+        appCard = nil
+        lunaMenuItems.removeAll()
+        let application = NSWorkspace.shared.frontmostApplication
+        let mode = application?.bundleIdentifier.map { settings.appMode(for: $0) } ?? .global
+        if let application, let id = application.bundleIdentifier, !application.isTerminated,
+           application.activationPolicy != .prohibited,
            application.processIdentifier != ProcessInfo.processInfo.processIdentifier {
-            appCardTarget = application
             let name = application.localizedName ?? id
-            let automatic = mode.automaticEnabled(global: settings.value.automatic) && settings.value.canConvertLayout
-            let subtitle = switch mode {
-            case .global: automatic ? "Автоматически · по умолчанию" : "Только вручную · по умолчанию"
-            case .automatic: automatic ? "Автоматически" : "Только вручную"
-            case .manual: "Только вручную"
-            case .disabled: "Punto приостановлен"
-            }
             let tile = item(name, icon: "app", #selector(toggleAppCard(_:)), key: "0")
             tile.keyEquivalentModifierMask = [.option]
             tile.representedObject = application
-            tile.state = appCardExpanded ? .on : .off
-            tile.view = AppMenuTile(application: application, title: name, subtitle: subtitle,
-                                    expanded: appCardExpanded, toggleDisclosure: { [weak self] in
-                                        guard let self else { return }
-                                        self.setAppCardExpanded(!self.appCardExpanded, for: application)
-                                    })
-            menu.addItem(tile)
-            if appCardExpanded {
-                let autoItem = item("Автопереключение для \(name)", icon: "bolt", #selector(toggleAppAutomatic(_:)), key: "1")
-                autoItem.keyEquivalentModifierMask = [.option]
-                let available = mode.manualEnabled && settings.value.canConvertLayout
-                autoItem.representedObject = application
-                autoItem.state = automatic ? .on : .off
-                autoItem.isEnabled = available
-                autoItem.view = AppMenuAutomaticRow(appName: name, automatic: automatic, available: available) { [weak self] enabled in
-                    self?.setAppAutomatic(enabled, for: application)
-                }
-                menu.addItem(autoItem)
-
-                let paused = mode == .disabled
-                let pauseTitle = paused ? "Возобновить Punto" : "Приостановить Punto"
-                let pauseItem = item(pauseTitle, icon: paused ? "play.circle" : "pause.circle", #selector(toggleAppPause(_:)), key: "2")
-                pauseItem.keyEquivalentModifierMask = [.option]
-                pauseItem.representedObject = application
-                pauseItem.view = AppMenuPauseRow(title: pauseTitle, paused: paused) { [weak self] in
-                    self?.changeAppPause(for: application)
-                }
-                menu.addItem(pauseItem)
+            tile.view = AppMenuTile(application: application, title: name) { [weak self] in
+                self?.toggleAppCard(tileTarget: application)
             }
+
+            let automatic = item("Автопереключение для \(name)", icon: "bolt", #selector(toggleAppAutomatic(_:)), key: "1")
+            automatic.keyEquivalentModifierMask = [.option]
+            automatic.representedObject = application
+            automatic.view = AppMenuAutomaticRow(appName: name) { [weak self] enabled in
+                self?.setAppAutomatic(enabled, for: application)
+            }
+
+            let pause = item("Приостановить Punto", icon: "pause.circle", #selector(toggleAppPause(_:)), key: "2")
+            pause.keyEquivalentModifierMask = [.option]
+            pause.representedObject = application
+            pause.view = AppMenuPauseRow { [weak self] in self?.changeAppPause(for: application) }
+
+            appCard = AppCardItems(application: application, tile: tile, automatic: automatic, pause: pause)
+            updateAppCard()
+            menu.addItem(tile)
+            menu.addItem(automatic)
+            menu.addItem(pause)
             menu.addItem(.separator())
         }
 
@@ -143,23 +137,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
             let actionItem = item(title, icon: icon, action)
             actionItem.isEnabled = mode.manualEnabled && settings.running && settings.value.lunaEnabled
             actionItem.representedObject = application?.processIdentifier
+            lunaMenuItems.append(actionItem)
             menu.addItem(actionItem)
         }
         menu.addItem(item("Последнее исправление", icon: "clock.arrow.circlepath", #selector(lastCorrection)))
         menu.addItem(.separator())
         menu.addItem(item("Настройки…", icon: "gearshape", #selector(showSettings), key: ","))
         menu.addItem(item("О программе", icon: "info.circle", #selector(showAbout)))
-        supportImpression = nil
-        insertSupportItem(at: menu.numberOfItems)
+        let github = item(SupportMenuRow.title, icon: "star", #selector(openSupportLink))
+        supportMenuItem = github
+        menu.addItem(github)
+        updateSupportMenuItem()
         menu.addItem(item("Выйти", icon: "power", #selector(quit), key: "q"))
     }
 
     func menuWillOpen(_ menu: NSMenu) {
         guard menu === statusMenu else { return }
         isStatusMenuOpen = true
-        pendingAppMenuReopen = nil
         support.closePopover()
-        if let id = supportImpression { support.shown(id) }
+        updateSupportMenuItem()
     }
 
     func menu(_ menu: NSMenu, willHighlight item: NSMenuItem?) {
@@ -174,31 +170,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
         highlightedAppCardRow?.setHighlighted(false)
         highlightedAppCardRow = nil
         isStatusMenuOpen = false
-        if pendingAppMenuReopen == nil {
-            appCardExpanded = false
-            appCardTarget = nil
-        }
+        appCardExpanded = false
     }
 
-    private func insertSupportItem(at index: Int) {
-        guard supportImpression == nil, supportSetupComplete, let id = support.visibleID else { return }
-        let supportItem = item(SupportMenuRow.title, icon: "star.fill", #selector(openInvitation))
-        if #available(macOS 14.4, *) {
-            supportItem.image?.isTemplate = false
-            supportItem.image = supportItem.image?.withSymbolConfiguration(.init(paletteColors: [.systemOrange]))
-            supportItem.subtitle = SupportMenuRow.subtitle
-        } else {
-            supportItem.view = SupportMenuRow(target: self, open: #selector(openInvitation))
+    private func updateSupportMenuItem() {
+        let id = supportSetupComplete ? support.visibleID : nil
+        var image = NSImage(systemSymbolName: id == nil ? "star" : "star.fill", accessibilityDescription: nil)
+        if id != nil {
+            image = image?.withSymbolConfiguration(.init(paletteColors: [.systemOrange]))
+            image?.isTemplate = false
         }
-        statusMenu.insertItem(supportItem, at: index)
-        supportImpression = id
+        supportMenuItem?.image = image
+        if isStatusMenuOpen, let id { support.shown(id) }
     }
 
     private func recordSupportConversion() {
         guard support.recordConversion(), supportSetupComplete else { return }
         if isStatusMenuOpen {
-            insertSupportItem(at: max(0, statusMenu.numberOfItems - 1))
-            if let id = supportImpression { support.shown(id) }
+            updateSupportMenuItem()
         } else {
             let todayIsVisible = window?.isVisible == true && settings.selectedSection == "Сегодня"
             if !todayIsVisible, window?.isKeyWindow != true, let button = status.button {
@@ -231,14 +220,47 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
     @objc func toggleSound() { settings.value.sound.toggle() }
     @objc private func toggleAppCard(_ sender: NSMenuItem) {
         guard let application = sender.representedObject as? NSRunningApplication else { return }
-        setAppCardExpanded(sender.state != .on, for: application)
+        toggleAppCard(tileTarget: application)
     }
 
-    private func setAppCardExpanded(_ expanded: Bool, for application: NSRunningApplication) {
-        guard !application.isTerminated else { return }
-        appCardTarget = application
-        appCardExpanded = expanded
-        refreshAppMenu()
+    private func toggleAppCard(tileTarget application: NSRunningApplication) {
+        guard isStatusMenuOpen, !application.isTerminated,
+              appCard?.application.processIdentifier == application.processIdentifier else { return }
+        appCardExpanded.toggle()
+        updateAppCard()
+    }
+
+    private func updateAppCard() {
+        guard let card = appCard, let id = card.application.bundleIdentifier else { return }
+        let mode = settings.appMode(for: id)
+        let available = mode.manualEnabled && settings.value.canConvertLayout
+        let automatic = available && mode.automaticEnabled(global: settings.value.automatic)
+        let paused = mode == .disabled
+        let subtitle: String
+        if paused {
+            subtitle = "Punto приостановлен"
+        } else if !available {
+            subtitle = "Конвертация недоступна"
+        } else {
+            let label = automatic ? "Автоматически" : "Только вручную"
+            subtitle = mode == .global ? "\(label) · по умолчанию" : label
+        }
+
+        (card.tile.view as? AppMenuTile)?.update(subtitle: subtitle, expanded: appCardExpanded)
+        card.automatic.state = automatic ? .on : .off
+        card.automatic.isEnabled = available
+        (card.automatic.view as? AppMenuAutomaticRow)?.update(automatic: automatic, available: available)
+        let pauseTitle = paused ? "Возобновить Punto" : "Приостановить Punto"
+        card.pause.title = pauseTitle
+        (card.pause.view as? AppMenuPauseRow)?.update(title: pauseTitle, paused: paused)
+        // Keep the tracked menu and its header. AppKit lays out the rows as
+        // their visibility changes, without reopening the status menu.
+        card.automatic.isHidden = !appCardExpanded
+        card.pause.isHidden = !appCardExpanded
+
+        for item in lunaMenuItems {
+            item.isEnabled = mode.manualEnabled && settings.running && settings.value.lunaEnabled
+        }
     }
 
     @objc private func toggleAppAutomatic(_ sender: NSMenuItem) {
@@ -251,7 +273,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
               settings.appMode(for: id).manualEnabled else { return }
         settings.setAppMode(enabled ? .automatic : .manual, for: id)
         if NSWorkspace.shared.frontmostApplication?.bundleIdentifier == id { engine.reset() }
-        setAppCardExpanded(true, for: application)
+        updateAppCard()
     }
 
     @objc private func toggleAppPause(_ sender: NSMenuItem) {
@@ -263,29 +285,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
         guard let id = application.bundleIdentifier, !application.isTerminated else { return }
         settings.toggleAppPause(for: id)
         if NSWorkspace.shared.frontmostApplication?.bundleIdentifier == id { engine.reset() }
-        setAppCardExpanded(true, for: application)
+        updateAppCard()
     }
 
-    private func refreshAppMenu() {
-        guard let button = status.button, pendingAppMenuReopen == nil else { return }
-        // AppKit sizes a custom menu item before tracking. Reopen at the status
-        // button to apply the new height while keeping the original app target.
-        let reopen = UUID()
-        pendingAppMenuReopen = reopen
-        statusMenu.cancelTrackingWithoutAnimation()
-        DispatchQueue.main.async { [weak self, weak button] in
-            guard let self, self.pendingAppMenuReopen == reopen else { return }
-            button?.performClick(nil)
-            // A nested tracking loop can already have scheduled a different reopen.
-            if self.pendingAppMenuReopen == reopen {
-                self.pendingAppMenuReopen = nil
-                self.appCardExpanded = false
-                self.appCardTarget = nil
-            }
+    @objc private func openSupportLink() {
+        statusMenu.cancelTracking()
+        if supportSetupComplete, support.visibleID != nil {
+            support.openInvitation()
+        } else {
+            NSWorkspace.shared.open(SupportPrompt.repository)
         }
     }
-
-    @objc func openInvitation() { statusMenu.cancelTracking(); support.openInvitation() }
 
     @objc func showAbout() { openSettings(section: "О программе") }
     @objc func showSettings() { openSettings(section: settings.running ? "Сегодня" : "Основные") }

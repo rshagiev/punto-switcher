@@ -16,14 +16,14 @@ Native macOS 14+ Swift app. Preserve the user's live settings and permission ide
 
 ## Check the menu and Today
 
-- In an isolated app, open the status menu, expand and collapse the current-app card, toggle automatic correction, then pause and resume Punto. Reopen the menu and confirm the previous mode is restored after resuming. Keep the app in the card as the target while the menu is open. Verify Option-0 opens and closes the card and, while it is expanded, Option-1 switches automatic correction and Option-2 pauses or resumes Punto.
+- In an isolated app, open the status menu, expand and collapse the current-app card, toggle automatic correction, then pause and resume Punto. Reopen the menu and confirm the previous mode is restored after resuming. Keep the app in the card as the target while the menu is open. Verify that opening and closing the card leaves the same menu window open and that an explicit app choice appears in Profiles. Verify Option-0 opens and closes the card and, while it is expanded, Option-1 switches automatic correction and Option-2 pauses or resumes Punto.
 - Seed Today with different activity on two days in a temporary settings folder. Switch between Day and Week. Verify the two conversion totals, the stacked chart and the symbol total below it. Confirm that days before local recording are shown as missing history.
 
 ## Check the GitHub invitation
 
 - Run `swift run -c release PuntoChecks` for the threshold, failed open, dismissal, restart and migration checks. Run `bash Scripts/build-app.sh` for an isolated app bundle.
-- Use a fresh test profile and an isolated editable field, with analytics off. Mix manual and automatic conversions. Verify the text after each conversion. The first five successful conversions leave the invitation hidden. The sixth makes one invitation available in the popup, menu and Today. Layout toggles and failed replacements do not count.
-- On the native UI, check that the popup leaves focus in the editor. A click outside closes only the popup. Opening GitHub or choosing “Больше не предлагать” hides the shared invitation in all three places, including after restart.
+- Use a fresh test profile and an isolated editable field, with analytics off. Mix manual and automatic conversions. Verify the text after each conversion. The GitHub link stays in the menu regardless of invitation history. The first five successful conversions leave the invitation hidden. The sixth makes it available in the popup and Today and highlights the existing menu link. Layout toggles and failed replacements do not count.
+- On the native UI, check that the popup leaves focus in the editor. A click outside closes only the popup. Opening GitHub or choosing “Больше не предлагать” hides the shared invitation, including after restart. The plain GitHub link stays available.
 - A fixture that calls the completion handler covers the shared UI state. Changes to event delivery, focus or popup buttons also need a separate live run through `CGEventTap`. For the default manual chord, use `bash Scripts/press-conversion-chord.sh <fixture-bundle-id> '<exact fixture text>'` from the integrated checkout. Check the automatic path in the same isolated editor.
 
 ## Packaging a release
