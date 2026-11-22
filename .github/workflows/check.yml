@@ -8,7 +8,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: swift --version
-      - run: swift run -c release PuntoChecks
+      - name: Run core checks
+        run: |
+          swift build -c release --product PuntoChecks
+          checks="$(swift build -c release --show-bin-path)/PuntoChecks"
+          codesign --force --sign - "$checks"
+          codesign --verify --strict "$checks"
+          "$checks"
       - run: |
           swiftc Sources/PuntoNative/Layouts.swift Sources/PuntoCore/Conversion.swift Scripts/check-layouts.swift -o "$RUNNER_TEMP/punto-layouts-check"
           "$RUNNER_TEMP/punto-layouts-check"
