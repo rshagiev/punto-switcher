@@ -47,13 +47,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
             let alert = NSAlert(); alert.messageText = "Запоминать отменённые исправления?"; alert.informativeText = "Punto будет добавлять такие слова в исключения. Первое слово: «\(word)»."; alert.addButton(withTitle:"Включить"); alert.addButton(withTitle:"Не сейчас"); alert.showsSuppressionButton = true; alert.suppressionButton?.title = "Больше не предлагать"
             let previousApp = NSWorkspace.shared.frontmostApplication
             NSApp.activate(ignoringOtherApps:true)
-            if alert.runModal() == .alertFirstButtonReturn {
-                self.settings.value.learning = true
-                self.engine.learn(word)
-            } else {
-                self.settings.value.learningCounts.removeValue(forKey: word)
-            }
-            if alert.suppressionButton?.state == .on { self.settings.value.showLearningPrompt = false }
+            let accepted = alert.runModal() == .alertFirstButtonReturn
+            self.engine.resolveLearningPrompt(for: word, accepted: accepted,
+                                             suppressFuturePrompts: alert.suppressionButton?.state == .on)
             previousApp?.activate()
         }
         if CommandLine.arguments.contains("--enable-login") { settings.setLogin(true) }

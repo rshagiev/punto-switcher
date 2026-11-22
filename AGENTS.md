@@ -3,6 +3,8 @@
 Native macOS 14+ Swift app. Preserve the user's live settings and permission identity.
 
 - Run `swift run -c release PuntoChecks` for core changes.
+- Run `bash Scripts/check-self-learning.sh` for self-learning checks. The checks use temporary settings and call the cancellation handler directly. They require no physical keystrokes or Accessibility grant.
+- For a live conversion chord in an isolated field, use `bash Scripts/press-conversion-chord.sh <bundle-id> '<exact fixture text>'`. The probe sends system modifier events only after checking the foreground app and field contents. Verify the resulting field contents after posting.
 - Build the full signed bundle with `bash Scripts/build-app.sh`; do not replace an installed executable alone.
 - `Scripts/deploy.sh` installs `/Applications/PuntoNative.app`. Use an explicitly selected stable signing identity when updating a permissioned local installation.
 - Use Computer Use for UI checks. Never send test messages, execute commands in a user's terminal, or overwrite a nonempty user draft. Use isolated fixtures.

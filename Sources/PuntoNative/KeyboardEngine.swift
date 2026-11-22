@@ -47,9 +47,9 @@ final class KeyboardEngine {
     var onLearning: ((String) -> Void)?
     var suppressedKeys: Set<UInt16> = []
     var soundCache: [String: NSSound] = [:]
-    init(settings: Settings) {
+    init(settings: Settings, resources: URL? = Bundle.main.resourceURL) {
         self.settings = settings
-        let root = Bundle.main.resourceURL ?? URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent("Resources")
+        let root = resources ?? URL(fileURLWithPath: FileManager.default.currentDirectoryPath).appendingPathComponent("Resources")
         rules = AutoRules(dictionary: (try? String(contentsOf: root.appendingPathComponent("ps.dat.txt"), encoding: .utf8)) ?? "", triggers: (try? String(contentsOf: root.appendingPathComponent("triggers.dat.txt"), encoding: .utf8)) ?? "")
         lastApp = NSWorkspace.shared.frontmostApplication?.bundleIdentifier ?? ""
         lastInputSource = Layouts.currentID
@@ -420,7 +420,16 @@ final class KeyboardEngine {
         if settings.value.learning { learn(word) }
         else if settings.value.showLearningPrompt { pendingLearningPrompt = word }
     }
-    func learn(_ word: String) {
+    func resolveLearningPrompt(for word: String, accepted: Bool, suppressFuturePrompts: Bool) {
+        if accepted {
+            settings.value.learning = true
+            learn(word)
+        } else {
+            settings.value.learningCounts.removeValue(forKey: word)
+        }
+        if suppressFuturePrompts { settings.value.showLearningPrompt = false }
+    }
+    private func learn(_ word: String) {
         guard !settings.value.rules.contains(where: { $0.text == word }) else { return }
         settings.value.rules.append(UserRule(text:word,caseSensitive:true))
         settings.value.learningCounts.removeValue(forKey:word)
