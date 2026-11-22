@@ -11,7 +11,6 @@ struct TodayView: View {
     private struct Point: Identifiable {
         let label: String
         let counts: ActivityCounts?
-        let highlighted: Bool
         var id: String { label }
     }
 
@@ -49,28 +48,40 @@ struct TodayView: View {
         .modifier(TodayCard())
     }
 
+    private let automaticColor = Color(nsColor: .systemBlue)
+    private let manualColor = Color(red: 0.46, green: 0.56, blue: 0.71)
+
     private func statistics(points: [Point], totals: ActivityCounts) -> some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Набрано символов").font(.callout).foregroundStyle(.secondary)
-                    Text(totals.symbols.formatted()).font(.system(size: 36, weight: .semibold)).monospacedDigit()
-                }
-                Spacer()
+            HStack(alignment: .top, spacing: 12) {
+                counter("Автопереключения", color: automaticColor, value: totals.automatic)
+                counter("Ручные конвертации", color: manualColor, value: totals.manual)
                 Picker("Период", selection: $period) {
                     ForEach(Period.allCases) { Text($0.rawValue).tag($0) }
                 }
-                .pickerStyle(.segmented).labelsHidden().frame(width: 170)
+                .pickerStyle(.segmented).labelsHidden().frame(width: 144)
             }
+
+            let peak = points.compactMap { $0.counts.map { $0.automatic + $0.manual } }.max() ?? 0
             Chart(points) { point in
                 if let counts = point.counts {
-                    BarMark(x: .value("Интервал", point.label), y: .value("Символы", counts.symbols))
-                        .foregroundStyle(Color.accentColor.opacity(point.highlighted ? 1 : 0.65))
+                    BarMark(x: .value("Интервал", point.label),
+                            yStart: .value("Конвертации", 0),
+                            yEnd: .value("Конвертации", counts.automatic))
+                        .foregroundStyle(automaticColor)
                         .cornerRadius(3)
-                        .accessibilityLabel(point.label)
-                        .accessibilityValue(counts.symbols.formatted())
+                        .accessibilityLabel("\(point.label), автопереключения")
+                        .accessibilityValue(counts.automatic.formatted())
+
+                    BarMark(x: .value("Интервал", point.label),
+                            yStart: .value("Конвертации", counts.automatic),
+                            yEnd: .value("Конвертации", counts.automatic + counts.manual))
+                        .foregroundStyle(manualColor)
+                        .cornerRadius(3)
+                        .accessibilityLabel("\(point.label), ручные конвертации")
+                        .accessibilityValue(counts.manual.formatted())
                 } else {
-                    PointMark(x: .value("Интервал", point.label), y: .value("Символы", 0))
+                    PointMark(x: .value("Интервал", point.label), y: .value("Конвертации", 0))
                         .foregroundStyle(.clear)
                         .annotation(position: .top) { Text("—").font(.caption).foregroundStyle(.secondary) }
                         .accessibilityLabel(point.label)
@@ -78,25 +89,35 @@ struct TodayView: View {
                 }
             }
             .chartXScale(domain: points.map(\.label))
+            .chartXAxis { AxisMarks { AxisValueLabel() } }
             .chartYAxis { AxisMarks(position: .leading) { AxisGridLine(); AxisValueLabel() } }
-            .chartYScale(domain: 0...max(4, points.compactMap { $0.counts?.symbols }.max() ?? 0))
-            .frame(height: 195)
+            .chartYScale(domain: 0...max(4, peak + 1))
+            .frame(height: 205)
+
             Divider()
             HStack {
-                counter("Автопереключения", icon: "bolt", value: totals.automatic)
+                Label("Набрано символов", systemImage: "keyboard").foregroundStyle(.secondary)
                 Spacer()
-                counter("Ручные конвертации", icon: "command", value: totals.manual)
-                Spacer()
+                Text(totals.symbols.formatted()).fontWeight(.semibold).monospacedDigit()
             }
+            .font(.callout)
+            .accessibilityElement(children: .combine)
         }
         .modifier(TodayCard())
     }
 
-    private func counter(_ title: String, icon: String, value: Int) -> some View {
+    private func counter(_ title: String, color: Color, value: Int) -> some View {
         VStack(alignment: .leading, spacing: 5) {
-            Label(title, systemImage: icon).font(.callout).foregroundStyle(.secondary)
-            Text(value.formatted()).font(.title2.weight(.semibold)).monospacedDigit()
+            HStack(spacing: 6) {
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(color).frame(width: 8, height: 8)
+                    .accessibilityHidden(true)
+                Text(title).font(.callout).foregroundStyle(.secondary)
+            }
+            Text(value.formatted()).font(.system(size: 34, weight: .semibold)).monospacedDigit()
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
     }
 
     private func points(at now: Date) -> [Point] {
@@ -106,14 +127,14 @@ struct TodayView: View {
         if period == .day {
             let current = activity.snapshot.day(today)
             return (0..<8).map {
-                Point(label: String(format: "%02d", $0 * 3), counts: current?[$0], highlighted: true)
+                Point(label: String(format: "%02d", $0 * 3), counts: current?[$0])
             }
         }
         return (-6...0).compactMap { offset in
             guard let date = calendar.date(byAdding: .day, value: offset, to: now) else { return nil }
             let key = ActivityHistory.dayKey(date, calendar: calendar)
             let label = calendar.shortStandaloneWeekdaySymbols[calendar.component(.weekday, from: date) - 1]
-            return Point(label: label, counts: activity.snapshot.day(key)?.totals, highlighted: offset == 0)
+            return Point(label: label, counts: activity.snapshot.day(key)?.totals)
         }
     }
 }
