@@ -21,13 +21,20 @@ if [[ -n "${SPARKLE_FEED_URL:-}" ]]; then
     }
 fi
 
+stage=$(mktemp -d)
+trap 'rm -rf "$stage"' EXIT
+
+stable_releases='https://github.com/rshagiev/punto-switcher/releases'
+if [[ "${SPARKLE_FEED_URL:-}" == "$stable_releases/latest/download/appcast.xml" ]]; then
+    : "${SPARKLE_PUBLIC_KEY:?Set SPARKLE_PUBLIC_KEY to the stable Sparkle public key.}"
+    bash Scripts/check-stable-update.sh "$stage" "$stable_releases"
+fi
+
 bash Scripts/build-app.sh
 app='Build/Punto Native.app'
 bash Scripts/audit-bundle.sh "$app"
 version=$(plutil -extract CFBundleShortVersionString raw "$app/Contents/Info.plist")
 mkdir -p Release
-stage=$(mktemp -d)
-trap 'rm -rf "$stage"' EXIT
 
 if [[ -n "$notary_profile" ]]; then
     ditto -c -k --keepParent "$app" "$stage/notary.zip"
