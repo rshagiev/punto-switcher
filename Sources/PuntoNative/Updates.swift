@@ -29,7 +29,14 @@ final class Updates: NSObject, ObservableObject, SPUUpdaterDelegate {
         setAutomaticChecks(automaticallyCheck)
         availability = updater.publisher(for: \.canCheckForUpdates)
             .sink { [weak self] in self?.canCheck = $0 }
+        let lastCheckAtLaunch = updater.lastUpdateCheckDate
         controller.startUpdater()
+        guard automaticallyCheck else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 15) { [weak updater] in
+            guard let updater, updater.automaticallyChecksForUpdates, !updater.sessionInProgress,
+                  updater.lastUpdateCheckDate == lastCheckAtLaunch else { return }
+            updater.checkForUpdatesInBackground()
+        }
     }
 
     func setAutomaticChecks(_ enabled: Bool) {
