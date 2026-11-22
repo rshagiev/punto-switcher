@@ -82,7 +82,8 @@ struct SettingsView: View {
         switch section {
         case "Сегодня":
             TodayView(activity: activity, support: support, period: $period,
-                      setupComplete: settings.running && !showAnalytics && (!analytics.isConfigured || analytics.choice != nil))
+                      setupComplete: settings.running && !showAnalytics &&
+                          (analytics.existingInstall || !analytics.isConfigured || analytics.choice != nil))
         case "Основные": general
         case "Шорткаты": shortcuts
         case "Правила": rules
@@ -192,8 +193,8 @@ struct SettingsView: View {
             Section("Раскладки клавиатуры") {
                 Picker("Русская",selection:$settings.value.russian) { layoutOptions(russian:true) }
                 Picker("Английская",selection:$settings.value.english) { layoutOptions(russian:false) }
-                if settings.value.usesPhoneticLayout {
-                    Text("С фонетической раскладкой доступно ручное исправление. Автопереключение приостановлено.")
+                if !settings.value.canConvertLayout {
+                    Text(Preferences.unsupportedConversionMessage)
                         .foregroundStyle(.secondary)
                 }
             }
@@ -286,6 +287,7 @@ struct SettingsView: View {
             }
             Section {
                 Button("Помощь") { showHelp = true }
+                Link("GitHub", destination: SupportPrompt.repository)
                 Button("Открыть папку настроек") { settings.flush(); NSWorkspace.shared.open(settings.folder) }
             }
             Section("Обновления") {

@@ -26,7 +26,7 @@ struct TodayView: View {
             let totals = points.compactMap(\.counts).reduce(ActivityCounts(), +)
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
-                    if let id = support.available(setupComplete: setupComplete) {
+                    if setupComplete, let id = support.visibleID {
                         supportCard.onAppear { support.shown(id) }.id(id)
                     }
                     statistics(points: points, totals: totals)
@@ -37,17 +37,14 @@ struct TodayView: View {
     }
 
     private var supportCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label("Нравится Punto Native?", systemImage: "star.fill")
-                .font(.headline)
-                .foregroundStyle(Color(nsColor: .systemOrange))
-            Text("Звёздочка на GitHub помогает другим найти Punto.")
-                .font(.callout).foregroundStyle(.secondary)
-            HStack {
-                Button("Открыть GitHub") { support.openInvitation() }.buttonStyle(.borderedProminent)
-                Button("Через 3 дня") { support.snooze() }
-                Button("Больше не показывать") { support.dismiss() }.buttonStyle(.borderless)
-            }
+        HStack(spacing: 10) {
+            Image(systemName: "star.fill").foregroundStyle(Color(nsColor: .systemYellow))
+                .accessibilityHidden(true)
+            Text(SupportMenuRow.title).font(.headline)
+            Spacer()
+            Button("Открыть GitHub") { support.openInvitation() }
+            Button("Больше не предлагать") { support.dismiss() }
+                .buttonStyle(.borderless).foregroundStyle(.secondary)
         }
         .modifier(TodayCard())
     }

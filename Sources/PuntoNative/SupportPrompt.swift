@@ -5,52 +5,87 @@ import PuntoCore
 
 final class SupportPrompt: ObservableObject {
     @Published private var invitation: SupportInvitation
+    private var popover: SupportPopover?
     private let defaults: UserDefaults
     private let analytics: UsageAnalytics
-    private static let key = "puntoSupportInvitationV1"
-    private static let repository = URL(string: "https://github.com/rshagiev/punto-switcher")!
+    private static let key = "puntoGitHubSupportV1"
+    private static let legacyKey = "puntoSupportInvitationV1"
+    static let repository = URL(string: "https://github.com/rshagiev/punto-switcher")!
 
     init(analytics: UsageAnalytics, defaults: UserDefaults = .standard) {
         self.analytics = analytics
         self.defaults = defaults
-        invitation = defaults.data(forKey: Self.key).flatMap { try? JSONDecoder().decode(SupportInvitation.self, from: $0) } ?? SupportInvitation()
+        let decoder = JSONDecoder()
+        if let current = defaults.data(forKey: Self.key),
+           let state = try? decoder.decode(SupportInvitation.self, from: current) {
+            invitation = state
+        } else {
+            let legacy = defaults.data(forKey: Self.legacyKey)
+            invitation = legacy.flatMap { try? decoder.decode(SupportInvitation.self, from: $0) } ?? SupportInvitation()
+            save()
+        }
     }
 
-    func qualify() { update { $0.qualify() } }
+    var visibleID: UUID? {
+        IsSecureEventInputEnabled() ? nil : invitation.visibleID
+    }
 
-    func available(setupComplete: Bool, at date: Date = Date()) -> UUID? {
-        guard setupComplete, !IsSecureEventInputEnabled() else { return nil }
-        return invitation.available(at: date)
+    func recordConversion() -> Bool {
+        var next = invitation
+        let reachedThreshold = next.recordConversion()
+        store(next)
+        return reachedThreshold
+    }
+
+    func showPopover(under anchor: NSView) {
+        guard !invitation.wasPresented, let id = visibleID else { return }
+        let candidate = SupportPopover(open: { [weak self] in self?.openInvitation() },
+                                       dismiss: { [weak self] in self?.dismiss() },
+                                       close: { [weak self] in self?.closePopover() })
+        guard candidate.show(under: anchor) else { return }
+        popover = candidate
+        shown(id)
     }
 
     func shown(_ id: UUID) {
-        update {
-            guard $0.available(at: Date()) == id else { return }
-            _ = $0.registerShow(at: Date())
-        }
-        guard invitation.available(at: Date()) == id else { return }
+        guard id == visibleID else { return }
+        var next = invitation
+        next.markPresented()
+        store(next)
         analytics.noteSupportShown(id)
     }
 
-    func snooze() { update { $0.snooze(at: Date()) } }
+    func closePopover() {
+        popover?.close()
+        popover = nil
+    }
 
-    func dismiss() { update { $0.dismiss() } }
+    func dismiss() {
+        guard visibleID != nil else { return }
+        var next = invitation
+        next.dismiss()
+        store(next)
+        closePopover()
+    }
 
     func openInvitation() {
-        guard let id = invitation.available(at: Date()), Self.openRepository() else { return }
+        guard visibleID != nil else { return }
+        var next = invitation
+        next.markPresented()
+        guard let id = next.open(using: { NSWorkspace.shared.open(Self.repository) }) else { return }
+        store(next)
+        closePopover()
+        analytics.noteSupportShown(id)
         analytics.noteSupportOpened(id)
-        dismiss()
     }
 
-    @discardableResult static func openRepository() -> Bool {
-        NSWorkspace.shared.open(repository)
+    private func store(_ state: SupportInvitation) {
+        guard state != invitation else { return }
+        invitation = state
+        save()
     }
 
-    private func update(_ mutate: (inout SupportInvitation) -> Void) {
-        var changed = invitation
-        mutate(&changed)
-        guard changed != invitation else { return }
-        if let data = try? JSONEncoder().encode(changed) { defaults.set(data, forKey: Self.key) }
-        invitation = changed
+    private func save() {
+        if let data = try? JSONEncoder().encode(invitation) { defaults.set(data, forKey: Self.key) }
     }
 }

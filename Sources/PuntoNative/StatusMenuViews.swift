@@ -25,7 +25,10 @@ final class AppMenuTile: NSView {
 }
 
 final class SupportMenuRow: NSView {
-    init(target: AnyObject, open: Selector, snooze: Selector, dismiss: Selector) {
+    static let title = "Поставить звезду на GitHub"
+    static let subtitle = "Поддержать Punto Native"
+
+    init(target: AnyObject, open: Selector) {
         super.init(frame: NSRect(x: 0, y: 0, width: 285, height: 48))
         autoresizingMask = [.width]
 
@@ -34,31 +37,16 @@ final class SupportMenuRow: NSView {
         star.contentTintColor = .systemOrange
         star.setAccessibilityHidden(true)
         addSubview(star)
-        addSubview(menuLabel("Поставить звезду на GitHub", size: 13, weight: .medium, y: 24, width: 201, x: 44))
-        addSubview(menuLabel("Поддержать Punto Native", size: 11, weight: .regular, y: 8, width: 201, x: 44, secondary: true))
+        addSubview(menuLabel(Self.title, size: 13, weight: .semibold, y: 24, width: 226, x: 44))
+        addSubview(menuLabel(Self.subtitle, size: 11, weight: .regular, y: 8, width: 226, x: 44, secondary: true))
 
         let link = NSButton(title: "", target: target, action: open)
-        link.frame = NSRect(x: 10, y: 2, width: bounds.width - 53, height: 44)
+        link.frame = NSRect(x: 10, y: 2, width: bounds.width - 20, height: 44)
         link.autoresizingMask = [.width]
         link.isBordered = false
         link.isTransparent = true
-        link.setAccessibilityLabel("Поставить звезду на GitHub")
+        link.setAccessibilityLabel(Self.title)
         addSubview(link)
-
-        let options = NSPopUpButton(frame: NSRect(x: bounds.width - 39, y: 12, width: 26, height: 24), pullsDown: true)
-        options.autoresizingMask = [.minXMargin]
-        options.isBordered = false
-        options.setAccessibilityLabel("Варианты приглашения")
-        (options.cell as? NSPopUpButtonCell)?.arrowPosition = .noArrow
-        options.addItem(withTitle: "⋯")
-        options.menu?.item(at: 0)?.image = NSImage(systemSymbolName: "ellipsis", accessibilityDescription: "Варианты приглашения")
-        for (title, action) in [("Напомнить через 3 дня", snooze), ("Больше не показывать", dismiss)] {
-            let item = NSMenuItem(title: title, action: action, keyEquivalent: "")
-            item.target = target
-            options.menu?.addItem(item)
-        }
-        options.selectItem(at: 0)
-        addSubview(options)
     }
 
     required init?(coder: NSCoder) { nil }

@@ -9,7 +9,7 @@ if [[ -n "$feed_url" || -n "$public_key" ]]; then
         exit 1
     fi
 fi
-version="${PUNTO_VERSION:-2.0.6}"
+version="${PUNTO_VERSION:-2.0.7}"
 analytics_token="${PUNTO_POSTHOG_PROJECT_TOKEN:-}"
 if [[ -n "$analytics_token" && ! "$analytics_token" =~ ^phc_[A-Za-z0-9_-]+$ ]]; then
     echo 'PUNTO_POSTHOG_PROJECT_TOKEN must be a PostHog project capture token.' >&2

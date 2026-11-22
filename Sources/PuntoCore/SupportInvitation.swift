@@ -1,39 +1,56 @@
 import Foundation
 
 public struct SupportInvitation: Codable, Equatable {
-    private var cycle: UUID?
-    private var shown = false
-    private var dismissed = false
-    private var remindAfter: Date?
+    public static let conversionThreshold = 6
 
-    public init() {}
+    private let cycle: UUID
+    private var dismissed: Bool
+    private var conversions: Int
+    public private(set) var wasPresented: Bool
 
-    public mutating func qualify() {
-        guard cycle == nil, !dismissed else { return }
+    private enum CodingKeys: String, CodingKey {
+        case cycle, dismissed, conversions, wasPresented
+    }
+
+    public init() {
         cycle = UUID()
+        dismissed = false
+        conversions = 0
+        wasPresented = false
     }
 
-    public func available(at date: Date) -> UUID? {
-        guard !dismissed, (remindAfter ?? .distantPast) <= date else { return nil }
-        return cycle
+    public init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        cycle = try values.decodeIfPresent(UUID.self, forKey: .cycle) ?? UUID()
+        dismissed = try values.decode(Bool.self, forKey: .dismissed)
+        let savedCount = try values.decodeIfPresent(Int.self, forKey: .conversions) ?? 0
+        conversions = min(max(savedCount, 0), Self.conversionThreshold)
+        // A legacy menu or Today impression did not display the new popover.
+        wasPresented = try values.decodeIfPresent(Bool.self, forKey: .wasPresented) ?? false
     }
 
-    public mutating func registerShow(at date: Date) -> UUID? {
-        guard !shown, let cycle = available(at: date) else { return nil }
-        shown = true
-        return cycle
+    public var visibleID: UUID? {
+        dismissed || conversions < Self.conversionThreshold ? nil : cycle
     }
 
-    public mutating func snooze(at date: Date) {
-        guard available(at: date) != nil else { return }
-        remindAfter = date.addingTimeInterval(3 * 24 * 60 * 60)
-        cycle = UUID()
-        shown = false
+    /// Returns true only for the successful conversion that reaches the threshold.
+    public mutating func recordConversion() -> Bool {
+        guard !dismissed, conversions < Self.conversionThreshold else { return false }
+        conversions += 1
+        return conversions == Self.conversionThreshold
+    }
+
+    public mutating func markPresented() {
+        if visibleID != nil { wasPresented = true }
     }
 
     public mutating func dismiss() {
-        dismissed = true
-        cycle = nil
-        remindAfter = nil
+        if visibleID != nil { dismissed = true }
+    }
+
+    public mutating func open(using openRepository: () -> Bool) -> UUID? {
+        guard let id = visibleID, openRepository() else { return nil }
+        dismiss()
+        return id
     }
 }

@@ -52,7 +52,7 @@ Luna can miss details, so review important names, numbers and requirements. Requ
 
 Layout conversion stays on your Mac. Luna sends only the selected text or current paragraph to Codex when invoked. There is no continuous LLM processing or typing-history log. Settings, daily counters and learning words are stored locally. Codex account settings and data policies also apply to Luna requests.
 
-Starting in 2.0.6, Punto offers usage analytics. The checkbox is selected initially and collection begins after you confirm it. You can clear it during setup or turn it off later under General → Privacy. PostHog Cloud EU retains events for one year. Events include a random installation ID, Punto and macOS versions, first launch, keyboard readiness, active days, update outcomes, support invitations, and GitHub clicks. Analytics excludes typed text, clipboard contents, app names, and document contents.
+Starting in 2.0.6, Punto offers usage analytics. The checkbox is selected initially and collection begins after you confirm it. You can clear it during setup or turn it off later under General → Privacy. PostHog Cloud EU retains events for one year. Events include a random installation ID, Punto and macOS versions, first launch, keyboard readiness, active days, update outcomes, support invitation impressions, and GitHub clicks. Analytics excludes typed text, clipboard contents, app names, and document contents.
 
 ## Build
 

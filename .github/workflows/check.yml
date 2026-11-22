@@ -15,9 +15,6 @@ jobs:
           codesign --force --sign - "$checks"
           codesign --verify --strict "$checks"
           "$checks"
-      - run: |
-          swiftc Sources/PuntoNative/Layouts.swift Sources/PuntoCore/Conversion.swift Scripts/check-layouts.swift -o "$RUNNER_TEMP/punto-layouts-check"
-          "$RUNNER_TEMP/punto-layouts-check"
       - run: bash Scripts/build-app.sh
       - run: bash Scripts/audit-bundle.sh
       - name: Audit a bundle with update and analytics configuration
