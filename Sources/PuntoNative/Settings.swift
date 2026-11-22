@@ -13,6 +13,7 @@ struct Preferences: Codable {
     var automatic = false
     var showConversionFeedback = true
     var appProfiles: [String:AppMode] = [:]
+    var appModesBeforePause: [String: AppMode]?
     var sound = false
     var rememberLayout = false
     var switchAfterSelection = true
@@ -38,14 +39,16 @@ final class Settings: ObservableObject {
     @Published var running = false
     @Published var message = ""
     @Published var recording: Int?
-    @Published var symbols = 0
-    @Published var switches = 0
-    @Published var manual = 0
     @Published var loginError = ""
-    let folder = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/PuntoNative")
+    let folder: URL
+    let activity: LocalActivity
+    let existingInstall: Bool
     private var saveTask: DispatchWorkItem?
-    init() {
-        let url = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/PuntoNative/settings.json")
+    init(folder: URL = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/PuntoNative")) {
+        self.folder = folder
+        let url = folder.appendingPathComponent("settings.json")
+        existingInstall = FileManager.default.fileExists(atPath: url.path)
+        activity = LocalActivity(folder: folder)
         if let data = try? Data(contentsOf: url), var object = (try? JSONSerialization.jsonObject(with:data)) as? [String:Any] {
             if object["lunaEnabled"] == nil { object["lunaEnabled"] = true }
             if object["lunaModel"] == nil { object["lunaModel"] = LunaClient.Model.gpt6.rawValue }
@@ -65,23 +68,46 @@ final class Settings: ObservableObject {
             else { value = Self.importOriginal() }
         }
         else { value = Self.importOriginal() }
-        let d = UserDefaults.standard
-        if d.string(forKey: "statisticsDay") == Self.day { symbols = d.integer(forKey: "symbols"); switches = d.integer(forKey: "switches"); manual = d.integer(forKey: "manual") }
     }
-    static var day: String {
-        let date = Calendar.current.dateComponents([.year,.month,.day], from: Date())
-        return String(format:"%04d-%02d-%02d",date.year ?? 0,date.month ?? 0,date.day ?? 0)
+
+    func appMode(for id: String) -> AppMode {
+        if let mode = value.appProfiles[id] { return mode }
+        if value.exceptions.contains(id) { return value.excludeManual ? .disabled : .manual }
+        return .global
     }
-    func count(_ kind: String, amount: Int = 1) {
-        let d = UserDefaults.standard
-        if d.string(forKey: "statisticsDay") != Self.day { symbols = 0; switches = 0; manual = 0; d.set(Self.day, forKey: "statisticsDay") }
-        switch kind { case "symbols": symbols += amount; case "switches": switches += amount; default: manual += amount }
+
+    func setAppMode(_ mode: AppMode, for id: String) {
+        var updated = value
+        updated.appModesBeforePause?.removeValue(forKey: id)
+        updated.appProfiles[id] = mode
+        value = updated
+    }
+
+    func toggleAppPause(for id: String) {
+        var updated = value
+        let current = appMode(for: id)
+        if current == .disabled {
+            let previous = updated.appModesBeforePause?.removeValue(forKey: id)
+            updated.appProfiles[id] = previous ?? .global
+        } else {
+            var modes = updated.appModesBeforePause ?? [:]
+            modes[id] = current
+            updated.appModesBeforePause = modes
+            updated.appProfiles[id] = .disabled
+        }
+        value = updated
+    }
+
+    func removeAppProfile(_ id: String) {
+        var updated = value
+        updated.appProfiles.removeValue(forKey: id)
+        updated.appModesBeforePause?.removeValue(forKey: id)
+        updated.exceptions.removeAll { $0 == id }
+        value = updated
     }
     func flush() {
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         if let d = try? JSONEncoder().encode(value) { try? d.write(to: folder.appendingPathComponent("settings.json"), options: .atomic) }
-        let d = UserDefaults.standard
-        d.set(Self.day, forKey: "statisticsDay"); d.set(symbols, forKey: "symbols"); d.set(switches, forKey: "switches"); d.set(manual, forKey: "manual")
     }
     private func save() { saveTask?.cancel(); let t = DispatchWorkItem { [weak self] in self?.flush() }; saveTask = t; DispatchQueue.main.asyncAfter(deadline: .now()+0.4, execute: t) }
     func setLogin(_ enabled: Bool) {

@@ -193,6 +193,11 @@ final class LunaCorrection: NSObject, NSWindowDelegate {
     private func normalize(_ value:String) -> String { value.replacingOccurrences(of:"\u{00a0}",with:" ") }
     private func replace(expected:String,range:CFRange,text:String,activate:Bool = true,completion:@escaping(String?)->Void) {
         guard let source, let app = NSRunningApplication(processIdentifier:source.focus.pid) else { completion(nil); return }
+        guard settings.appMode(for: app.bundleIdentifier ?? "").manualEnabled else {
+            replacementFailure = "Punto отключён для этого приложения."
+            completion(nil)
+            return
+        }
         state.canApply = false; state.canUndo = false
         replacementFailure = ""
         let id = requestID

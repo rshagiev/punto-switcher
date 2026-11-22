@@ -9,7 +9,12 @@ if [[ -n "$feed_url" || -n "$public_key" ]]; then
         exit 1
     fi
 fi
-version="${PUNTO_VERSION:-2.0.5}"
+version="${PUNTO_VERSION:-2.0.6}"
+analytics_token="${PUNTO_POSTHOG_PROJECT_TOKEN:-}"
+if [[ -n "$analytics_token" && ! "$analytics_token" =~ ^phc_[A-Za-z0-9_-]+$ ]]; then
+    echo 'PUNTO_POSTHOG_PROJECT_TOKEN must be a PostHog project capture token.' >&2
+    exit 1
+fi
 build_number="${PUNTO_BUILD_NUMBER:-$(date -u +%Y%m%d%H%M%S)}"
 if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ || ! "$build_number" =~ ^[0-9]+$ ]]; then
     echo 'Expected PUNTO_VERSION as major.minor.patch and PUNTO_BUILD_NUMBER as an integer.' >&2
@@ -52,6 +57,9 @@ PLIST
 plist="$app/Contents/Info.plist"
 plutil -replace CFBundleShortVersionString -string "$version" "$plist"
 plutil -replace CFBundleVersion -string "$build_number" "$plist"
+if [[ -n "$analytics_token" ]]; then
+    plutil -insert PuntoPostHogProjectToken -string "$analytics_token" "$plist"
+fi
 if [[ -n "$feed_url" ]]; then
     plutil -insert SUFeedURL -string "$feed_url" "$plist"
     plutil -insert SUPublicEDKey -string "$public_key" "$plist"

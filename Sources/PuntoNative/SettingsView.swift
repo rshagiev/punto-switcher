@@ -7,16 +7,21 @@ import PuntoCore
 
 struct SettingsView: View {
     @ObservedObject var settings: Settings
+    @ObservedObject var activity: LocalActivity
     let engine: KeyboardEngine
     @ObservedObject var updates: Updates
+    @ObservedObject var analytics: UsageAnalytics
+    let support: SupportPrompt
     let onLunaDemo: () -> Void
     @StateObject private var codex = CodexConnection()
     private var section: String { settings.selectedSection }
     @State private var newRule = false
     @State private var showHelp = false
+    @State private var showAnalytics = false
+    @State private var period = TodayView.Period.day
     @State private var editing: UserRule?
     @State private var login = SMAppService.mainApp.status == .enabled
-    private let panes = [("Основные","keyboard"),("Шорткаты","command"),("Правила","text.badge.checkmark"),("Профили","app.badge"),("Звуки","speaker.wave.2"),("Luna","sparkles"),("О программе","info.circle")]
+    private let panes = [("Сегодня","chart.bar.xaxis"),("Основные","keyboard"),("Шорткаты","command"),("Правила","text.badge.checkmark"),("Профили","app.badge"),("Звуки","speaker.wave.2"),("Luna","sparkles"),("О программе","info.circle")]
     var body: some View {
         NavigationSplitView {
             VStack(alignment:.leading,spacing:20) {
@@ -38,6 +43,12 @@ struct SettingsView: View {
                 if !settings.message.isEmpty && settings.message != "Готов к работе" { Text(settings.message).font(.caption).foregroundStyle(.secondary).padding(.horizontal,26).padding(.bottom,14) }
             }.frame(maxWidth:.infinity,maxHeight:.infinity,alignment:.topLeading).background(Color(nsColor:.windowBackgroundColor))
         }.frame(minWidth:810,minHeight:600)
+        .onAppear { offerAnalytics() }
+        .onChange(of: settings.running) { _, _ in offerAnalytics() }
+        .sheet(isPresented: $showAnalytics) {
+            AnalyticsConsentView(existing: analytics.existingInstall, version: analytics.displayVersion, onDone: setAnalytics)
+                .onExitCommand { showAnalytics = false }
+        }
         .sheet(isPresented:$showHelp) { HelpView(settings:settings) }
         .sheet(isPresented:$newRule) { RuleEditor(rule:editing ?? UserRule(text:"")) { rule in
             if let i = settings.value.rules.firstIndex(where:{$0.id == rule.id}) { settings.value.rules[i] = rule }
@@ -46,6 +57,7 @@ struct SettingsView: View {
     }
     var subtitle: String {
         switch section {
+        case "Сегодня": return "Статистика на этом Mac"
         case "Основные": return "Русский и английский в привычных приложениях."
         case "Шорткаты": return "Назначьте клавиши или сочетание одних модификаторов."
         case "Правила": return "Какие слова исправлять, а какие оставлять как есть."
@@ -68,6 +80,9 @@ struct SettingsView: View {
     }
     @ViewBuilder var content: some View {
         switch section {
+        case "Сегодня":
+            TodayView(activity: activity, support: support, period: $period,
+                      setupComplete: settings.running && !showAnalytics && (!analytics.isConfigured || analytics.choice != nil))
         case "Основные": general
         case "Шорткаты": shortcuts
         case "Правила": rules
@@ -76,6 +91,17 @@ struct SettingsView: View {
         case "Звуки": sounds
         default: about
         }
+    }
+    private func offerAnalytics() {
+        guard settings.running, analytics.isConfigured, analytics.choice == nil else { return }
+        settings.selectedSection = "Сегодня"
+        showAnalytics = true
+    }
+
+    private func setAnalytics(_ enabled: Bool) {
+        analytics.setChoice(enabled)
+        analytics.start(keyboardReady: settings.running)
+        showAnalytics = false
     }
     private func lunaShortcut(_ title:String,index:Int) -> some View {
         LabeledContent(title) {
@@ -155,6 +181,13 @@ struct SettingsView: View {
                 Toggle("Переключать раскладку при конвертации выделения",isOn:$settings.value.switchAfterSelection)
                 Toggle("Запускать при входе в macOS",isOn:$login).onChange(of:login) { _,v in settings.setLogin(v); login = SMAppService.mainApp.status == .enabled }
                 if !settings.loginError.isEmpty { Text(settings.loginError).foregroundStyle(.red).font(.caption) }
+            }
+            if analytics.isConfigured {
+                Section("Конфиденциальность") {
+                    Toggle("Делиться данными об использовании",
+                           isOn: Binding(get: { analytics.choice == true }, set: setAnalytics))
+                    AnalyticsDetails()
+                }
             }
             Section("Раскладки клавиатуры") {
                 Picker("Русская",selection:$settings.value.russian) { layoutOptions(russian:true) }
@@ -241,9 +274,15 @@ struct SettingsView: View {
                 Text("Переключение раскладки работает на этом Mac. Luna отправляет выбранный текст в Codex по вашей команде. История набора не сохраняется.").foregroundStyle(.secondary)
             }
             Section("Сегодня") {
-                LabeledContent("Набрано символов",value:"\(settings.symbols)")
-                LabeledContent("Автопереключений",value:"\(settings.switches)")
-                LabeledContent("Ручных конвертаций",value:"\(settings.manual)")
+                TimelineView(.everyMinute) { time in
+                    let day = ActivityHistory.dayKey(time.date, calendar: LocalActivity.localCalendar)
+                    let totals = activity.snapshot.day(day)?.totals ?? ActivityCounts()
+                    VStack(alignment: .leading, spacing: 8) {
+                        LabeledContent("Набрано символов", value: totals.symbols.formatted())
+                        LabeledContent("Автопереключений", value: totals.automatic.formatted())
+                        LabeledContent("Ручных конвертаций", value: totals.manual.formatted())
+                    }
+                }
             }
             Section {
                 Button("Помощь") { showHelp = true }

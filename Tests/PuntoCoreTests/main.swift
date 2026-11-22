@@ -228,3 +228,69 @@ XCTAssertEqual(ProcessingDepth.suggestsStructure("Первое - провери�
 XCTAssertEqual(ProcessingDepth.suggestsStructure("Нет лучше завтра"),false)
 XCTAssertEqual(ProcessingDepth.suggestsStructure("Я очень очень рад и очень очень доволен тем как прошла встреча сегодня вечером мы обсудили планы на неделю."),false)
 print("PASS: depth routing distinguishes rough dictation from typos, clean prose and lists")
+
+var history = ActivityHistory()
+var counts = ActivityCounts()
+counts.symbols = 4
+history.record(counts, day: 20261122, interval: 7)
+counts.symbols = 5
+counts.automatic = 1
+history.record(counts, day: 20261123, interval: 0)
+history.record(counts, day: 20261123, interval: 0)
+let reopenedHistory = try JSONDecoder().decode(ActivityHistory.self, from: JSONEncoder().encode(history))
+XCTAssertNil(reopenedHistory.day(20261121))
+XCTAssertEqual(reopenedHistory.day(20261122)?.totals.symbols, 4)
+XCTAssertEqual(reopenedHistory.day(20261123)?[0].symbols, 10)
+XCTAssertEqual(reopenedHistory.day(20261123)?.totals.automatic, 2)
+XCTAssertEqual(reopenedHistory.day(20261124)?.totals.symbols, 0)
+print("PASS: local activity separates midnight, unavailable history and known zero")
+
+let date = Date(timeIntervalSince1970: 1_795_300_000)
+var invitation = SupportInvitation()
+XCTAssertNil(invitation.available(at: date))
+invitation.qualify()
+let firstInvite = invitation.available(at: date)
+XCTAssertTrue(firstInvite != nil)
+XCTAssertEqual(invitation.registerShow(at: date), firstInvite)
+XCTAssertNil(invitation.registerShow(at: date))
+XCTAssertEqual(invitation.available(at: date), firstInvite)
+invitation.snooze(at: date)
+XCTAssertNil(invitation.available(at: date.addingTimeInterval(3 * 86400 - 1)))
+var restartedInvitation = try JSONDecoder().decode(SupportInvitation.self, from: JSONEncoder().encode(invitation))
+let nextInvite = restartedInvitation.registerShow(at: date.addingTimeInterval(3 * 86400))
+XCTAssertTrue(nextInvite != nil && nextInvite != firstInvite)
+restartedInvitation.dismiss()
+restartedInvitation.qualify()
+XCTAssertNil(restartedInvitation.available(at: date.addingTimeInterval(4 * 86400)))
+print("PASS: support invitation is shared, survives restart and snoozes exactly three days")
+
+let installationID = UUID()
+let requestID = UUID()
+let day = UsageCapture.day(at: date)
+let active = UsageEnvelope(day: day, version: "2.0.6", os: "14.8.0", event: .activeDay(first: true))
+let readiness = UsageEnvelope(day: day, version: "2.0.6", os: "14.8.0", event: .keyboardReady)
+let request = try UsageCapture.request(token: "phc_fixture_capture_only", installation: installationID,
+    events: [active, readiness], version: "2.0.6", requestID: requestID, attempt: 1, created: date, now: date)
+XCTAssertEqual(request.url, UsageCapture.endpoint)
+XCTAssertEqual(request.httpMethod, "POST")
+XCTAssertEqual(request.value(forHTTPHeaderField: "PostHog-Request-Id"), requestID.uuidString)
+let payload = try JSONSerialization.jsonObject(with: request.httpBody!) as! [String: Any]
+let sent = payload["batch"] as! [[String: Any]]
+let event = sent[0]
+let properties = event["properties"] as! [String: Any]
+let options = event["options"] as! [String: Any]
+XCTAssertEqual(event["timestamp"] as? String, day + "T00:00:00.000Z")
+XCTAssertEqual(event["distinct_id"] as? String, installationID.uuidString)
+XCTAssertEqual(event["uuid"] as? String, active.id.uuidString.lowercased())
+XCTAssertEqual(Set(properties.keys), ["schema_version", "app_version", "macos_version", "$geoip_disable", "first_active_day"])
+XCTAssertEqual(options["process_person_profile"] as? Bool, false)
+XCTAssertEqual(options["disable_skew_correction"] as? Bool, true)
+let serverResponse = try JSONSerialization.data(withJSONObject: ["results": [
+    active.id.uuidString.lowercased(): ["result": "ok"],
+    readiness.id.uuidString.lowercased(): ["result": "retry"]
+]])
+XCTAssertEqual(UsageCapture.awaitingRetry(status: 200, body: serverResponse, in: [active, readiness]), [readiness])
+XCTAssertEqual(UsageCapture.awaitingRetry(status: 503, body: Data(), in: [active, readiness]), [active, readiness])
+XCTAssertEqual(UsageCapture.awaitingRetry(status: 401, body: Data(), in: [active, readiness]), [])
+XCTAssertEqual(UsageCapture.validToken("phx_private_key"), false)
+print("PASS: PostHog packet allowlist, UTC timestamp, stable IDs and partial retries")
