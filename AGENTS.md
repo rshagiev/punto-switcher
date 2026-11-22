@@ -16,7 +16,7 @@ Native macOS 14+ Swift app. Preserve the user's live settings and permission ide
 
 ## Check the menu and Today
 
-- In an isolated app, open the status menu, expand and collapse the current-app card, toggle automatic correction, then pause and resume Punto. Reopen the menu and confirm the previous mode is restored after resuming. Keep the app in the card as the target while the menu is open.
+- In an isolated app, open the status menu, expand and collapse the current-app card, toggle automatic correction, then pause and resume Punto. Reopen the menu and confirm the previous mode is restored after resuming. Keep the app in the card as the target while the menu is open. Verify Option-0 opens and closes the card and, while it is expanded, Option-1 switches automatic correction and Option-2 pauses or resumes Punto.
 - Seed Today with different activity on two days in a temporary settings folder. Switch between Day and Week. Verify the two conversion totals, the stacked chart and the symbol total below it. Confirm that days before local recording are shown as missing history.
 
 ## Check the GitHub invitation

@@ -14,7 +14,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
     private var isStatusMenuOpen = false
     private var appCardExpanded = false
     private var appCardTarget: NSRunningApplication?
-    private var reopeningAppMenu = false
+    private var pendingAppMenuReopen: UUID?
+    private weak var highlightedAppCardRow: AppMenuCardRow?
     private var supportSetupComplete: Bool {
         settings.running && (analytics.existingInstall || !analytics.isConfigured || analytics.choice != nil)
     }
@@ -81,7 +82,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
     func menuNeedsUpdate(_ menu: NSMenu) {
         guard menu === statusMenu else { return }
         menu.removeAllItems()
-        let application = reopeningAppMenu ? appCardTarget : NSWorkspace.shared.frontmostApplication
+        let application = pendingAppMenuReopen != nil ? appCardTarget : NSWorkspace.shared.frontmostApplication
         let bundleID = application?.bundleIdentifier
         let mode = bundleID.map { settings.appMode(for: $0) } ?? .global
         if let application, let id = bundleID, !application.isTerminated, application.activationPolicy != .prohibited,
@@ -95,20 +96,38 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
             case .manual: "Только вручную"
             case .disabled: "Punto приостановлен"
             }
-            let tile = item(name, icon: "app", #selector(toggleAppCard(_:)))
+            let tile = item(name, icon: "app", #selector(toggleAppCard(_:)), key: "0")
+            tile.keyEquivalentModifierMask = [.option]
             tile.representedObject = application
             tile.state = appCardExpanded ? .on : .off
             tile.view = AppMenuTile(application: application, title: name, subtitle: subtitle,
-                                    expanded: appCardExpanded, automatic: automatic,
-                                    automaticAvailable: mode.manualEnabled && settings.value.canConvertLayout,
-                                    paused: mode == .disabled,
-                                    toggleDisclosure: { [weak self] in
+                                    expanded: appCardExpanded, toggleDisclosure: { [weak self] in
                                         guard let self else { return }
                                         self.setAppCardExpanded(!self.appCardExpanded, for: application)
-                                    },
-                                    toggleAutomatic: { [weak self] in self?.toggleAppAutomatic(id) },
-                                    togglePause: { [weak self] in self?.toggleAppPause(id) })
+                                    })
             menu.addItem(tile)
+            if appCardExpanded {
+                let autoItem = item("Автопереключение для \(name)", icon: "bolt", #selector(toggleAppAutomatic(_:)), key: "1")
+                autoItem.keyEquivalentModifierMask = [.option]
+                let available = mode.manualEnabled && settings.value.canConvertLayout
+                autoItem.representedObject = application
+                autoItem.state = automatic ? .on : .off
+                autoItem.isEnabled = available
+                autoItem.view = AppMenuAutomaticRow(appName: name, automatic: automatic, available: available) { [weak self] enabled in
+                    self?.setAppAutomatic(enabled, for: application)
+                }
+                menu.addItem(autoItem)
+
+                let paused = mode == .disabled
+                let pauseTitle = paused ? "Возобновить Punto" : "Приостановить Punto"
+                let pauseItem = item(pauseTitle, icon: paused ? "play.circle" : "pause.circle", #selector(toggleAppPause(_:)), key: "2")
+                pauseItem.keyEquivalentModifierMask = [.option]
+                pauseItem.representedObject = application
+                pauseItem.view = AppMenuPauseRow(title: pauseTitle, paused: paused) { [weak self] in
+                    self?.changeAppPause(for: application)
+                }
+                menu.addItem(pauseItem)
+            }
             menu.addItem(.separator())
         }
 
@@ -138,15 +157,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
     func menuWillOpen(_ menu: NSMenu) {
         guard menu === statusMenu else { return }
         isStatusMenuOpen = true
-        reopeningAppMenu = false
+        pendingAppMenuReopen = nil
         support.closePopover()
         if let id = supportImpression { support.shown(id) }
     }
 
+    func menu(_ menu: NSMenu, willHighlight item: NSMenuItem?) {
+        guard menu === statusMenu else { return }
+        highlightedAppCardRow?.setHighlighted(false)
+        highlightedAppCardRow = item?.view as? AppMenuCardRow
+        highlightedAppCardRow?.setHighlighted(true)
+    }
+
     func menuDidClose(_ menu: NSMenu) {
         guard menu === statusMenu else { return }
+        highlightedAppCardRow?.setHighlighted(false)
+        highlightedAppCardRow = nil
         isStatusMenuOpen = false
-        if !reopeningAppMenu {
+        if pendingAppMenuReopen == nil {
             appCardExpanded = false
             appCardTarget = nil
         }
@@ -213,30 +241,47 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
         refreshAppMenu()
     }
 
-    private func toggleAppAutomatic(_ id: String) {
-        guard settings.value.canConvertLayout else { return }
-        let mode = settings.appMode(for: id)
-        guard mode.manualEnabled else { return }
-        settings.setAppMode(mode.automaticEnabled(global: settings.value.automatic) ? .manual : .automatic, for: id)
-        if NSWorkspace.shared.frontmostApplication?.bundleIdentifier == id { engine.reset() }
-        refreshAppMenu()
+    @objc private func toggleAppAutomatic(_ sender: NSMenuItem) {
+        guard let application = sender.representedObject as? NSRunningApplication else { return }
+        setAppAutomatic(sender.state != .on, for: application)
     }
 
-    private func toggleAppPause(_ id: String) {
+    private func setAppAutomatic(_ enabled: Bool, for application: NSRunningApplication) {
+        guard let id = application.bundleIdentifier, !application.isTerminated, settings.value.canConvertLayout,
+              settings.appMode(for: id).manualEnabled else { return }
+        settings.setAppMode(enabled ? .automatic : .manual, for: id)
+        if NSWorkspace.shared.frontmostApplication?.bundleIdentifier == id { engine.reset() }
+        setAppCardExpanded(true, for: application)
+    }
+
+    @objc private func toggleAppPause(_ sender: NSMenuItem) {
+        guard let application = sender.representedObject as? NSRunningApplication else { return }
+        changeAppPause(for: application)
+    }
+
+    private func changeAppPause(for application: NSRunningApplication) {
+        guard let id = application.bundleIdentifier, !application.isTerminated else { return }
         settings.toggleAppPause(for: id)
         if NSWorkspace.shared.frontmostApplication?.bundleIdentifier == id { engine.reset() }
-        refreshAppMenu()
+        setAppCardExpanded(true, for: application)
     }
 
     private func refreshAppMenu() {
-        guard let button = status.button, !reopeningAppMenu else { return }
+        guard let button = status.button, pendingAppMenuReopen == nil else { return }
         // AppKit sizes a custom menu item before tracking. Reopen at the status
         // button to apply the new height while keeping the original app target.
-        reopeningAppMenu = true
+        let reopen = UUID()
+        pendingAppMenuReopen = reopen
         statusMenu.cancelTrackingWithoutAnimation()
         DispatchQueue.main.async { [weak self, weak button] in
+            guard let self, self.pendingAppMenuReopen == reopen else { return }
             button?.performClick(nil)
-            self?.reopeningAppMenu = false
+            // A nested tracking loop can already have scheduled a different reopen.
+            if self.pendingAppMenuReopen == reopen {
+                self.pendingAppMenuReopen = nil
+                self.appCardExpanded = false
+                self.appCardTarget = nil
+            }
         }
     }
 
