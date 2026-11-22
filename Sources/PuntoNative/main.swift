@@ -7,10 +7,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
     lazy var engine = KeyboardEngine(settings:settings)
     lazy var correction = LunaCorrection(settings:settings,engine:engine)
     let analytics = UsageAnalytics()
-    lazy var support = SupportPrompt(analytics: analytics)
     lazy var updates = Updates(analytics: analytics)
     private let statusMenu = NSMenu()
-    private var supportImpression: UUID?
     var status: NSStatusItem!
     var window: NSWindow?
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -42,7 +40,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
             if self?.settings.running == true { self?.analytics.noteKeyboardReady() }
         }
         engine.onLayoutConversion = { [weak self] in
-            self?.support.qualify()
             self?.analytics.noteActiveDay()
         }
         engine.onLearning = { [weak self] word in
@@ -50,7 +47,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
             let alert = NSAlert(); alert.messageText = "Запоминать отменённые исправления?"; alert.informativeText = "Punto будет добавлять такие слова в исключения. Первое слово: «\(word)»."; alert.addButton(withTitle:"Включить"); alert.addButton(withTitle:"Не сейчас"); alert.showsSuppressionButton = true; alert.suppressionButton?.title = "Больше не предлагать"
             let previousApp = NSWorkspace.shared.frontmostApplication
             NSApp.activate(ignoringOtherApps:true)
-            if alert.runModal() == .alertFirstButtonReturn { self.settings.value.learning = true; self.engine.learn(word) }
+            if alert.runModal() == .alertFirstButtonReturn {
+                self.settings.value.learning = true
+                self.engine.learn(word)
+            } else {
+                self.settings.value.learningCounts.removeValue(forKey: word)
+            }
             if alert.suppressionButton?.state == .on { self.settings.value.showLearningPrompt = false }
             previousApp?.activate()
         }
@@ -84,11 +86,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
                                     subtitle: mode == .disabled ? "Punto отключён" : appModeLabel(mode))
             menu.addItem(tile)
             if mode != .disabled {
-                let enabled = mode.automaticEnabled(global: settings.value.automatic) && !settings.value.usesPhoneticLayout
+                let enabled = mode.automaticEnabled(global: settings.value.automatic) && settings.value.canConvertLayout
                 let automatic = item(enabled ? "Выключить автоконвертацию" : "Включить автоконвертацию",
                                      icon: "bolt", #selector(toggleAppAutomatic(_:)))
                 automatic.representedObject = id
-                automatic.isEnabled = !settings.value.usesPhoneticLayout
+                automatic.isEnabled = settings.value.canConvertLayout
                 menu.addItem(automatic)
             }
             let pause = item(mode == .disabled ? "Включить Punto для \(shortName)" : "Отключить Punto для \(shortName)",
@@ -116,21 +118,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
         menu.addItem(.separator())
         menu.addItem(item("Настройки…", icon: "gearshape", #selector(showSettings), key: ","))
         menu.addItem(item("О программе", icon: "info.circle", #selector(showAbout)))
-        supportImpression = support.available(setupComplete: settings.running &&
-            (analytics.existingInstall || !analytics.isConfigured || analytics.choice != nil))
-        if supportImpression != nil {
-            let invitation = item("Поставить звезду на GitHub", icon: "star", #selector(openInvitation))
-            invitation.view = SupportMenuRow(target: self, open: #selector(openInvitation),
-                                             snooze: #selector(snoozeInvitation), dismiss: #selector(dismissInvitation))
-            menu.addItem(invitation)
-        } else {
-            menu.addItem(item("Поддержать проект", icon: "star", #selector(openRepository)))
-        }
+        let star = item("Поставить звезду на GitHub", icon: "star.fill", #selector(openRepository))
+        star.image?.isTemplate = false
+        star.image = star.image?.withSymbolConfiguration(.init(paletteColors: [.systemOrange]))
+        if #available(macOS 14.4, *) { star.subtitle = "Поддержать Punto Native" }
+        menu.addItem(star)
         menu.addItem(item("Выйти", icon: "power", #selector(quit), key: "q"))
-    }
-
-    func menuWillOpen(_ menu: NSMenu) {
-        if menu === statusMenu, let id = supportImpression { support.shown(id) }
     }
 
     private func item(_ title: String, icon: String, _ action: Selector, key: String = "") -> NSMenuItem {
@@ -156,7 +149,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
     @objc func toggleAuto() { settings.value.automatic.toggle(); engine.reset() }
     @objc func toggleSound() { settings.value.sound.toggle() }
     @objc func toggleAppAutomatic(_ sender: NSMenuItem) {
-        guard let id = sender.representedObject as? String, !settings.value.usesPhoneticLayout else { return }
+        guard let id = sender.representedObject as? String, settings.value.canConvertLayout else { return }
         let mode = settings.appMode(for: id)
         guard mode.manualEnabled else { return }
         settings.setAppMode(mode.automaticEnabled(global: settings.value.automatic) ? .manual : .automatic, for: id)
@@ -167,10 +160,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
         settings.toggleAppPause(for: id)
         if NSWorkspace.shared.frontmostApplication?.bundleIdentifier == id { engine.reset() }
     }
-    @objc func openRepository() { SupportPrompt.openRepository() }
-    @objc func openInvitation() { statusMenu.cancelTracking(); support.openInvitation() }
-    @objc func snoozeInvitation() { statusMenu.cancelTracking(); support.snooze() }
-    @objc func dismissInvitation() { statusMenu.cancelTracking(); support.dismiss() }
+    @objc func openRepository() {
+        guard let url = URL(string: "https://github.com/rshagiev/punto-switcher") else { return }
+        NSWorkspace.shared.open(url)
+    }
 
     @objc func showAbout() { openSettings(section: "О программе") }
     @objc func showSettings() { openSettings(section: settings.running ? "Сегодня" : "Основные") }
@@ -178,7 +171,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
         settings.selectedSection = section
         if window == nil {
             let view = SettingsView(settings: settings, activity: settings.activity, engine: engine, updates: updates,
-                                    analytics: analytics, support: support, onLunaDemo: { [weak self] in self?.correction.demo() })
+                                    analytics: analytics, onLunaDemo: { [weak self] in self?.correction.demo() })
             let w = NSWindow(contentRect:NSRect(x:0,y:0,width:900,height:680),styleMask:[.titled,.closable,.miniaturizable,.resizable,.fullSizeContentView],backing:.buffered,defer:false)
             w.title = "Punto Native"; w.titlebarAppearsTransparent = true; w.isReleasedWhenClosed = false; w.delegate = self
             let hosting = NSHostingView(rootView:GeometryReader { geometry in view.frame(width:geometry.size.width,height:geometry.size.height) })

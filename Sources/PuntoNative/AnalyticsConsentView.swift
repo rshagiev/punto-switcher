@@ -88,7 +88,7 @@ struct AnalyticsConsentView: View {
 struct AnalyticsDetails: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 7) {
-            Text("Случайный ID установки, версии, дни активности, готовность клавиатуры, исходы обновлений, показы приглашения и переходы на GitHub.")
+            Text("Случайный ID установки, версии, дни активности, готовность клавиатуры, исходы обновлений.")
             Text("События хранятся в PostHog Cloud EU один год. Изменить выбор можно в «Основные» → «Конфиденциальность».")
         }
         .font(.callout)

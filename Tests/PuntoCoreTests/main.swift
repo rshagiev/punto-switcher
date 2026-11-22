@@ -4,7 +4,7 @@ final class CoreTests {
     func testRussianKeyboardAndPunctuation() {
         XCTAssertEqual(LayoutConversion.english.count,LayoutConversion.russian.count)
         XCTAssertEqual(LayoutConversion.english.count,LayoutConversion.russianPC.count)
-        for (input,output) in [("ghbdtn","привет"),("Ghbdtn","Привет"),("djj,ot","вообще"),("[etdj","хуево"),("ghbdtn;","приветж")] {
+        for (input,output) in [("ghbdtn","привет"),("Ghbdtn","Привет"),("privet","зкшмуе"),("djj,ot","вообще"),("[etdj","хуево"),("ghbdtn;","приветж")] {
             XCTAssertEqual(LayoutConversion.convert(input,toRussian:true),output)
             XCTAssertEqual(LayoutConversion.convert(output,toRussian:false),input)
         }
@@ -17,17 +17,6 @@ final class CoreTests {
     func testCaseToggle() {
         XCTAssertEqual(LayoutConversion.changeCase("Привет Hello"),"ПРИВЕТ HELLO")
         XCTAssertEqual(LayoutConversion.changeCase("ПРИВЕТ HELLO"),"привет hello")
-    }
-    func testSelectionUsesSelectedLayoutConverter() {
-        var directions: [Bool] = []
-        let result = LayoutConversion.selection("  privet\tпривет\n🙂  ") { word, toRussian in
-            directions.append(toRussian)
-            if word == "privet" { return "привет" }
-            if word == "привет" { return "privet" }
-            return word
-        }
-        XCTAssertEqual(result,"  привет\tprivet\n🙂  ")
-        XCTAssertEqual(directions,[true,false,true])
     }
     func testChordAfterOrdinaryTyping() {
         var c = ChordTracker(); c.keyPressed()
@@ -91,7 +80,7 @@ final class CoreTests {
         XCTAssertFalse(UserRule(text:"[",mode:.regex).valid)
     }
     func testUserRulesDuringPartialTyping() {
-        let rules = AutoRules(triggers:"ghbdtn")
+        let rules = AutoRules(dictionary:"_P ghbdtn",triggers:"ghbdtn")
         XCTAssertFalse(rules.shouldConvert("ghbdtn",completed:false,userRules:[UserRule(text:"ghbdtn")]))
         XCTAssertTrue(rules.shouldConvert("ghbdtn",completed:false,userRules:[UserRule(text:"bd",mode:.contains)]))
         XCTAssertFalse(rules.shouldConvert("ghbdtn",completed:false,userRules:[UserRule(text:"ghb",mode:.prefix)]))
@@ -124,7 +113,6 @@ func XCTAssertNil<T>(_ value: T?, file: StaticString = #filePath, line: UInt = #
 let tests = CoreTests()
 tests.testRussianKeyboardAndPunctuation()
 tests.testSelectionKeepsWhitespaceAndEmoji()
-tests.testSelectionUsesSelectedLayoutConverter()
 tests.testCaseToggle()
 tests.testChordAfterOrdinaryTyping()
 tests.testChordDoesNotFireAfterModifiedKey()
@@ -139,6 +127,11 @@ print("PASS: \(checks) assertions")
 let root = URL(fileURLWithPath:FileManager.default.currentDirectoryPath)
 if let dictionary = try? String(contentsOf:root.appendingPathComponent("Resources/ps.dat.txt"),encoding:.utf8), let triggers = try? String(contentsOf:root.appendingPathComponent("Resources/triggers.dat.txt"),encoding:.utf8) {
     let actual = AutoRules(dictionary:dictionary,triggers:triggers)
+    for word in ["DSL","dsl"] {
+        XCTAssertFalse(actual.shouldConvert(word,completed:false,userRules:[]))
+    }
+    XCTAssertTrue(actual.shouldConvert("ghb",completed:false,userRules:[]))
+    XCTAssertTrue(actual.shouldConvert("рудд",completed:false,userRules:[]))
     for word in ["ghbdtn","rfr","руддщ"] { XCTAssertTrue(actual.shouldConvert(word,completed:true,userRules:[])) }
     for word in ["hello","привет","git","swift","a","я"] { XCTAssertFalse(actual.shouldConvert(word,completed:true,userRules:[])) }
     let words = ["hello","привет","git","swift","ghbdtn","rfr","руддщ"]
@@ -246,24 +239,6 @@ XCTAssertEqual(reopenedHistory.day(20261124)?.totals.symbols, 0)
 print("PASS: local activity separates midnight, unavailable history and known zero")
 
 let date = Date(timeIntervalSince1970: 1_795_300_000)
-var invitation = SupportInvitation()
-XCTAssertNil(invitation.available(at: date))
-invitation.qualify()
-let firstInvite = invitation.available(at: date)
-XCTAssertTrue(firstInvite != nil)
-XCTAssertEqual(invitation.registerShow(at: date), firstInvite)
-XCTAssertNil(invitation.registerShow(at: date))
-XCTAssertEqual(invitation.available(at: date), firstInvite)
-invitation.snooze(at: date)
-XCTAssertNil(invitation.available(at: date.addingTimeInterval(3 * 86400 - 1)))
-var restartedInvitation = try JSONDecoder().decode(SupportInvitation.self, from: JSONEncoder().encode(invitation))
-let nextInvite = restartedInvitation.registerShow(at: date.addingTimeInterval(3 * 86400))
-XCTAssertTrue(nextInvite != nil && nextInvite != firstInvite)
-restartedInvitation.dismiss()
-restartedInvitation.qualify()
-XCTAssertNil(restartedInvitation.available(at: date.addingTimeInterval(4 * 86400)))
-print("PASS: support invitation is shared, survives restart and snoozes exactly three days")
-
 let installationID = UUID()
 let requestID = UUID()
 let day = UsageCapture.day(at: date)

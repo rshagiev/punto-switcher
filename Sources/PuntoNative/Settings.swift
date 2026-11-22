@@ -25,7 +25,10 @@ struct Preferences: Codable {
     var showLearningPrompt = true
     var english = "com.apple.keylayout.ABC"
     var russian = "com.apple.keylayout.Russian"
-    var usesPhoneticLayout: Bool { english == Layouts.russianPhonetic || russian == Layouts.russianPhonetic }
+    static let unsupportedConversionMessage = "Для конвертации выберите «Русская» или «Русская — ПК»."
+    // Keep existing input-source choices for layout switching. Do not apply the
+    // standard Russian conversion table to a saved phonetic input source.
+    var canConvertLayout: Bool { ![english, russian].contains("com.apple.keylayout.Russian-Phonetic") }
     var exceptions: [String] = []
     var rules: [UserRule] = []
     var shortcuts: [Shortcut] = [Shortcut(), Shortcut(modifiers: Shortcut.command | Shortcut.option | Shortcut.shift), Shortcut(key: 6, modifiers: Shortcut.command | Shortcut.shift), Shortcut(), Self.lunaShortcut, Self.lunaReviewShortcut]
