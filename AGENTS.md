@@ -14,6 +14,13 @@ Native macOS 14+ Swift app. Preserve the user's live settings and permission ide
 - Copy and Apply must use the exact reviewed text, including individually rejected edits. Never auto-apply after the target or source text changes.
 - Quick Luna mode is conservative proofreading. Prompt mode is explicitly selected in review and must not invent requirements.
 
+## Check the GitHub invitation
+
+- Run `swift run -c release PuntoChecks` for the threshold, failed open, dismissal, restart and migration checks. Run `bash Scripts/build-app.sh` for an isolated app bundle.
+- Use a fresh test profile and an isolated editable field, with analytics off. Mix manual and automatic conversions. Verify the text after each conversion. The first five successful conversions leave the invitation hidden. The sixth makes one invitation available in the popup, menu and Today. Layout toggles and failed replacements do not count.
+- On the native UI, check that the popup leaves focus in the editor. A click outside closes only the popup. Opening GitHub or choosing “Больше не предлагать” hides the shared invitation in all three places, including after restart.
+- A fixture that calls the completion handler covers the shared UI state. Changes to event delivery, focus or popup buttons also need a separate live run through `CGEventTap`. For the default manual chord, use `bash Scripts/press-conversion-chord.sh <fixture-bundle-id> '<exact fixture text>'` from the integrated checkout. Check the automatic path in the same isolated editor.
+
 ## Packaging a release
 
 - Use `bash Scripts/package-release.sh` for local packaging. For a stable OTA candidate, follow [docs/OTA.md](docs/OTA.md#сборка-и-публикация-stable) for the release version, increasing build number, notes, and GitHub feed URLs.
