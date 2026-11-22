@@ -14,3 +14,10 @@ jobs:
           "$RUNNER_TEMP/punto-layouts-check"
       - run: bash Scripts/build-app.sh
       - run: bash Scripts/audit-bundle.sh
+      - name: Audit an update-enabled bundle
+        env:
+          SPARKLE_FEED_URL: https://example.invalid/appcast.xml
+        run: |
+          export SPARKLE_PUBLIC_KEY="$(openssl rand -base64 32)"
+          bash Scripts/build-app.sh
+          bash Scripts/audit-bundle.sh
