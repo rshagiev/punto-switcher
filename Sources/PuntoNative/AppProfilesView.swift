@@ -41,10 +41,10 @@ struct AppProfilesView: View {
                                     } else { Image(systemName:"app").font(.system(size:25)).frame(width:28) }
                                     Text(appName(id)).lineLimit(1).truncationMode(.middle).help(id)
                                     Spacer(minLength:8)
-                                    Picker("Режим для \(appName(id))",selection:Binding(get:{settings.value.appProfiles[id] ?? .global},set:{settings.value.appProfiles[id] = $0; engine.reset()})) {
+                                    Picker("Режим для \(appName(id))",selection:Binding(get:{settings.appMode(for: id)},set:{settings.setAppMode($0, for: id); engine.reset()})) {
                                         ForEach(AppMode.allCases,id:\.self) { mode in Text(appModeLabel(mode)).tag(mode) }
                                     }.labelsHidden().frame(width:210)
-                                    Button { settings.value.appProfiles.removeValue(forKey:id); settings.value.exceptions.removeAll { $0 == id }; engine.reset() } label: {
+                                    Button { settings.removeAppProfile(id); engine.reset() } label: {
                                         Image(systemName:"minus.circle").foregroundStyle(.secondary)
                                     }.buttonStyle(.borderless).help("Убрать профиль \(appName(id))").accessibilityLabel("Убрать профиль \(appName(id))")
                                 }.padding(.horizontal,14).padding(.vertical,12)

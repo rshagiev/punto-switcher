@@ -24,6 +24,7 @@ final class KeyboardEngine {
     var replayInFlight = false
     var fenceCounter: Int64 = 0
     var pendingFence: Int64?
+    private var pendingCountedConversion: Bool?
     var pendingLearningPrompt: String?
     var generation: UInt64 = 0
     var shortcutRecorder = ShortcutRecorder()
@@ -40,6 +41,7 @@ final class KeyboardEngine {
     var maxCallbackSeconds: Double = 0
     var tapDisableCount = 0
     var onProofread: ((Bool) -> Void)?
+    var onLayoutConversion: (() -> Void)?
     var onUserInteraction: (() -> Void)?
     var onStatus: (() -> Void)?
     var onLearning: ((String) -> Void)?
@@ -94,7 +96,7 @@ final class KeyboardEngine {
         if let tapSource { CFRunLoopRemoveSource(CFRunLoopGetMain(),tapSource,.commonModes) }
         if let tap { CFMachPortInvalidate(tap) }
         tap = nil; tapSource = nil; reset(); access.finish(); settings.running = false
-        pendingFence = nil; busy = false; replayInFlight = false
+        pendingFence = nil; pendingCountedConversion = nil; busy = false; replayInFlight = false
         let pending = deferredEvents; deferredEvents.removeAll()
         for event in pending { access.forward(event,throughEngine:false) }
     }
@@ -150,11 +152,21 @@ final class KeyboardEngine {
         replayInFlight = true
         access.forward(next,throughEngine:true)
     }
-    func finishEdit(_ tag: Int64) {
+    func finishEdit(_ tag: Int64, completed: Bool) {
         guard pendingFence == tag else { return }
         pendingFence = nil; busy = false
+        if completed, let automatic = pendingCountedConversion,
+           let pendingFeedback, NSWorkspace.shared.frontmostApplication?.processIdentifier == pendingFeedback.pid {
+            recordConversion(automatic: automatic)
+        }
+        pendingCountedConversion = nil
         if let request = pendingFeedback { pendingFeedback = nil; showFeedback(pid:request.pid,source:request.source) }
         drainInput()
+    }
+
+    private func recordConversion(automatic: Bool) {
+        settings.activity.converted(automatic: automatic)
+        DispatchQueue.main.async { [weak self] in self?.onLayoutConversion?() }
     }
     func showFeedback(pid:pid_t,source:String) {
         guard settings.value.showConversionFeedback else { return }
@@ -174,7 +186,7 @@ final class KeyboardEngine {
         if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
             tapDisableCount += 1
             log.error("Event tap was disabled by the system"); reset()
-            pendingFence = nil; busy = false; replayInFlight = false
+            pendingFence = nil; pendingCountedConversion = nil; busy = false; replayInFlight = false
             if let tap { CGEvent.tapEnable(tap:tap,enable:true) }
             DispatchQueue.main.async { [weak self] in self?.drainInput() }
             return Unmanaged.passUnretained(event)
@@ -183,7 +195,7 @@ final class KeyboardEngine {
         lastTag = tag
         if tag >= TextAccess.fenceBase && tag < TextAccess.fenceBase + 0x100000000 {
             lastFence = tag
-            finishEdit(tag)
+            finishEdit(tag, completed: true)
             return nil
         }
         if tag == TextAccess.marker { return Unmanaged.passUnretained(event) }
@@ -240,6 +252,7 @@ final class KeyboardEngine {
         guard source == settings.value.english || source == settings.value.russian else { reset(); return Unmanaged.passUnretained(event) }
         let boundaries: [UInt16:String] = [49:" ",36:"\n",76:"\n",48:"\t"]
         if let separator = boundaries[key] {
+            if key == 49 { settings.activity.typed(1) }
             let word = buffer.text
             let canAuto = automaticEnabled && !justConverted && !buffer.cancelled && !(settings.value.noTabEnter && key != 49) && !excluded(manual:false)
             if canAuto && shouldAutomaticallyConvert(word,completed:true), let owner, owner.stillFocused(), !word.isEmpty {
@@ -269,7 +282,7 @@ final class KeyboardEngine {
             previous.after += text; undo = previous
         } else { undo = nil }
         justConverted = false
-        buffer.append(text); settings.count("symbols",amount:text.count); sound("keystroke")
+        buffer.append(text); settings.activity.typed(text.count); sound("keystroke")
         // The triggering key has not reached the editor yet. Suppress it and replay
         // the complete converted word, deleting only the already-delivered prefix.
         // Scheduling this after the callback raced the editor's input queue and could
@@ -305,11 +318,7 @@ final class KeyboardEngine {
     }
     func convert(_ word: String) -> String { LayoutConversion.convert(word,toRussian:ownerSource == settings.value.english,pc:settings.value.russian.contains("Win")) }
     var currentMode: AppMode {
-        let id = NSWorkspace.shared.frontmostApplication?.bundleIdentifier ?? ""
-        if let mode = settings.value.appProfiles[id] { return mode }
-        // Retain compatibility with imported exclusions and older preference files.
-        if settings.value.exceptions.contains(id) { return settings.value.excludeManual ? .disabled : .manual }
-        return .global
+        settings.appMode(for: NSWorkspace.shared.frontmostApplication?.bundleIdentifier ?? "")
     }
     var automaticEnabled: Bool {
         !settings.value.usesPhoneticLayout && currentMode.automaticEnabled(global:settings.value.automatic)
@@ -370,7 +379,7 @@ final class KeyboardEngine {
         guard !changeCase else { return }
         if let undo, undo.focus.stillFocused() {
             self.undo = nil
-            performTyped(before:undo.after,after:undo.before,suffix:undo.suffix,appendKey:nil,focus:focus,automatic:false,targetSource:undo.source)
+            performTyped(before:undo.after,after:undo.before,suffix:undo.suffix,appendKey:nil,focus:focus,automatic:false,targetSource:undo.source,countsAsConversion:false)
             if undo.automatic { registerCancellation(undo.before) }
             return
         }
@@ -402,8 +411,11 @@ final class KeyboardEngine {
             self.busy = false
             defer { self.drainInput() }
             if ok {
-                self.settings.count("manual"); self.sound("selection")
-                if !changeCase && self.settings.value.switchAfterSelection && self.generation == generation && focus.stillFocused() { self.switchLayout(silent:true); self.showFeedback(pid:focus.pid,source:Layouts.currentID) }
+                self.sound("selection")
+                if !changeCase && self.generation == generation && focus.stillFocused() {
+                    self.recordConversion(automatic: false)
+                    if self.settings.value.switchAfterSelection { self.switchLayout(silent:true); self.showFeedback(pid:focus.pid,source:Layouts.currentID) }
+                }
             }
         }
     }
@@ -426,7 +438,7 @@ final class KeyboardEngine {
         settings.value.learningCounts.removeValue(forKey:word)
     }
     @discardableResult
-    func performTyped(before: String, after: String, suffix: String, appendKey: UInt16?, focus: Focus, automatic: Bool, targetSource: String? = nil, undoBefore: String? = nil) -> Bool {
+    func performTyped(before: String, after: String, suffix: String, appendKey: UInt16?, focus: Focus, automatic: Bool, targetSource: String? = nil, undoBefore: String? = nil, countsAsConversion: Bool = true) -> Bool {
         guard !busy, before != after, focus.stillFocused(), !IsSecureEventInputEnabled() else { return false }
         // Never erase a selection in a normal editor as though it were the buffered tail.
         if !automatic, let selected = focus.selected, !selected.isEmpty, !focus.terminal { reset(); return false }
@@ -458,6 +470,7 @@ final class KeyboardEngine {
         fenceCounter &+= 1
         let fence = TextAccess.fenceBase + fenceCounter
         pendingFence = fence
+        pendingCountedConversion = countsAsConversion ? automatic : nil
         pendingFeedback = (focus.pid,target)
         if spotlightCaret == nil { access.erase(typedTail.count) }
         access.replay(after+suffix, layout:target)
@@ -470,7 +483,7 @@ final class KeyboardEngine {
         if settings.value.noRepeatCorrection { buffer.cancelAuto() }
         justConverted = true
         undo = (undoBefore ?? before,after,ending,focus,source,target,automatic)
-        if automatic { settings.count("switches"); sound("auto") } else { settings.count("manual"); sound("undo") }
+        sound(automatic ? "auto" : "undo")
         settings.message = "Готов к работе"
         access.fence(fence)
         // A fence passes the same tap after every replacement event. Later physical
@@ -478,7 +491,7 @@ final class KeyboardEngine {
         DispatchQueue.main.asyncAfter(deadline:.now()+0.8) { [weak self] in
             guard let self, self.pendingFence == fence else { return }
             self.log.error("Replacement fence timed out; releasing queued input")
-            self.finishEdit(fence)
+            self.finishEdit(fence, completed: false)
         }
         return true
     }

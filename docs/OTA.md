@@ -26,12 +26,13 @@ Sparkle 2.10.1 закреплён в SwiftPM. Официальный бинар�
 
 ```bash
 export CODE_SIGN_IDENTITY='Punto Local Code Signing'
-export PUNTO_VERSION='2.0.5'
+export PUNTO_VERSION='2.0.6'
 export PUNTO_BUILD_NUMBER='20261123000000' # Пример, сверить с последним опубликованным номером.
 export SPARKLE_FEED_URL='https://github.com/rshagiev/punto-switcher/releases/latest/download/appcast.xml'
 export SPARKLE_DOWNLOAD_PREFIX="https://github.com/rshagiev/punto-switcher/releases/download/v${PUNTO_VERSION}/"
 export SPARKLE_PUBLIC_KEY="$(.build/artifacts/sparkle/Sparkle/bin/generate_keys --account punto-native -p)"
 export SPARKLE_RELEASE_NOTES='/absolute/path/to/release-notes.md'
+# Задайте PUNTO_POSTHOG_PROJECT_TOKEN токеном приёма проекта Punto в PostHog Cloud EU.
 bash Scripts/package-release.sh
 ```
 
@@ -47,3 +48,9 @@ bash Scripts/package-release.sh
 - Проверить на чистом Mac первый запуск DMG после скачивания по HTTPS, затем отдельно ручной переход с публичной 2.0.4 на первую сборку со Sparkle. Сверить, сохраняются ли разрешения при той же подписи, и проверить Gatekeeper при первом OTA. В случае проблем с уже установленной версией можно вручную поставить предыдущий доверенный DMG. Для исправления через OTA опубликовать исправленную версию с бо́льшим номером сборки.
 
 Открытие и проверка DMG, установка через Sparkle, сохранение Accessibility в тестовом окружении и проверка публичного URL — отдельные критерии. Локальный выпуск и подпись Sparkle сами по себе не подтверждают публичную доставку.
+
+## Аналитика сборок 2.0.6
+
+Параметр `PUNTO_POSTHOG_PROJECT_TOKEN` встраивает в пакет публичный токен приёма событий проекта PostHog Cloud EU. Административный ключ для сборки не нужен. В проекте заранее включаем удаление клиентского IP, выключаем GeoIP и проверяем срок хранения. В сборках без токена отправка выключена и её элементы интерфейса скрыты.
+
+Для дашборда используйте `punto_first_start`, `punto_keyboard_ready`, `punto_active_day`, `punto_update`, `punto_support_shown` и `punto_support_opened`. Считайте уникальные установки по `distinct_id`, попытки обновления по `update_id` и приглашения по `invitation_id`. Успешное OTA подтверждает запуск целевого номера сборки. Замеры полного цикла обновления начинаются со сборок 2.0.6: 2.0.5 не отправляет событие начала скачивания.

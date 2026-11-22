@@ -4,13 +4,15 @@ cd "$(dirname "$0")/.."
 app="${1:-Build/Punto Native.app}"
 codesign --verify --deep --strict "$app"
 python3 - "$app" <<'PY'
-import base64,plistlib,sys
+import base64,plistlib,re,sys
 from urllib.parse import urlsplit
 from pathlib import Path
 app=Path(sys.argv[1]);info=plistlib.loads((app/'Contents/Info.plist').read_bytes())
 assert info['CFBundleIdentifier']=='dev.rshagiev.PuntoNative'
 assert info['LSMinimumSystemVersion']=='14.0'
 assert 'PuntoReleaseCandidate' not in info, 'Private local update path in release'
+if 'PuntoPostHogProjectToken' in info:
+ assert re.fullmatch(r'phc_[A-Za-z0-9_-]+', info['PuntoPostHogProjectToken']), 'Expected a capture-only project token'
 feed = info.get('SUFeedURL')
 if feed is not None:
  url = urlsplit(feed)
