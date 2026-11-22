@@ -7,8 +7,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
     lazy var engine = KeyboardEngine(settings:settings)
     lazy var correction = LunaCorrection(settings:settings,engine:engine)
     let analytics = UsageAnalytics()
+    lazy var support = SupportPrompt(analytics: analytics)
     lazy var updates = Updates(analytics: analytics)
     private let statusMenu = NSMenu()
+    private var supportImpression: UUID?
+    private var isStatusMenuOpen = false
+    private var supportSetupComplete: Bool {
+        settings.running && (analytics.existingInstall || !analytics.isConfigured || analytics.choice != nil)
+    }
     var status: NSStatusItem!
     var window: NSWindow?
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -40,7 +46,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
             if self?.settings.running == true { self?.analytics.noteKeyboardReady() }
         }
         engine.onLayoutConversion = { [weak self] in
-            self?.analytics.noteActiveDay()
+            guard let self else { return }
+            self.analytics.noteActiveDay()
+            self.recordSupportConversion()
         }
         engine.onLearning = { [weak self] word in
             guard let self else { return }
@@ -114,12 +122,47 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
         menu.addItem(.separator())
         menu.addItem(item("Настройки…", icon: "gearshape", #selector(showSettings), key: ","))
         menu.addItem(item("О программе", icon: "info.circle", #selector(showAbout)))
-        let star = item("Поставить звезду на GitHub", icon: "star.fill", #selector(openRepository))
-        star.image?.isTemplate = false
-        star.image = star.image?.withSymbolConfiguration(.init(paletteColors: [.systemOrange]))
-        if #available(macOS 14.4, *) { star.subtitle = "Поддержать Punto Native" }
-        menu.addItem(star)
+        supportImpression = nil
+        insertSupportItem(at: menu.numberOfItems)
         menu.addItem(item("Выйти", icon: "power", #selector(quit), key: "q"))
+    }
+
+    func menuWillOpen(_ menu: NSMenu) {
+        guard menu === statusMenu else { return }
+        isStatusMenuOpen = true
+        support.closePopover()
+        if let id = supportImpression { support.shown(id) }
+    }
+
+    func menuDidClose(_ menu: NSMenu) {
+        if menu === statusMenu { isStatusMenuOpen = false }
+    }
+
+    private func insertSupportItem(at index: Int) {
+        guard supportImpression == nil, supportSetupComplete, let id = support.visibleID else { return }
+        let supportItem = item(SupportMenuRow.title, icon: "star.fill", #selector(openInvitation))
+        if #available(macOS 14.4, *) {
+            supportItem.image?.isTemplate = false
+            supportItem.image = supportItem.image?.withSymbolConfiguration(.init(paletteColors: [.systemOrange]))
+            supportItem.subtitle = SupportMenuRow.subtitle
+        } else {
+            supportItem.view = SupportMenuRow(target: self, open: #selector(openInvitation))
+        }
+        statusMenu.insertItem(supportItem, at: index)
+        supportImpression = id
+    }
+
+    private func recordSupportConversion() {
+        guard support.recordConversion(), supportSetupComplete else { return }
+        if isStatusMenuOpen {
+            insertSupportItem(at: max(0, statusMenu.numberOfItems - 1))
+            if let id = supportImpression { support.shown(id) }
+        } else {
+            let todayIsVisible = window?.isVisible == true && settings.selectedSection == "Сегодня"
+            if !todayIsVisible, window?.isKeyWindow != true, let button = status.button {
+                support.showPopover(under: button)
+            }
+        }
     }
 
     private func item(_ title: String, icon: String, _ action: Selector, key: String = "") -> NSMenuItem {
@@ -156,18 +199,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
         settings.toggleAppPause(for: id)
         if NSWorkspace.shared.frontmostApplication?.bundleIdentifier == id { engine.reset() }
     }
-    @objc func openRepository() {
-        guard let url = URL(string: "https://github.com/rshagiev/punto-switcher") else { return }
-        NSWorkspace.shared.open(url)
-    }
+    @objc func openInvitation() { statusMenu.cancelTracking(); support.openInvitation() }
 
     @objc func showAbout() { openSettings(section: "О программе") }
     @objc func showSettings() { openSettings(section: settings.running ? "Сегодня" : "Основные") }
     private func openSettings(section: String) {
+        support.closePopover()
         settings.selectedSection = section
         if window == nil {
             let view = SettingsView(settings: settings, activity: settings.activity, engine: engine, updates: updates,
-                                    analytics: analytics, onLunaDemo: { [weak self] in self?.correction.demo() })
+                                    analytics: analytics, support: support, onLunaDemo: { [weak self] in self?.correction.demo() })
             let w = NSWindow(contentRect:NSRect(x:0,y:0,width:900,height:680),styleMask:[.titled,.closable,.miniaturizable,.resizable,.fullSizeContentView],backing:.buffered,defer:false)
             w.title = "Punto Native"; w.titlebarAppearsTransparent = true; w.isReleasedWhenClosed = false; w.delegate = self
             let hosting = NSHostingView(rootView:GeometryReader { geometry in view.frame(width:geometry.size.width,height:geometry.size.height) })

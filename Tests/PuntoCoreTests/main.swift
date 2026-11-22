@@ -238,6 +238,67 @@ XCTAssertEqual(reopenedHistory.day(20261123)?.totals.automatic, 2)
 XCTAssertEqual(reopenedHistory.day(20261124)?.totals.symbols, 0)
 print("PASS: local activity separates midnight, unavailable history and known zero")
 
+let supportEncoder = JSONEncoder()
+let supportDecoder = JSONDecoder()
+var invitation = SupportInvitation()
+XCTAssertEqual(SupportInvitation.conversionThreshold, 6)
+for _ in 1...5 {
+    XCTAssertFalse(invitation.recordConversion())
+    XCTAssertNil(invitation.visibleID)
+}
+invitation = try supportDecoder.decode(SupportInvitation.self, from: supportEncoder.encode(invitation))
+XCTAssertTrue(invitation.recordConversion())
+let supportID = invitation.visibleID
+XCTAssertTrue(supportID != nil)
+XCTAssertFalse(invitation.wasPresented)
+XCTAssertFalse(invitation.recordConversion())
+invitation.markPresented()
+XCTAssertTrue(invitation.wasPresented)
+XCTAssertEqual(invitation.visibleID, supportID)
+invitation = try supportDecoder.decode(SupportInvitation.self, from: supportEncoder.encode(invitation))
+XCTAssertTrue(invitation.wasPresented)
+XCTAssertEqual(invitation.visibleID, supportID)
+XCTAssertNil(invitation.open { false })
+XCTAssertEqual(invitation.visibleID, supportID)
+
+var optedOut = invitation
+optedOut.dismiss()
+XCTAssertNil(optedOut.visibleID)
+XCTAssertFalse(optedOut.recordConversion())
+let restartedOptOut = try supportDecoder.decode(SupportInvitation.self, from: supportEncoder.encode(optedOut))
+XCTAssertNil(restartedOptOut.visibleID)
+
+XCTAssertEqual(invitation.open { true }, supportID)
+XCTAssertNil(invitation.visibleID)
+var attemptedAgain = false
+XCTAssertNil(invitation.open {
+    attemptedAgain = true
+    return true
+})
+XCTAssertFalse(attemptedAgain)
+let restartedHidden = try supportDecoder.decode(SupportInvitation.self, from: supportEncoder.encode(invitation))
+XCTAssertNil(restartedHidden.visibleID)
+XCTAssertTrue(restartedHidden.wasPresented)
+
+let legacyID = UUID()
+let legacyShown = Data("""
+{"cycle":"\(legacyID.uuidString)","shown":true,"dismissed":false,"remindAfter":800000000}
+""".utf8)
+var migratedShown = try supportDecoder.decode(SupportInvitation.self, from: legacyShown)
+XCTAssertNil(migratedShown.visibleID)
+for _ in 1...6 { _ = migratedShown.recordConversion() }
+XCTAssertEqual(migratedShown.visibleID, legacyID)
+XCTAssertFalse(migratedShown.wasPresented)
+let legacyUnqualified = Data(#"{"shown":false,"dismissed":false}"#.utf8)
+let migratedUnqualified = try supportDecoder.decode(SupportInvitation.self, from: legacyUnqualified)
+XCTAssertNil(migratedUnqualified.visibleID)
+XCTAssertFalse(migratedUnqualified.wasPresented)
+let legacyDismissed = Data(#"{"shown":true,"dismissed":true}"#.utf8)
+var migratedDismissed = try supportDecoder.decode(SupportInvitation.self, from: legacyDismissed)
+for _ in 1...6 { XCTAssertFalse(migratedDismissed.recordConversion()) }
+XCTAssertNil(migratedDismissed.visibleID)
+print("PASS: shared GitHub invitation qualifies on the sixth completion and preserves presentation, dismissal, and migration")
+
 let date = Date(timeIntervalSince1970: 1_795_300_000)
 let installationID = UUID()
 let requestID = UUID()

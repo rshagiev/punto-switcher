@@ -16,17 +16,37 @@ struct TodayView: View {
     }
 
     @ObservedObject var activity: LocalActivity
+    @ObservedObject var support: SupportPrompt
     @Binding var period: Period
+    let setupComplete: Bool
 
     var body: some View {
         TimelineView(.everyMinute) { time in
             let points = points(at: time.date)
             let totals = points.compactMap(\.counts).reduce(ActivityCounts(), +)
             ScrollView {
-                statistics(points: points, totals: totals)
-                    .padding(.horizontal, 26).padding(.bottom, 20)
+                VStack(alignment: .leading, spacing: 14) {
+                    if setupComplete, let id = support.visibleID {
+                        supportCard.onAppear { support.shown(id) }.id(id)
+                    }
+                    statistics(points: points, totals: totals)
+                }
+                .padding(.horizontal, 26).padding(.bottom, 20)
             }
         }
+    }
+
+    private var supportCard: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "star.fill").foregroundStyle(Color(nsColor: .systemYellow))
+                .accessibilityHidden(true)
+            Text(SupportMenuRow.title).font(.headline)
+            Spacer()
+            Button("Открыть GitHub") { support.openInvitation() }
+            Button("Больше не предлагать") { support.dismiss() }
+                .buttonStyle(.borderless).foregroundStyle(.secondary)
+        }
+        .modifier(TodayCard())
     }
 
     private func statistics(points: [Point], totals: ActivityCounts) -> some View {

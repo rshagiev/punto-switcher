@@ -8,7 +8,6 @@ public enum UsageEvent: Codable, Equatable {
     case keyboardReady
     case activeDay(first: Bool)
     case update(id: UUID, from: String, to: String, outcome: Outcome)
-    // Older versions can leave these events in the persisted queue.
     case support(id: UUID, opened: Bool)
 }
 

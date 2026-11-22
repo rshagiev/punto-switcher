@@ -11,6 +11,7 @@ struct SettingsView: View {
     let engine: KeyboardEngine
     @ObservedObject var updates: Updates
     @ObservedObject var analytics: UsageAnalytics
+    let support: SupportPrompt
     let onLunaDemo: () -> Void
     @StateObject private var codex = CodexConnection()
     private var section: String { settings.selectedSection }
@@ -80,7 +81,9 @@ struct SettingsView: View {
     @ViewBuilder var content: some View {
         switch section {
         case "Сегодня":
-            TodayView(activity: activity, period: $period)
+            TodayView(activity: activity, support: support, period: $period,
+                      setupComplete: settings.running && !showAnalytics &&
+                          (analytics.existingInstall || !analytics.isConfigured || analytics.choice != nil))
         case "Основные": general
         case "Шорткаты": shortcuts
         case "Правила": rules
@@ -284,6 +287,7 @@ struct SettingsView: View {
             }
             Section {
                 Button("Помощь") { showHelp = true }
+                Link("GitHub", destination: SupportPrompt.repository)
                 Button("Открыть папку настроек") { settings.flush(); NSWorkspace.shared.open(settings.folder) }
             }
             Section("Обновления") {

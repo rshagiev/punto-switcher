@@ -32,6 +32,7 @@ final class UsageAnalytics: NSObject, ObservableObject, URLSessionTaskDelegate {
         var firstStart = false
         var firstReady = false
         var activeDay: String?
+        var invitation: UUID?
         var queue: [UsageEnvelope] = []
         var update: UpdateAttempt?
 
@@ -123,6 +124,17 @@ final class UsageAnalytics: NSObject, ObservableObject, URLSessionTaskDelegate {
         guard current.activeDay.map({ $0 < day }) ?? true else { return }
         state?.activeDay = day
         enqueue(.activeDay(first: current.activeDay == nil), day: day)
+    }
+
+    func noteSupportShown(_ id: UUID) {
+        guard choice == true, let current = state, current.invitation != id else { return }
+        state?.invitation = id
+        enqueue(.support(id: id, opened: false))
+    }
+
+    func noteSupportOpened(_ id: UUID) {
+        guard state?.invitation == id else { return }
+        enqueue(.support(id: id, opened: true))
     }
 
     func beginUpdate(to target: String, build: String) {
