@@ -7,10 +7,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
     lazy var correction = LunaCorrection(settings:settings,engine:engine)
     let analytics = UsageAnalytics()
     lazy var support = SupportPrompt(analytics: analytics)
-    lazy var updates = Updates(analytics: analytics)
+    lazy var updates = Updates(analytics: analytics) { [weak self] in
+        guard let window = self?.window else { return false }
+        return NSApp.isActive && window.isVisible && !window.isMiniaturized
+    }
     private let statusMenu = NSMenu()
     private static let keyboardSetupExpiresKey = "keyboardSetupExpiresAt"
-    private lazy var permissionSetup = PermissionSetup { [weak self] in self?.clearKeyboardSetup() }
+    private lazy var permissionSetup = PermissionSetup { [weak self] in self?.endKeyboardSetup() }
     private var isTerminating = false
     private struct AppCardItems {
         let application: NSRunningApplication
@@ -341,7 +344,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
         settings.message = ""
         engine.start()
         guard case .permission(let permission) = settings.keyboardBlocker else {
-            permissionSetup.dismiss()
+            permissionSetup.close()
+            clearKeyboardSetup()
             return
         }
         if !permissionSetup.show(permission, onGrant: { [weak self] in self?.continueKeyboardSetup() }) {
@@ -352,6 +356,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
 
     private func clearKeyboardSetup() {
         UserDefaults.standard.removeObject(forKey: Self.keyboardSetupExpiresKey)
+    }
+
+    private func endKeyboardSetup() {
+        clearKeyboardSetup()
+        if case .permission = settings.keyboardBlocker { engine.start() }
     }
 
     func windowWillClose(_ notification: Notification) {

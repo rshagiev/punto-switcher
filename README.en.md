@@ -27,7 +27,7 @@ Built with Swift, AppKit and SwiftUI. Development checks included Safari text fi
 
 Language tables and sounds are bundled. The original Punto Switcher is not required. The build is not Apple-notarized; macOS may require allowing it to open in Privacy & Security.
 
-Starting with 2.0.5, check for updates in About → Updates. To upgrade from 2.0.4 or earlier, download the DMG and replace the app manually.
+In 2.0.11 and newer, use the circular arrow next to the status in Settings. In 2.0.5 through 2.0.10, use About → Updates. To upgrade from 2.0.4 or earlier, download the DMG and replace the app manually.
 
 ## Optional text editing with Luna
 

@@ -31,7 +31,15 @@ struct SettingsView: View {
                     VStack(alignment:.leading,spacing:3) { Text("Punto Native").font(.headline); Text("Раскладка под рукой").font(.caption).foregroundStyle(.secondary) }
                 }.padding(.horizontal,14).padding(.top,22)
                 List(selection:$settings.selectedSection) { ForEach(panes,id:\.0) { name,icon in Label(name,systemImage:icon).tag(name).padding(.vertical,4) } }.listStyle(.sidebar)
-                Label(keyboardStatus,systemImage:settings.running ? "checkmark.circle.fill" : "lock.fill").font(.caption).foregroundStyle(settings.running ? .green : .orange).padding(18)
+                HStack {
+                    Label(keyboardStatus, systemImage: settings.running ? "checkmark.circle.fill" : "lock.fill")
+                        .font(.caption)
+                        .foregroundStyle(settings.running ? .green : .orange)
+                    Spacer()
+                    if updates.isConfigured { UpdateStatusButton(updates: updates) }
+                }
+                .padding(.horizontal, 18)
+                .padding(.vertical, 10)
             }.navigationSplitViewColumnWidth(min:205,ideal:220,max:250)
         } detail: {
             VStack(alignment:.leading,spacing:0) {
@@ -81,6 +89,10 @@ struct SettingsView: View {
         let detail: String
         let button: String
         switch blocker {
+        case .permission(.postEvents):
+            title = "Доступ к отправке клавиш"
+            detail = "Подтвердите запрос macOS, чтобы Punto мог подставлять исправленный текст."
+            button = "Запросить доступ"
         case .permission:
             title = "Настройка клавиатуры"
             detail = "Выдайте Punto доступ в настройках macOS. Punto сам проверит доступ и начнёт работу."
