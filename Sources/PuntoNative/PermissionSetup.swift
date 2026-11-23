@@ -36,10 +36,21 @@ final class PermissionSetup {
             onGrant()
             return true
         }
-        if permission == .postEvents { _ = CGRequestPostEventAccess() }
+        if permission == .postEvents {
+            // Quartz asks for this separately on some Macs. The app can already
+            // be listed under Accessibility, so there is no second drag step.
+            if CGRequestPostEventAccess() {
+                onGrant()
+            } else {
+                nextPermissionCheck = 0
+                windowSearchDeadline = ProcessInfo.processInfo.systemUptime + 60
+                setInterval(Self.checkInterval, permission: permission, onGrant: onGrant)
+            }
+            return true
+        }
 
-        let bundle = Bundle.main.bundleURL
-        guard bundle.pathExtension == "app", NSWorkspace.shared.open(permission.settingsURL) else { return false }
+        let bundle = Bundle.main
+        guard bundle.bundleURL.pathExtension == "app", NSWorkspace.shared.open(permission.settingsURL) else { return false }
         panel = makePanel(bundle: bundle, permission: permission)
         nextPermissionCheck = 0
         windowSearchDeadline = ProcessInfo.processInfo.systemUptime + 10
@@ -72,15 +83,9 @@ final class PermissionSetup {
     }
 
     private func update(_ permission: KeyboardPermission, onGrant: @escaping () -> Void) {
-        guard let panel else { return }
         let now = ProcessInfo.processInfo.systemUptime
         if now >= nextPermissionCheck {
             nextPermissionCheck = now + Self.checkInterval
-            if permission.isGranted {
-                close()
-                onGrant()
-                return
-            }
             if let windowID {
                 // Including the window by ID also finds it when it is minimized or on another Space.
                 guard let windows = CGWindowListCopyWindowInfo(.optionIncludingWindow, windowID),
@@ -88,12 +93,19 @@ final class PermissionSetup {
                     dismiss()
                     return
                 }
-            } else if now >= windowSearchDeadline {
+            }
+            if permission.isGranted {
+                close()
+                onGrant()
+                return
+            }
+            if windowID == nil, now >= windowSearchDeadline {
                 dismiss()
                 return
             }
         }
 
+        guard let panel else { return }
         guard let front = NSWorkspace.shared.frontmostApplication, front.bundleIdentifier == Self.settingsID,
               let (id, bounds) = settingsWindow(pid: front.processIdentifier) else {
             if panel.isVisible { panel.orderOut(nil) }
@@ -130,10 +142,12 @@ final class PermissionSetup {
         return nil
     }
 
-    private func makePanel(bundle: URL, permission: KeyboardPermission) -> NSPanel {
+    private func makePanel(bundle: Bundle, permission: KeyboardPermission) -> NSPanel {
+        let name = (bundle.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String)
+            ?? FileManager.default.displayName(atPath: bundle.bundleURL.path)
         let panel = NSPanel(contentRect: NSRect(x: 0, y: 0, width: 560, height: 136),
                             styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: true)
-        panel.title = "Punto Native · \(permission.title)"
+        panel.title = "\(name) · \(permission.title)"
         panel.isOpaque = false
         panel.backgroundColor = .clear
         panel.hasShadow = true
@@ -143,10 +157,7 @@ final class PermissionSetup {
         panel.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary, .ignoresCycle]
         panel.animationBehavior = .none
 
-        let instruction = permission == .postEvents
-            ? "Включите доступ для Punto Native в списке выше"
-            : "Перетащите карточку в список и включите доступ"
-        let content = NSHostingView(rootView: PermissionCard(bundle: bundle, instruction: instruction) { [weak self] in
+        let content = NSHostingView(rootView: PermissionCard(bundle: bundle.bundleURL, name: name) { [weak self] in
             self?.dismiss()
         })
         content.sizingOptions = []
@@ -158,7 +169,7 @@ final class PermissionSetup {
 // Permission panel layout adapted from T3 Code's MacPermissionHelper (MIT).
 private struct PermissionCard: View {
     let bundle: URL
-    let instruction: String
+    let name: String
     let close: () -> Void
     @Environment(\.colorScheme) private var colorScheme
     private var icon: NSImage { NSWorkspace.shared.icon(forFile: bundle.path) }
@@ -167,12 +178,12 @@ private struct PermissionCard: View {
         let dark = colorScheme == .dark
         let shape = RoundedRectangle(cornerRadius: 24)
         VStack(alignment: .leading, spacing: 16) {
-            Label(instruction, systemImage: "arrow.up")
+            Label("Перетащите карточку, если приложения нет в списке", systemImage: "arrow.up")
                 .font(.system(size: 15, weight: .semibold))
                 .padding(.trailing, 20)
             HStack(spacing: 12) {
                 Image(nsImage: icon).resizable().scaledToFit().frame(width: 26, height: 26)
-                Text("Punto Native").font(.system(size: 16, weight: .semibold))
+                Text(name).font(.system(size: 16, weight: .semibold)).lineLimit(1)
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, 14)
@@ -180,7 +191,7 @@ private struct PermissionCard: View {
             .background(Color(white: dark ? 0.22 : 0.91), in: RoundedRectangle(cornerRadius: 10))
             .accessibilityHidden(true)
             .overlay {
-                PermissionDragTile(bundle: bundle, icon: icon)
+                PermissionDragTile(bundle: bundle, name: name, icon: icon)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
@@ -203,9 +214,10 @@ private struct PermissionCard: View {
 
 private struct PermissionDragTile: NSViewRepresentable {
     let bundle: URL
+    let name: String
     let icon: NSImage
 
-    func makeNSView(context: Context) -> PermissionDragButton { PermissionDragButton(bundle: bundle, icon: icon) }
+    func makeNSView(context: Context) -> PermissionDragButton { PermissionDragButton(bundle: bundle, name: name, icon: icon) }
     func updateNSView(_ view: PermissionDragButton, context: Context) {}
 }
 
@@ -214,11 +226,11 @@ private final class PermissionDragButton: NSButton, NSDraggingSource {
     private let dragIcon: NSImage
     private var dragStart: NSPoint?
 
-    init(bundle: URL, icon: NSImage) {
+    init(bundle: URL, name: String, icon: NSImage) {
         self.bundle = bundle
         dragIcon = icon
         super.init(frame: .zero)
-        setAccessibilityLabel("Punto Native")
+        setAccessibilityLabel(name)
         toolTip = "Перетащить в список или показать в Finder"
         setAccessibilityHelp(toolTip)
         target = self

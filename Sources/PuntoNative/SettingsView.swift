@@ -89,6 +89,10 @@ struct SettingsView: View {
         let detail: String
         let button: String
         switch blocker {
+        case .permission(.postEvents):
+            title = "Доступ к отправке клавиш"
+            detail = "Подтвердите запрос macOS, чтобы Punto мог подставлять исправленный текст."
+            button = "Запросить доступ"
         case .permission:
             title = "Настройка клавиатуры"
             detail = "Выдайте Punto доступ в настройках macOS. Punto сам проверит доступ и начнёт работу."

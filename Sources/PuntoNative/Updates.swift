@@ -38,12 +38,14 @@ final class Updates: NSObject, ObservableObject, SPUUpdaterDelegate, SPUStandard
     private var controller: SPUStandardUpdaterController?
     private var availability: AnyCancellable?
     private let analytics: UsageAnalytics
+    private let settingsWindowIsActive: () -> Bool
     private var observedBuild: String?
 
     var isConfigured: Bool { controller != nil }
 
-    init(analytics: UsageAnalytics) {
+    init(analytics: UsageAnalytics, settingsWindowIsActive: @escaping () -> Bool) {
         self.analytics = analytics
+        self.settingsWindowIsActive = settingsWindowIsActive
         super.init()
         let info = Bundle.main.infoDictionary ?? [:]
         guard info["SUFeedURL"] is String, info["SUPublicEDKey"] is String else { return }
@@ -80,6 +82,10 @@ final class Updates: NSObject, ObservableObject, SPUUpdaterDelegate, SPUStandard
     }
 
     var supportsGentleScheduledUpdateReminders: Bool { true }
+
+    func standardUserDriverShouldHandleShowingScheduledUpdate(_ update: SUAppcastItem, andInImmediateFocus immediateFocus: Bool) -> Bool {
+        update.isCriticalUpdate || !settingsWindowIsActive()
+    }
 
     func standardUserDriverWillHandleShowingUpdate(_ handleShowingUpdate: Bool, forUpdate update: SUAppcastItem, state: SPUUserUpdateState) {
         offer = Offer(update)
