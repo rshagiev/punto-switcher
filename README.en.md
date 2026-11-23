@@ -22,8 +22,8 @@ Built with Swift, AppKit and SwiftUI. Development checks included Safari text fi
 ## Install
 
 1. Download the DMG from Releases and drag **PuntoNative.app** into Applications.
-2. Open the app and grant Accessibility and Input Monitoring permissions in System Settings.
-3. Quit other keyboard layout switchers before using Punto Native.
+2. Quit any other keyboard layout switcher.
+3. Open Punto and click **Настроить Punto** (Set up Punto). Drag its card into the list that opens in System Settings and enable access. Punto opens any additional step it needs.
 
 Language tables and sounds are bundled. The original Punto Switcher is not required. The build is not Apple-notarized; macOS may require allowing it to open in Privacy & Security.
 

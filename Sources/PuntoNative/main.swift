@@ -1,5 +1,4 @@
 import AppKit
-import ApplicationServices
 import SwiftUI
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMenuDelegate {
@@ -10,6 +9,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
     lazy var support = SupportPrompt(analytics: analytics)
     lazy var updates = Updates(analytics: analytics)
     private let statusMenu = NSMenu()
+    private static let keyboardSetupExpiresKey = "keyboardSetupExpiresAt"
+    private lazy var permissionSetup = PermissionSetup { [weak self] in self?.clearKeyboardSetup() }
+    private var isTerminating = false
     private struct AppCardItems {
         let application: NSRunningApplication
         let tile: NSMenuItem
@@ -78,10 +80,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
         menuNeedsUpdate(statusMenu)
         updates.start(automaticallyCheck: settings.value.checkUpdates)
         // The original keeps handling input until the user explicitly switches to this app.
-        if NSRunningApplication.runningApplications(withBundleIdentifier:"ru.yandex.desktop.PuntoSwitcher").isEmpty { engine.start() }
-        else { settings.permission = AXIsProcessTrusted(); settings.message = "Punto Яндекса запущен. Завершите его, затем нажмите «Начать работу»." }
-        if !settings.permission { showSettings() }
+        engine.start()
+        if let blocker = settings.keyboardBlocker,
+           blocker != .originalPuntoRunning || !KeyboardPermission.accessibility.isGranted {
+            showSettings()
+        }
+        if case .permission = settings.keyboardBlocker,
+           let expiry = UserDefaults.standard.object(forKey: Self.keyboardSetupExpiresKey) as? Date, expiry > Date() {
+            continueKeyboardSetup()
+        } else {
+            clearKeyboardSetup()
+        }
     }
+
+    func applicationDidBecomeActive(_ notification: Notification) {
+        if settings.keyboardBlocker != nil, window?.isVisible == true { engine.start() }
+    }
+
     private func updateStatus() {
         status.button?.appearsDisabled = !settings.running
     }
@@ -304,7 +319,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
         settings.selectedSection = section
         if window == nil {
             let view = SettingsView(settings: settings, activity: settings.activity, engine: engine, updates: updates,
-                                    analytics: analytics, support: support, onLunaDemo: { [weak self] in self?.correction.demo() })
+                                    analytics: analytics, support: support, onLunaDemo: { [weak self] in self?.correction.demo() },
+                                    onPermissionSetup: { [weak self] in self?.beginKeyboardSetup() })
             let w = NSWindow(contentRect:NSRect(x:0,y:0,width:900,height:680),styleMask:[.titled,.closable,.miniaturizable,.resizable,.fullSizeContentView],backing:.buffered,defer:false)
             w.title = "Punto Native"; w.titlebarAppearsTransparent = true; w.isReleasedWhenClosed = false; w.delegate = self
             let hosting = NSHostingView(rootView:GeometryReader { geometry in view.frame(width:geometry.size.width,height:geometry.size.height) })
@@ -315,14 +331,40 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMe
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps:true); window?.makeKeyAndOrderFront(nil)
     }
+    private func beginKeyboardSetup() {
+        // macOS may quit and reopen Punto after an input permission changes.
+        UserDefaults.standard.set(Date().addingTimeInterval(20 * 60), forKey: Self.keyboardSetupExpiresKey)
+        continueKeyboardSetup()
+    }
+
+    private func continueKeyboardSetup() {
+        settings.message = ""
+        engine.start()
+        guard case .permission(let permission) = settings.keyboardBlocker else {
+            permissionSetup.dismiss()
+            return
+        }
+        if !permissionSetup.show(permission, onGrant: { [weak self] in self?.continueKeyboardSetup() }) {
+            permissionSetup.dismiss()
+            settings.message = "Не удалось открыть настройки macOS. Откройте «Конфиденциальность и безопасность» и разрешите доступ для Punto Native."
+        }
+    }
+
+    private func clearKeyboardSetup() {
+        UserDefaults.standard.removeObject(forKey: Self.keyboardSetupExpiresKey)
+    }
+
     func windowWillClose(_ notification: Notification) {
         guard let closing = notification.object as? NSWindow, closing === window else { return }
+        if !isTerminating { permissionSetup.dismiss() }
         window = nil
         NSApp.setActivationPolicy(correction.window?.isVisible == true ? .regular : .accessory)
     }
     func applicationShouldTerminateAfterLastWindowClosed(_ sender:NSApplication) -> Bool { false }
     @objc func quit() { NSApp.terminate(nil) }
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        isTerminating = true
+        permissionSetup.close()
         correction.cancel(); engine.stop(); settings.activity.flush(); settings.flush()
         return .terminateNow
     }

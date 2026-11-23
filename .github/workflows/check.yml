@@ -15,6 +15,7 @@ jobs:
           codesign --force --sign - "$checks"
           codesign --verify --strict "$checks"
           "$checks"
+      - run: bash Scripts/check-keyboard-setup.sh
       - run: bash Scripts/build-app.sh
       - run: bash Scripts/audit-bundle.sh
       - name: Audit a bundle with update and analytics configuration

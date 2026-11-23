@@ -38,7 +38,7 @@ struct Preferences: Codable {
 final class Settings: ObservableObject {
     @Published var value: Preferences { didSet { save() } }
     @Published var selectedSection = "Основные"
-    @Published var permission = false
+    @Published var keyboardBlocker: KeyboardStartBlocker?
     @Published var running = false
     @Published var message = ""
     @Published var recording: Int?
