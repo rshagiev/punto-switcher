@@ -1,62 +1,62 @@
-# Punto Native - keyboard layout switcher for macOS
+<p align="center">
+  <img src="docs/images/icon.png" width="80" height="80" alt="Punto Native app icon">
+</p>
 
-[Русский](README.md) · English
+<h1 align="center">Punto Native</h1>
 
-Punto Native is a Punto Switcher alternative for Apple Silicon Macs. It fixes English or Russian text typed with the wrong keyboard layout, either automatically or with a custom keyboard shortcut.
+<p align="center">A Russian–English keyboard layout switcher for macOS.</p>
 
-Type `ghbdtn`, press **Command + Option + Shift**, and get `привет`. Select a phrase to convert it all at once. `руддщ` becomes `hello`.
+<p align="center">
+  <a href="https://github.com/rshagiev/punto-switcher/releases/latest"><strong>Download for Mac</strong></a> ·
+  <a href="#install">Install</a> ·
+  <a href="CHANGELOG.md">Release notes</a> ·
+  <a href="README.md">Русский</a>
+</p>
 
-**[Download for Mac](https://github.com/rshagiev/punto-switcher/releases/latest)** · macOS 14+ · Apple Silicon (M1 or newer) · No Intel build
+<p align="center">macOS 14+ · Apple Silicon (M1 or newer)</p>
 
-## Features
+![Correcting руддщ to hello with ⌘⌥⇧, alongside the Punto menu with controls for the current app.](docs/images/layout-en.webp)
 
-- Convert the last typed word or selected text between English QWERTY and Russian layouts.
-- Enable automatic layout correction or keep manual shortcuts only.
-- Choose a mode for each app: global settings, automatic, manual only, or disabled. Drag apps from Finder into Profiles.
-- Add word, prefix, substring or regular-expression rules; learn from cancelled corrections.
-- Remember the layout per app, show brief conversion feedback, and configure sounds and login launch.
-- Runs in the menu bar. The Dock icon appears while a settings or review window is open.
-
-Built with Swift, AppKit and SwiftUI. Development checks included Safari text fields and web editors, Codex, Terminal and Ghostty. Password fields are excluded; behavior in other editors may vary.
+Punto Native is a Punto Switcher alternative for Mac. Type `руддщ` and press **⌘⌥⇧** (Command + Option + Shift) to get `hello`. The shortcut fixes the last word or a selected phrase. You can turn on automatic correction and customize the shortcuts. Punto lives in the menu bar and corrects layouts on your Mac. The app interface is in Russian.
 
 ## Install
 
-1. Download the DMG from Releases and drag **PuntoNative.app** into Applications.
+1. [Download the DMG](https://github.com/rshagiev/punto-switcher/releases/latest) and drag **PuntoNative.app** into Applications.
 2. Quit any other keyboard layout switcher.
-3. Open Punto and click **Настроить Punto** (Set up Punto). Drag its card into the list that opens in System Settings and enable access. Punto opens any additional step it needs.
+3. Open Punto and click **«Настроить Punto»** (Set up Punto). Drag its card into the list that opens in System Settings and enable access. Punto opens any additional permission page it needs.
 
-Language tables and sounds are bundled. The original Punto Switcher is not required. The build is not Apple-notarized; macOS may require allowing it to open in Privacy & Security.
+The build is currently distributed without Apple notarization. If macOS blocks it, allow it to open in System Settings → Privacy & Security.
 
-In 2.0.11 and newer, use the circular arrow next to the status in Settings. In 2.0.5 through 2.0.10, use About → Updates. To upgrade from 2.0.4 or earlier, download the DMG and replace the app manually.
+To check for updates in 2.0.11 and later, click the circular arrow next to the status in Settings. In 2.0.5–2.0.10, open About → Updates. To upgrade from 2.0.4 or earlier, replace the app using the latest DMG.
 
-## Optional text editing with Luna
+## A mode for each app
 
-Luna uses your installed [Codex CLI](https://developers.openai.com/codex/cli/) and signed-in account. Select GPT-6 Luna (the default) or GPT-5.6 Luna in Luna settings. It runs only when requested. Keyboard layout conversion works without Codex or a network connection.
+Use automatic correction in Safari and switch to manual correction in Terminal. Drag an app from Finder into **«Профили»** (Profiles), or change the mode for your current app directly in the Punto menu. Settings also include custom text rules, per-app layout memory, and learning from undone corrections.
 
-Select text or place the cursor in a paragraph, then use one of two configurable commands:
+![Punto Native profiles. Safari uses automatic correction, Terminal uses manual correction, and TextEdit follows the default.](docs/images/profiles.webp)
 
-- **Fix immediately** applies conservative typo and grammar correction.
-- **Review before replacing** opens a before/after comparison with three modes:
+## Edit text with Luna
 
-| Mode in the app | Purpose |
-| --- | --- |
-| **Ошибки** | Correct typos and grammar while keeping the author's voice. |
-| **Собрать мысль** | Organize rough dictation, repetitions and explicit self-corrections into readable text. |
-| **Промпт** | Turn a rough task description into a structured LLM prompt. |
+Select text or place the cursor in a paragraph. Luna can **fix it immediately** or **show a comparison before replacing it**. In the review window, you can fix errors, clean up dictation, or turn a rough brief into a prompt. Click a highlight to accept or reject an individual edit, then copy or apply the result.
 
-Click a highlighted edit to reject it; click again to accept it. Completed variants are cached for the current text. Switching modes during generation cancels the old request. If you edit the source or switch fields while a quick request is running, automatic replacement is cancelled.
+![Luna’s before-and-after review. A typo and a missing comma are highlighted as individual edits.](docs/images/luna.webp)
 
-Luna can miss details, so review important names, numbers and requirements. Requests use the limits of your Codex account; no separate API key is configured in Punto. The app's interface is currently in Russian.
+To use Luna, install [Codex CLI](https://github.com/openai/codex#quickstart), sign in, then click **«Попробовать на примере»** (Try an example) in Luna settings. Choose GPT-6 Luna or GPT-5.6 Luna. Requests use your Codex account limits. Keyboard layout correction works offline with Punto alone.
 
 ## Privacy
 
-Layout conversion stays on your Mac. Luna sends only the selected text or current paragraph to Codex when invoked. There is no continuous LLM processing or typing-history log. Settings, daily counters and learning words are stored locally. Codex account settings and data policies also apply to Luna requests.
+Punto keeps no typing history. Settings, counters, and learning words stay on your Mac. Luna sends only the selected text or current paragraph to Codex when invoked. Your Codex account settings and policies apply to those requests.
 
-Starting in 2.0.6, Punto offers usage analytics. The checkbox is selected initially and collection begins after you confirm it. You can clear it during setup or turn it off later under General → Privacy. PostHog Cloud EU retains events for one year. Events include a random installation ID, Punto and macOS versions, first launch, keyboard readiness, active days, update outcomes, support invitation impressions, and GitHub clicks. Analytics excludes typed text, clipboard contents, app names, and document contents.
+<details>
+<summary>Usage analytics</summary>
 
-## Build
+Punto offers usage analytics during setup. The checkbox is selected initially, and collection begins after you confirm it. You can change your choice in General → Privacy. PostHog Cloud EU retains events for one year. Events include a random installation ID, Punto and macOS versions, first launch, keyboard readiness, active days, update outcomes, support invitation impressions, and GitHub clicks. Analytics excludes typed text, clipboard contents, app names, and document contents.
 
-Requires Swift 6 and Xcode Command Line Tools on macOS 14+.
+</details>
+
+## Build from source
+
+Requires Swift 6 and Xcode Command Line Tools.
 
 ```sh
 swift run -c release PuntoChecks
@@ -66,4 +66,4 @@ open 'Build/Punto Native.app'
 
 The default build uses ad-hoc signing. Set `CODE_SIGN_IDENTITY` to use your own certificate. Build a DMG with `bash Scripts/package-release.sh`.
 
-[Release notes](CHANGELOG.md) · [Architecture](docs/ARCHITECTURE.md) · [Verification](docs/VERIFICATION.md) · [Report an issue](https://github.com/rshagiev/punto-switcher/issues)
+[Architecture](docs/ARCHITECTURE.md) · [Verification](docs/VERIFICATION.md) · [Development history](docs/HISTORY.md) · [Report an issue](https://github.com/rshagiev/punto-switcher/issues)
