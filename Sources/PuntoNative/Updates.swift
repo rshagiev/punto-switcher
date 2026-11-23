@@ -3,8 +3,38 @@ import Combine
 import PuntoCore
 import Sparkle
 
-final class Updates: NSObject, ObservableObject, SPUUpdaterDelegate {
+final class Updates: NSObject, ObservableObject, SPUUpdaterDelegate, SPUStandardUserDriverDelegate {
+    struct Offer {
+        let version: String
+        let date: Date?
+        let notes: AttributedString?
+
+        init(_ item: SUAppcastItem) {
+            version = item.displayVersionString
+            date = item.date
+            guard let description = item.itemDescription?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  !description.isEmpty else {
+                notes = nil
+                return
+            }
+
+            switch item.itemDescriptionFormat {
+            case "markdown":
+                let list = description.split(separator: "\n", omittingEmptySubsequences: false).map { line in
+                    line.hasPrefix("- ") ? "• " + line.dropFirst(2) : String(line)
+                }.joined(separator: "\n")
+                notes = (try? AttributedString(markdown: list, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)))
+                    ?? AttributedString(list)
+            case "plain-text":
+                notes = AttributedString(description)
+            default:
+                notes = nil
+            }
+        }
+    }
+
     @Published private(set) var canCheck = false
+    @Published private(set) var offer: Offer?
     private var controller: SPUStandardUpdaterController?
     private var availability: AnyCancellable?
     private let analytics: UsageAnalytics
@@ -18,7 +48,7 @@ final class Updates: NSObject, ObservableObject, SPUUpdaterDelegate {
         let info = Bundle.main.infoDictionary ?? [:]
         guard info["SUFeedURL"] is String, info["SUPublicEDKey"] is String else { return }
         controller = SPUStandardUpdaterController(
-            startingUpdater: false, updaterDelegate: self, userDriverDelegate: nil
+            startingUpdater: false, updaterDelegate: self, userDriverDelegate: self
         )
     }
 
@@ -47,6 +77,16 @@ final class Updates: NSObject, ObservableObject, SPUUpdaterDelegate {
     func check() {
         guard canCheck else { return }
         controller?.checkForUpdates(nil)
+    }
+
+    var supportsGentleScheduledUpdateReminders: Bool { true }
+
+    func standardUserDriverWillHandleShowingUpdate(_ handleShowingUpdate: Bool, forUpdate update: SUAppcastItem, state: SPUUserUpdateState) {
+        offer = Offer(update)
+    }
+
+    func standardUserDriverWillFinishUpdateSession() {
+        offer = nil
     }
 
     func updater(_ updater: SPUUpdater, willDownloadUpdate item: SUAppcastItem, with request: NSMutableURLRequest) {
