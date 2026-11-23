@@ -26,6 +26,12 @@ Native macOS 14+ Swift app. Preserve the user's live settings and permission ide
 - On the native UI, check that the popup leaves focus in the editor. A click outside closes only the popup. Opening GitHub or choosing “Больше не предлагать” hides the shared invitation, including after restart. The plain GitHub link stays available.
 - A fixture that calls the completion handler covers the shared UI state. Changes to event delivery, focus or popup buttons also need a separate live run through `CGEventTap`. For the default manual chord, use `bash Scripts/press-conversion-chord.sh <fixture-bundle-id> '<exact fixture text>'` from the integrated checkout. Check the automatic path in the same isolated editor.
 
+## Permission setup
+
+- Start from the first action that should work for the user. Query capabilities, show one setup action, and open another permission page only when an operation still needs it.
+- Use the live app bundle as the drag source for macOS lists that accept applications. Keep the panel next to the list as the window moves. Let macOS handle the consent and verify it through the operating system before advancing.
+- Run `bash Scripts/check-keyboard-setup.sh`. In an isolated app, verify first launch, the panel and its file drag, cancellation, resume after relaunch, and keyboard conversion after the applicable grants. Record setup UI evidence and conversion evidence separately. See [the permission flow](docs/ARCHITECTURE.md#настройка-доступа-к-клавиатуре).
+
 ## Packaging a release
 
 - Use `bash Scripts/package-release.sh` for local packaging. For a stable OTA candidate, follow [docs/OTA.md](docs/OTA.md#сборка-и-публикация-stable) for the release version, increasing build number, notes, and GitHub feed URLs.

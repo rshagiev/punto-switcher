@@ -3,6 +3,12 @@ import Carbon
 import OSLog
 import PuntoCore
 
+enum KeyboardStartBlocker: Equatable {
+    case originalPuntoRunning
+    case permission(KeyboardPermission)
+    case eventTapUnavailable
+}
+
 final class KeyboardEngine {
     private let log = Logger(subsystem:"dev.rshagiev.PuntoNative",category:"Keyboard")
     let settings: Settings
@@ -57,24 +63,40 @@ final class KeyboardEngine {
         workspaceObserver = NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main) { [weak self] _ in self?.appChanged() }
     }
     func start() {
-        settings.permission = AXIsProcessTrusted()
-        guard NSRunningApplication.runningApplications(withBundleIdentifier:"ru.yandex.desktop.PuntoSwitcher").isEmpty else { settings.message = "Сначала завершите Punto Яндекса"; return }
-        guard settings.permission else {
-            let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
-            _ = AXIsProcessTrustedWithOptions(options)
-            settings.message = "macOS ещё не предоставила Универсальный доступ этой сборке"
+        guard tap == nil else { return }
+        guard NSRunningApplication.runningApplications(withBundleIdentifier: "ru.yandex.desktop.PuntoSwitcher").isEmpty else {
+            settings.keyboardBlocker = .originalPuntoRunning
             return
         }
-        guard tap == nil else { return }
-        let mask = [CGEventType.keyDown,.keyUp,.flagsChanged,.leftMouseDown,.rightMouseDown,.otherMouseDown,.leftMouseUp,.rightMouseUp,.otherMouseUp,.leftMouseDragged,.rightMouseDragged,.otherMouseDragged,.scrollWheel].reduce(CGEventMask(0)) { $0 | (1 << $1.rawValue) }
-        tap = CGEvent.tapCreate(tap: .cgSessionEventTap, place: .headInsertEventTap, options: .defaultTap, eventsOfInterest: mask, callback: { _,type,event,context in
-            guard let context else { return Unmanaged.passUnretained(event) }
-            return Unmanaged<KeyboardEngine>.fromOpaque(context).takeUnretainedValue().handle(type,event)
-        }, userInfo: Unmanaged.passUnretained(self).toOpaque())
-        guard let tap else { settings.message = "macOS не разрешила обработку клавиатуры"; settings.running = false; return }
-        tapSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault,tap,0)
-        CFRunLoopAddSource(CFRunLoopGetMain(),tapSource,.commonModes)
-        CGEvent.tapEnable(tap: tap,enable: true)
+        if let permission = KeyboardPermission.firstMissing(canTapKeys: canTapKeys) {
+            settings.keyboardBlocker = .permission(permission)
+            return
+        }
+
+        let mask = [CGEventType.keyDown, .keyUp, .flagsChanged, .leftMouseDown, .rightMouseDown, .otherMouseDown,
+                    .leftMouseUp, .rightMouseUp, .otherMouseUp, .leftMouseDragged, .rightMouseDragged,
+                    .otherMouseDragged, .scrollWheel].reduce(CGEventMask(0)) { $0 | (1 << $1.rawValue) }
+        guard let tap = createTap(mask: mask) else {
+            settings.keyboardBlocker = .eventTapUnavailable
+            return
+        }
+        guard let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0) else {
+            CFMachPortInvalidate(tap)
+            settings.keyboardBlocker = .eventTapUnavailable
+            return
+        }
+        CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
+        CGEvent.tapEnable(tap: tap, enable: true)
+        guard CGEvent.tapIsEnabled(tap: tap) else {
+            CFRunLoopRemoveSource(CFRunLoopGetMain(), source, .commonModes)
+            CFMachPortInvalidate(tap)
+            settings.keyboardBlocker = .eventTapUnavailable
+            return
+        }
+
+        self.tap = tap
+        tapSource = source
+        settings.keyboardBlocker = nil
         settings.running = true; settings.message = "Готов к работе"; onStatus?()
         if CommandLine.arguments.contains("--diagnostics") {
             diagnosticTimer = Timer.scheduledTimer(withTimeInterval:0.1,repeats:true) { [weak self] _ in
@@ -89,6 +111,22 @@ final class KeyboardEngine {
             if let tap = self.tap, !CGEvent.tapIsEnabled(tap: tap) { self.reset(); CGEvent.tapEnable(tap: tap,enable:true) }
         }
     }
+    private func canTapKeys() -> Bool {
+        // Quartz can return a mixed tap with its keyboard bits removed. Probe a single key event
+        // before adding the live tap, and only when the listening permission reports false.
+        guard let probe = createTap(mask: 1 << CGEventType.keyDown.rawValue) else { return false }
+        CFMachPortInvalidate(probe)
+        return true
+    }
+
+    private func createTap(mask: CGEventMask) -> CFMachPort? {
+        CGEvent.tapCreate(tap: .cgSessionEventTap, place: .headInsertEventTap, options: .defaultTap,
+                          eventsOfInterest: mask, callback: { _, type, event, context in
+            guard let context else { return Unmanaged.passUnretained(event) }
+            return Unmanaged<KeyboardEngine>.fromOpaque(context).takeUnretainedValue().handle(type, event)
+        }, userInfo: Unmanaged.passUnretained(self).toOpaque())
+    }
+
     func stop() {
         feedback.hide(); pendingFeedback = nil
         diagnosticTimer?.invalidate(); diagnosticTimer = nil

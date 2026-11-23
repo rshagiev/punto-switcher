@@ -13,6 +13,7 @@ struct SettingsView: View {
     @ObservedObject var analytics: UsageAnalytics
     let support: SupportPrompt
     let onLunaDemo: () -> Void
+    let onPermissionSetup: () -> Void
     @StateObject private var codex = CodexConnection()
     private var section: String { settings.selectedSection }
     @State private var newRule = false
@@ -30,12 +31,14 @@ struct SettingsView: View {
                     VStack(alignment:.leading,spacing:3) { Text("Punto Native").font(.headline); Text("Раскладка под рукой").font(.caption).foregroundStyle(.secondary) }
                 }.padding(.horizontal,14).padding(.top,22)
                 List(selection:$settings.selectedSection) { ForEach(panes,id:\.0) { name,icon in Label(name,systemImage:icon).tag(name).padding(.vertical,4) } }.listStyle(.sidebar)
-                Label(settings.running ? "Работает" : (settings.permission ? "Приостановлен" : "Нужен доступ"),systemImage:settings.running ? "checkmark.circle.fill" : "lock.fill").font(.caption).foregroundStyle(settings.running ? .green : .orange).padding(18)
+                Label(keyboardStatus,systemImage:settings.running ? "checkmark.circle.fill" : "lock.fill").font(.caption).foregroundStyle(settings.running ? .green : .orange).padding(18)
             }.navigationSplitViewColumnWidth(min:205,ideal:220,max:250)
         } detail: {
             VStack(alignment:.leading,spacing:0) {
                 VStack(alignment:.leading,spacing:5) { Text(section).font(.system(size:26,weight:.bold)); Text(subtitle).foregroundStyle(.secondary).font(.callout) }.padding(26)
-                if !settings.permission { permissionCard.padding(.horizontal,26).padding(.bottom,12) }
+                if let blocker = settings.keyboardBlocker {
+                    keyboardSetupCard(blocker).padding(.horizontal,26).padding(.bottom,12)
+                }
                 else if !settings.running {
                     HStack { Label("Обработка клавиатуры приостановлена",systemImage:"pause.circle"); Spacer(); Button("Начать работу") { engine.start() } }.padding(16).background(.quaternary,in:RoundedRectangle(cornerRadius:12)).padding(.horizontal,26)
                 }
@@ -67,17 +70,40 @@ struct SettingsView: View {
         default: return "Нативное приложение для macOS."
         }
     }
-    var permissionCard: some View {
-        VStack(alignment:.leading,spacing:10) {
-            Label("Разрешите работу с клавиатурой",systemImage:"hand.raised.fill").font(.headline)
-            Text("В настройках macOS включите Punto Native в разделах «Универсальный доступ» и «Мониторинг ввода».").font(.callout).foregroundStyle(.secondary)
-            HStack {
-                Button("Универсальный доступ") { openPrivacy("Privacy_Accessibility") }
-                Button("Мониторинг ввода") { openPrivacy("Privacy_ListenEvent") }
-                Button("Проверить доступ") { engine.start() }.buttonStyle(.borderedProminent)
-            }
-        }.padding(16).frame(maxWidth:.infinity,alignment:.leading).background(Color.orange.opacity(0.09),in:RoundedRectangle(cornerRadius:12))
+    private var keyboardStatus: String {
+        if settings.running { return "Работает" }
+        if case .permission = settings.keyboardBlocker { return "Нужен доступ" }
+        return "Приостановлен"
     }
+
+    private func keyboardSetupCard(_ blocker: KeyboardStartBlocker) -> some View {
+        let title: String
+        let detail: String
+        let button: String
+        switch blocker {
+        case .permission:
+            title = "Настройка клавиатуры"
+            detail = "Выдайте Punto доступ в настройках macOS. Punto сам проверит доступ и начнёт работу."
+            button = "Настроить Punto"
+        case .originalPuntoRunning:
+            title = "Работает Punto Яндекса"
+            detail = "Завершите Punto Яндекса, чтобы запустить Punto Native."
+            button = "Начать работу"
+        case .eventTapUnavailable:
+            title = "Клавиатура ещё недоступна"
+            detail = "Если macOS предложила перезапустить Punto после выдачи доступа, подтвердите перезапуск."
+            button = "Проверить снова"
+        }
+        return VStack(alignment: .leading, spacing: 10) {
+            Label(title, systemImage: "hand.raised.fill").font(.headline)
+            Text(detail).font(.callout).foregroundStyle(.secondary)
+            Button(button, action: onPermissionSetup).buttonStyle(.borderedProminent)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.orange.opacity(0.09), in: RoundedRectangle(cornerRadius: 12))
+    }
+
     @ViewBuilder var content: some View {
         switch section {
         case "Сегодня":
@@ -302,7 +328,6 @@ struct SettingsView: View {
             }
         }.formStyle(.grouped)
     }
-    func openPrivacy(_ pane: String) { if let url = URL(string:"x-apple.systempreferences:com.apple.preference.security?\(pane)") { NSWorkspace.shared.open(url) } }
 }
 
 func modeLabel(_ mode: UserRule.Mode) -> String {

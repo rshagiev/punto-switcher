@@ -20,23 +20,28 @@ Sparkle 2.10.1 закреплён в SwiftPM. Официальный бинар�
 
 В сборках без настроенного канала раздел «О программе» показывает ссылку на GitHub Releases. При включённой автопроверке Punto проверяет обновления через 15 секунд после запуска, если Sparkle ещё не начал проверку. Дальше Sparkle проверяет обновления раз в шесть часов. Ручная проверка доступна независимо от настройки, а скачивание и установка требуют действия пользователя. Профилирование отключено. Sparkle проверяет EdDSA-подписи appcast и архивов, включая проверку до распаковки. ZIP содержит только приложение. DMG с привычным установочным оформлением остаётся для ручной установки. [Настройки Sparkle](https://sparkle-project.org/documentation/customization/) · [Публикация обновления](https://sparkle-project.org/documentation/publishing/)
 
-1. Использовать ту же подпись `Punto Local Code Signing`, что у опубликованной 2.0.4. Перед выпуском сверить designated requirement через `codesign -dr -` на обоих пакетах. Сгенерировать отдельный EdDSA-ключ Sparkle аккаунтом `punto-native` через `generate_keys` из `.build/artifacts/sparkle/Sparkle/bin/` после `swift package resolve`. Хранить приватный ключ в Keychain с зашифрованной резервной копией. В приложение входит только открытый ключ.
+Для выпуска сначала обновите `CHANGELOG.md` и инструкции первого запуска, если они изменились. Возьмите раздел этой версии за основу заметок в GitHub и Sparkle. В заметках должно быть понятно, что изменилось и где нажать «Проверить обновления». Запускайте упаковку из дерева исходников будущего тега. Публиковать можно после проверки CI и всех четырёх файлов.
+
+1. Использовать ту же подпись `Punto Local Code Signing`, что у опубликованной 2.0.4. Перед выпуском сверить designated requirement через `codesign -dr -` на обоих пакетах. Использовать существующий EdDSA-ключ Sparkle из аккаунта `punto-native` в Keychain. `generate_keys -p` читает открытый ключ. Для обычного выпуска используйте ключ опубликованного канала. В приложение входит только открытый ключ, а зашифрованная резервная копия хранится отдельно.
 2. Задать `PUNTO_VERSION` как номер релиза и `PUNTO_BUILD_NUMBER` как целое число выше всех ранее опубликованных номеров. Для OTA передать номер явно. При сборке для публичного stable-канала скрипт скачивает текущие appcast и ZIP с GitHub Releases. Он прерывает сборку, если ключ не совпадает с ключом опубликованного приложения, номер сборки не вырос или предыдущий релиз нельзя проверить.
 3. Передать параметры ниже в `Scripts/package-release.sh`. Скрипт собирает и проверяет пакет, подписывает ZIP и appcast штатным `generate_appcast`. Для изолированной проверки задать тестовый URL и отдельный ключ Sparkle.
 
 ```bash
 export CODE_SIGN_IDENTITY='Punto Local Code Signing'
-export PUNTO_VERSION='2.0.6'
-export PUNTO_BUILD_NUMBER='20261123000000' # Пример, сверить с последним опубликованным номером.
+export PUNTO_VERSION='2.0.10' # Подставьте версию предстоящего релиза.
+export PUNTO_BUILD_NUMBER="$(date -u +%Y%m%d%H%M%S)"
 export SPARKLE_FEED_URL='https://github.com/rshagiev/punto-switcher/releases/latest/download/appcast.xml'
 export SPARKLE_DOWNLOAD_PREFIX="https://github.com/rshagiev/punto-switcher/releases/download/v${PUNTO_VERSION}/"
 export SPARKLE_PUBLIC_KEY="$(.build/artifacts/sparkle/Sparkle/bin/generate_keys --account punto-native -p)"
 export SPARKLE_RELEASE_NOTES='/absolute/path/to/release-notes.md'
-# Задайте PUNTO_POSTHOG_PROJECT_TOKEN токеном приёма проекта Punto в PostHog Cloud EU.
+# Сохраните capture-токен из Info.plist проверенного предыдущего stable ZIP.
+# Обычный выпуск сохраняет настройку аналитики канала и выбор пользователя.
 bash Scripts/package-release.sh
 ```
 
-4. После согласования создать draft release. Загрузить DMG и его `.sha256` из `Release/`, ZIP и `appcast.xml` из `Release/ota-v<version>/`. Опубликовать релиз как latest только после загрузки всех файлов. Appcast содержит текущий stable, без привязки к предыдущему релизу. У каждой новой latest-версии должен быть appcast, даже если на момент первого выпуска он указывает на ту же версию. Ссылки на ZIP привязаны к тегу версии. После публикации проверить HTTPS URL, подпись и версию. [Постоянная GitHub-ссылка на latest asset](https://docs.github.com/en/repositories/releasing-projects-on-github/linking-to-releases)
+4. После согласования создать draft release. Загрузить DMG и его `.sha256` из `Release/`, ZIP и `appcast.xml` из `Release/ota-v<version>/`. Опубликовать релиз как latest только после загрузки всех файлов. Appcast содержит текущий stable, без привязки к предыдущему релизу. У каждой новой latest-версии должен быть appcast, даже если на момент первого выпуска он указывает на ту же версию. Ссылки на ZIP привязаны к тегу версии. Сверить SHA-256 всех загруженных файлов с локальными. После публикации скачать `latest/download/appcast.xml` и архив по URL внутри него. Проверить обе подписи Sparkle, версию, номер сборки, размер ZIP и designated requirement. Проверка оффера в установленной копии подтверждает, что Sparkle увидел релиз. Установка и работа клавиатуры после обновления требуют отдельной проверки. [Постоянная GitHub-ссылка на latest asset](https://docs.github.com/en/repositories/releasing-projects-on-github/linking-to-releases)
+
+На машине сборки с CLT для macOS 27 SDK 27 не находил макросы SwiftUI. Для 2.0.10 использован `SDKROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk`. Проверяйте доступность SDK на машине сборки.
 
 Для первой итерации подходят Keychain владельца и локальная упаковка. При первом запуске инструментов подписи macOS может запросить доступ к записи Keychain. В изолированном CI можно передать Sparkle защищённый временный файл через `SPARKLE_ED_KEY_FILE`. Обычный CI проверяет обе конфигурации пакета без секретов. Для последующей автоматизации использовать отдельный release job и секреты окружения публикации. Автопубликацию и nightly добавлять отдельными изменениями.
 
