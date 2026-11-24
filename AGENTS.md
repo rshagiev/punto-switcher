@@ -14,6 +14,15 @@ Native macOS 14+ Swift app. Preserve the user's live settings and permission ide
 - Copy and Apply must use the exact reviewed text, including individually rejected edits. Never auto-apply after the target or source text changes.
 - Quick Luna mode is conservative proofreading. Prompt mode is explicitly selected in review and must not invent requirements.
 
+## README and product demos
+
+- Keep the Russian and English READMEs aligned on features, requirements, and installation. Use short sentences and avoid em dashes. Preserve the approved order: app icon, name and short description, download and navigation links, compatibility, static cover, explanation, and the compact demo before installation. Keep install steps and the Apple notarization warning easy to find.
+- Explain what ships in plain text: local automatic and manual layout correction, app-specific modes, and optional Luna editing through Codex. Scope the MIT claim to code and documentation. Use a short FAQ for real user questions. Treat SEO briefs as suggestions and report search observations separately from indexing, ranking, or AI recommendation claims.
+- Capture native screenshots with isolated example data and show each screenshot beside its feature. If including Today, seed realistic activity so the counters and chart explain the feature.
+- Use one complete scenario in the animation. Keep the editor, RU/EN indicator, and keys, with the app menu on the static cover. For the current example, show `hello` being typed in the Russian layout and corrected automatically during typing. Show the finished word before the three keys of `⌘ + ⌥ + ⇧` light up together on the right of the letter keys. Restore `руддщ` and RU on the first release, then show the same chord again and hold the final frame on `hello` and EN. Keep status text inside the field above the word.
+- Verify the example against the current conversion rules and shortcut handling. Describe a generated sequence as an illustration. Describe a live capture as such only after verifying the actual editor contents and layout.
+- Check the encoded animation at desktop and mobile widths, including the frame where the shortcut lights up and the restored result. Check readability, spacing, the loop, alt text, and file size in both languages. After an authorized push, verify the image order and assets on the public GitHub pages.
+
 ## Check the menu and Today
 
 - In an isolated app, open the status menu, expand and collapse the current-app card, toggle automatic correction, then pause and resume Punto. Reopen the menu and confirm the previous mode is restored after resuming. Keep the app in the card as the target while the menu is open. Verify that opening and closing the card leaves the same menu window open and that an explicit app choice appears in Profiles. Verify Option-0 opens and closes the card and, while it is expanded, Option-1 switches automatic correction and Option-2 pauses or resumes Punto.

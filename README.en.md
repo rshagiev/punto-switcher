@@ -17,10 +17,10 @@
 
 ![The ⌘⌥⇧ shortcut turns руддщ into hello. The Punto menu on the right shows controls for the current app.](docs/images/layout-en.webp)
 
-Punto lives in the menu bar. With **automatic correction** on, it detects and fixes wrong-layout words as you type. For **manual correction**, press **⌘⌥⇧** (Command + Option + Shift). For example, `руддщ` becomes `hello`. The shortcut works on the last word or selected text, even with automatic correction off. Use it right after an automatic correction in the same field to restore the original text and layout. The app interface is in Russian.
+Punto lives in the menu bar. With **automatic correction** on, it detects and fixes wrong-layout words as you type. For **manual correction**, press **⌘⌥⇧** (Command + Option + Shift). For example, `руддщ` becomes `hello`. The shortcut works on the last word or selected text, even with automatic correction off. Use it right after an automatic correction in the same field to restore the original text and layout. Press it again to correct the word once more. The app interface is in Russian.
 
 <p align="center">
-  <img src="docs/images/auto-correction-en.webp" width="640" alt="Punto corrects the keyboard layout while typing hello. Pressing and releasing ⌘ + ⌥ + ⇧ brings back руддщ and the Russian layout.">
+  <img src="docs/images/auto-correction-en.webp" width="640" alt="Punto corrects the keyboard layout while typing hello. Pressing ⌘ + ⌥ + ⇧ brings back руддщ and the Russian layout. Pressing it again restores hello and the English layout.">
 </p>
 
 ## Install
